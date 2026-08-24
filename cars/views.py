@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.http import JsonResponse
 from django import forms
-from .models import CarSpecification, AdBanner
+from .models import CarSpecification, AdBanner, FeatureCard
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -95,6 +95,9 @@ def index_view(request):
     # جلب البنرات مع caching بسيط
     banners = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
 
+    # ✅ بطاقات المميزات (تُدار من لوحة الأدمن)
+    feature_cards = FeatureCard.objects.filter(is_active=True).order_by('order', 'created_at')
+
     # تحسين اقتراحات الماركات
     brand_suggestions = list(CarSpecification.objects.values_list('brand_ar', flat=True).distinct().order_by('brand_ar')[:100])
     
@@ -105,6 +108,7 @@ def index_view(request):
     context = {
         'cars': cars,
         'banners': banners,
+        'feature_cards': feature_cards,
         'brand_suggestions': brand_suggestions,
         'engine_type_choices': engine_type_choices,
         'spec_region_choices': spec_region_display,

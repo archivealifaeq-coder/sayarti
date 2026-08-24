@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django.template import Template, RequestContext
 from django.utils.html import format_html
 from django.db.models import Count
-from .models import CarSpecification, AdBanner
+from .models import CarSpecification, AdBanner, FeatureCard
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -349,6 +349,58 @@ class AdBannerAdmin(admin.ModelAdmin):
         form = super().get_form(request, obj=None, **kwargs)
         form.base_fields['image'].help_text = '🖼️ الأبعاد الموصى بها: 1920 × 640 بكسل (عرض كامل - نسبة 3:1)'
         form.base_fields['image_mobile'].help_text = '📱 الأبعاد الموصى بها: 1000 × 750 بكسل (نسبة 4:3)'
+        return form
+
+
+# ============================================================
+# ✅ إدارة بطاقات المميزات القابلة للتعديل + الإعلانات
+# ============================================================
+@admin.register(FeatureCard)
+class FeatureCardAdmin(admin.ModelAdmin):
+    list_display = (
+        'card_preview',
+        'type_badge',
+        'order',
+        'is_active',
+        'created_at_display',
+    )
+    list_editable = ('order', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('title', 'description')
+    ordering = ('order', 'created_at')
+    list_per_page = 20
+    fieldsets = (
+        ('📝 المحتوى', {
+            'fields': ('title', 'description', 'icon')
+        }),
+        ('📢 إعلان (اختياري)', {
+            'fields': ('image', 'link'),
+            'description': '📸 ضع صورة لتتحول البطاقة إلى إعلان، وأضف رابطاً لتصبح قابلة للنقر. الأبعاد الموصى بها: 400×400 بكسل'
+        }),
+        ('⚙️ الإعدادات', {
+            'fields': ('order', 'is_active')
+        }),
+    )
+
+    def card_preview(self, obj):
+        color = '#fbbf24' if obj.is_active else '#64748b'
+        icon = obj.icon or '🖼️'
+        return format_html('<span style="color: {};">{} <b>{}</b></span>', color, icon, obj.title[:40])
+    card_preview.short_description = 'البطاقة'
+
+    def type_badge(self, obj):
+        if obj.image:
+            return format_html('<span style="background: #ef444420; padding: 2px 12px; border-radius: 12px; color: #f87171;">📢 إعلان</span>')
+        return format_html('<span style="background: #22c55e20; padding: 2px 12px; border-radius: 12px; color: #4ade80;">⭐ مميزة</span>')
+    type_badge.short_description = 'النوع'
+
+    def created_at_display(self, obj):
+        return format_html('<span style="color: #64748b; font-size: 0.8rem;">{}</span>', obj.created_at.strftime('%Y-%m-%d'))
+    created_at_display.short_description = 'التاريخ'
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.base_fields['icon'].help_text = '🚗 🔧 🧮 ⭐ 💧 🛢️ ⚡ — اتركه فارغاً عند استخدام صورة'
         return form
 
 

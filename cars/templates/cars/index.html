@@ -1323,26 +1323,17 @@
         <!-- ============================================ -->
         <div class="max-w-7xl mx-auto px-4 section-spacing">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                <div class="feature-card">
-                    <span class="feature-icon">🚗</span>
-                    <div class="feature-title">أكثر من 5000 سيارة</div>
-                    <div class="feature-desc">في قاعدة البيانات</div>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">🔧</span>
-                    <div class="feature-title">توصيات دقيقة</div>
-                    <div class="feature-desc">من خبراء الصيانة</div>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">🧮</span>
-                    <div class="feature-title">حاسبة الخلط</div>
-                    <div class="feature-desc">نسب مثالية للوقود</div>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">⭐</span>
-                    <div class="feature-title">محدث باستمرار</div>
-                    <div class="feature-desc">أحدث الموديلات</div>
-                </div>
+                {% for card in feature_cards %}
+                    {% if card.link %}<a href="{{ card.link }}" class="feature-card block hover:-translate-y-1 transition-transform" {% if card.link|slice:":4" == 'http' %}target="_blank" rel="noopener"{% endif %}>{% else %}<div class="feature-card">{% endif %}
+                        {% if card.image %}
+                            <img src="{{ card.image.url }}" alt="{{ card.title }}" class="w-full h-20 md:h-24 object-contain rounded-xl mb-2" loading="lazy">
+                        {% else %}
+                            <span class="feature-icon">{{ card.icon|default:"⭐" }}</span>
+                        {% endif %}
+                        <div class="feature-title">{{ card.title }}</div>
+                        {% if card.description %}<div class="feature-desc">{{ card.description }}</div>{% endif %}
+                    {% if card.link %}</a>{% else %}</div>{% endif %}
+                {% endfor %}
             </div>
         </div>
         
