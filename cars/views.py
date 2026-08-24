@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.http import JsonResponse
 from django import forms
-from .models import CarSpecification, AdBanner, FeatureCard
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -238,3 +238,18 @@ def recommendations_view(request, car_id):
         messages.error(request, "⚠️ السيارة غير موجودة")
         return redirect('index')
     return render(request, 'cars/recommendations.html', {'car': car})
+
+
+def privacy_view(request):
+    return render(request, 'cars/privacy.html')
+
+
+def about_view(request):
+    return render(request, 'cars/about.html')
+
+
+def ads_txt_view(request):
+    from django.http import HttpResponse
+    settings_obj = SiteSettings.load()
+    content = settings_obj.ads_txt.strip() or "# ads.txt - سيتم تعبئته تلقائياً بعد القبول في Google AdSense"
+    return HttpResponse(content, content_type='text/plain; charset=utf-8')

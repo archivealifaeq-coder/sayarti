@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django.template import Template, RequestContext
 from django.utils.html import format_html
 from django.db.models import Count
-from .models import CarSpecification, AdBanner, FeatureCard
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -402,6 +402,43 @@ class FeatureCardAdmin(admin.ModelAdmin):
         form = super().get_form(request, obj, **kwargs)
         form.base_fields['icon'].help_text = '🚗 🔧 🧮 ⭐ 💧 🛢️ ⚡ — اتركه فارغاً عند استخدام صورة'
         return form
+
+
+# ============================================================
+# ✅ إعدادات الموقع (سجل واحد فقط) - الإعلانات وads.txt
+# ============================================================
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    list_display = ('settings_summary',)
+    fieldsets = (
+        ('📢 إعلانات Google AdSense', {
+            'fields': ('show_ads', 'adsense_client_id'),
+            'description': '1) سجّل في adsense.google.com بعد نشر الموقع 2) الصق معرف الناشر هنا 3) فعّل الإعلانات'
+        }),
+        ('🎯 مواضع الوحدات الإعلانية', {
+            'fields': ('ad_slot_results', 'ad_slot_recommend_top', 'ad_slot_recommend_bottom'),
+            'classes': ('collapse',),
+            'description': 'أنشئ وحدات إعلانية (Display ads) في لوحة AdSense والصق أرقامها data-ad-slot هنا — اتركها فارغة لإخفاء الموضع'
+        }),
+        ('📄 ملف ads.txt', {
+            'fields': ('ads_txt',),
+            'classes': ('collapse',),
+        }),
+    )
+
+    def has_add_permission(self, request):
+        return not SiteSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def settings_summary(self, obj):
+        if obj.show_ads and obj.adsense_client_id:
+            return format_html('<span style="color: #4ade80;">✅ الإعلانات مفعلة — {}</span>', obj.adsense_client_id)
+        if obj.adsense_client_id:
+            return format_html('<span style="color: #fbbf24;">⚠️ المعرف موجود لكن الإعلانات غير مفعلة</span>')
+        return format_html('<span style="color: #64748b;">⚪ لم يتم ربط AdSense بعد</span>')
+    settings_summary.short_description = 'الحالة'
 
 
 # ============================================================

@@ -6,6 +6,9 @@
     <title>بطاقة التوصيات | {{ car.brand_ar }} {{ car.model_ar }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    {% if site_settings.adsense_client_id %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site_settings.adsense_client_id }}" crossorigin="anonymous"></script>
+    {% endif %}
     <style>
         * { font-family: 'Cairo', sans-serif; }
         body { background: #0b1120; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
@@ -259,6 +262,7 @@
             </div>
         </div>
 
+        {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_top %}
         <div class="rec-box">
             <div class="flex items-center gap-3 mb-3">
                 <span class="text-2xl">📋</span>
@@ -290,6 +294,7 @@
             </a>
         </div>
 
+        {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_bottom %}
         <div class="mt-6 text-center text-[10px] text-slate-600/60 border-t border-slate-800/40 pt-4 flex justify-between">
             <span>🚗 سيارتي · قاعدة بيانات الصيانة الذكية</span>
             <span dir="ltr" class="font-mono">v2.0 · {{ car.year }}</span>

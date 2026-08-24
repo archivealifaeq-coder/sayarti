@@ -210,3 +210,56 @@ class FeatureCard(models.Model):
         ordering = ['order', 'created_at']
         verbose_name = "بطاقة مميزات"
         verbose_name_plural = "بطاقات المميزات"
+
+class SiteSettings(models.Model):
+    """إعدادات عامة للموقع - سجل واحد فقط (ID=1)"""
+    show_ads = models.BooleanField(
+        default=False,
+        verbose_name="تفعيل الإعلانات",
+        help_text="شغّلها بعد قبول موقعك في Google AdSense"
+    )
+    adsense_client_id = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="معرف الناشر AdSense",
+        help_text="مثال: ca-pub-1234567890123456"
+    )
+    ad_slot_results = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="رقم الوحدة: نتائج البحث",
+        help_text="data-ad-slot من لوحة AdSense"
+    )
+    ad_slot_recommend_top = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="رقم الوحدة: أعلى صفحة التوصيات",
+        help_text="data-ad-slot من لوحة AdSense"
+    )
+    ad_slot_recommend_bottom = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="رقم الوحدة: أسفل صفحة التوصيات",
+        help_text="data-ad-slot من لوحة AdSense"
+    )
+    ads_txt = models.TextField(
+        blank=True,
+        verbose_name="محتوى ads.txt",
+        help_text="يُعرض على /ads.txt — الصق السطر الذي يعطيك إياه AdSense مثال: google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0"
+    )
+
+    def __str__(self):
+        return "إعدادات الموقع"
+
+    class Meta:
+        verbose_name = "إعدادات الموقع"
+        verbose_name_plural = "إعدادات الموقع"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

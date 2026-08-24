@@ -19,6 +19,11 @@
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+
+    {% if site_settings.adsense_client_id %}
+    <!-- ✅ Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site_settings.adsense_client_id }}" crossorigin="anonymous"></script>
+    {% endif %}
     
     <style>
         /* ============================================ */
@@ -1457,6 +1462,7 @@
                     </div>
                     {% endfor %}
                 </div>
+                {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_results %}
             {% endif %}
         </div>
         
@@ -1491,6 +1497,8 @@
                         <li><a href="{% url 'index' %}">🏠 الرئيسية</a></li>
                         <li><a href="{% url 'mix_calculator' %}">🧮 حاسبة الخلط</a></li>
                         <li><a href="#cars-section">🚗 السيارات</a></li>
+                        <li><a href="{% url 'about' %}">ℹ️ من نحن</a></li>
+                        <li><a href="{% url 'privacy' %}">🔒 سياسة الخصوصية</a></li>
                         <li><a href="/admin/" rel="nofollow">🔐 لوحة التحكم</a></li>
                     </ul>
                 </div>

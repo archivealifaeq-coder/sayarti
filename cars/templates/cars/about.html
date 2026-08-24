@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="robots" content="index, follow"/>
+    <title>من نحن | سيارتي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+    {% if site_settings.adsense_client_id %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site_settings.adsense_client_id }}" crossorigin="anonymous"></script>
+    {% endif %}
+    <style>
+        * { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0f1a; color: #e2e8f0; min-height: 100vh; }
+        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.15); }
+        .prose-ar h2 { color: #fbbf24; font-weight: 800; font-size: 1.15rem; margin: 1.6rem 0 0.7rem; }
+        .prose-ar p, .prose-ar li { line-height: 2; color: #cbd5e1; font-size: 0.95rem; }
+        .prose-ar ul { padding-right: 1.5rem; list-style: disc; margin-bottom: 0.8rem; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+            <a href="{% url 'index' %}" class="text-slate-400 hover:text-white text-sm flex items-center gap-2 transition">→ العودة للرئيسية</a>
+            <span class="text-2xl font-black text-white">🚗 سيارتي</span>
+        </div>
+
+        <div class="glass rounded-3xl p-6 md:p-10 text-center mb-6">
+            <div class="text-5xl mb-3">🚗</div>
+            <h1 class="text-2xl md:text-3xl font-black text-white mb-3">من نحن؟</h1>
+            <p class="text-slate-300 leading-loose max-w-xl mx-auto">
+                "سيارتي" هو دليلك الذكي لمواصفات صيانة السيارات — نجمع لك بدقة الزيت المناسب،
+                سعة المحرك، رقم الأوكتان المطلوب، ومواصفات الفلاتر لآلاف السيارات
+                في مكان واحد وبضغطة زر.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="glass rounded-2xl p-5 text-center">
+                <div class="text-3xl mb-2">🎯</div>
+                <h3 class="font-extrabold text-white mb-1">رسالتنا</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">تمكين كل سائق من معرفة احتياجات سيارته بدون خبرة فنية أو بحث طويل.</p>
+            </div>
+            <div class="glass rounded-2xl p-5 text-center">
+                <div class="text-3xl mb-2">📚</div>
+                <h3 class="font-extrabold text-white mb-1">مصادرنا</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">بيانات موثقة من أدلة الصيانة الرسمية للشركات المصنعة، محدثة باستمرار.</p>
+            </div>
+            <div class="glass rounded-2xl p-5 text-center">
+                <div class="text-3xl mb-2">🧮</div>
+                <h3 class="font-extrabold text-white mb-1">أدواتنا</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">حاسبة خلط الوقود الذكية وتوصيات صيانة معتمدة لكل موديل وسنة.</p>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6 md:p-10">
+            <div class="prose-ar">
+                <h2>تواصل معنا</h2>
+                <p>نرحب بملاحظاتك واقتراحاتك واستفساراتك:</p>
+                <ul>
+                    <li>📧 البريد الإلكتروني:
+                        <a href="mailto:archivealifaeq@gmail.com?subject=استفسار%20عن%20سيارتي" class="text-amber-400 hover:underline">archivealifaeq@gmail.com</a>
+                    </li>
+                    <li>⏱️ نرد عادة خلال 24-48 ساعة</li>
+                </ul>
+
+                <h2>للمعلنين والرعاة</h2>
+                <p>إذا كنت تمتلك متجر زيوت أو قطع غيار وترغب بالظهور كممول للموقع (في البنرات أو بطاقات المميزات)، راسلنا على البريد أعلاه وسنسعد بشراكة مربحة للطرفين.</p>
+
+                <p class="mt-4">اقرأ أيضاً:
+                    <a href="{% url 'privacy' %}" class="text-amber-400 hover:underline">سياسة الخصوصية 🔒</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="text-center mt-6">
+            <a href="{% url 'index' %}" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-6 py-3 rounded-2xl transition text-sm border border-slate-600/30">
+                🏠 ابحث عن سيارتك الآن
+            </a>
+        </div>
+    </div>
+</body>
+</html>

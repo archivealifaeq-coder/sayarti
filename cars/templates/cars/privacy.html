@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="robots" content="index, follow"/>
+    <title>سياسة الخصوصية | سيارتي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+    {% if site_settings.adsense_client_id %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site_settings.adsense_client_id }}" crossorigin="anonymous"></script>
+    {% endif %}
+    <style>
+        * { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0f1a; color: #e2e8f0; min-height: 100vh; }
+        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.15); }
+        .prose-ar h2 { color: #fbbf24; font-weight: 800; font-size: 1.15rem; margin: 1.6rem 0 0.7rem; }
+        .prose-ar p, .prose-ar li { line-height: 2; color: #cbd5e1; font-size: 0.95rem; }
+        .prose-ar ul { padding-right: 1.5rem; list-style: disc; margin-bottom: 0.8rem; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+            <a href="{% url 'index' %}" class="text-slate-400 hover:text-white text-sm flex items-center gap-2 transition">→ العودة للرئيسية</a>
+            <span class="text-2xl font-black text-white">🚗 سيارتي</span>
+        </div>
+
+        <div class="glass rounded-3xl p-6 md:p-10">
+            <h1 class="text-2xl md:text-3xl font-black text-white mb-2">🔒 سياسة الخصوصية</h1>
+            <p class="text-slate-500 text-sm mb-6">آخر تحديث: يناير 2026</p>
+
+            <div class="prose-ar">
+                <h2>مقدمة</h2>
+                <p>نحن في موقع "سيارتي" نحترم خصوصيتك ونلتزم بحماية بياناتك. توضح هذه السياسة أنواع المعلومات التي نجمعها وكيفية استخدامها وحمايتها عند استخدامك للموقع.</p>
+
+                <h2>المعلومات التي نجمعها</h2>
+                <ul>
+                    <li><b>بيانات البحث:</b> عند البحث عن سيارة، تُعالج معايير البحث (الماركة، الموديل، سنة الصنع) لعرض النتائج فقط، ولا نربطها بهويتك الشخصية.</li>
+                    <li><b>لا نطلب التسجيل:</b> استخدام الموقع لا يتطلب إنشاء حساب أو تقديم بيانات شخصية.</li>
+                    <li><b>بيانات تقنية:</b> قد يُسجل نوع المتصفح والجهاز لأغراض تحسين الأداء والأمان.</li>
+                </ul>
+
+                <h2>ملفات تعريف الارتباط (Cookies)</h2>
+                <p>يستخدم الموقع ملفات تعريف ارتباط أساسية لعمل الميزات (مثل رسائل التنبيه). كما تستخدم شركاؤنا الإعلانيون - بما في ذلك Google AdSense - ملفات تعريف ارتباط لعرض إعلانات مخصصة.</p>
+
+                <h2>إعلانات الطرف الثالث وجوجل</h2>
+                <ul>
+                    <li>تستخدم شركة Google كوكب DART لعرض الإعلانات لمستخدمي موقعنا بناءً على زياراتهم لهذا الموقع ومواقع أخرى على الإنترنت.</li>
+                    <li>يمكن للمستخدمين إلغاء الاشتراك في استخدام كوكب DART بزيارة <a href="https://policies.google.com/technologies/ads" class="text-amber-400 hover:underline" target="_blank" rel="noopener">سياسة الإعلانات والخصوصية الخاصة بجوجل</a>.</li>
+                    <li>قد يستخدم مورّدو إعلانات الطرف الثالث الآخرون ملفات تعريف ارتباط لعرض الإعلانات وقياس فعاليتها.</li>
+                </ul>
+
+                <h2>إعدادات الإعلانات المخصصة</h2>
+                <p>يمكنك إدارة تفضيلات الإعلانات المخصصة من خلال زيارة <a href="https://adssettings.google.com" class="text-amber-400 hover:underline" target="_blank" rel="noopener">إعدادات إعلانات جوجل</a> أو من خلال أدوات إلغاء الاشتراك مثل <a href="https://optout.aboutads.info" class="text-amber-400 hover:underline" target="_blank" rel="noopener">aboutads.info</a>.</p>
+
+                <h2>حماية البيانات</h2>
+                <p>نتخذ تدابير تقنية وتنظيمية معقولة لحماية أي معلومات من الفقدان أو سوء الاستخدام أو الوصول غير المصرح به، بما في ذلك تشفير الاتصالات عبر HTTPS.</p>
+
+                <h2>مواقع خارجية</h2>
+                <p>قد يحتوي الموقع على روابط لمواقع خارجية (مثل مواقع الشركات المصنعة). لسنا مسؤولين عن ممارسات الخصوصية لتلك المواقع ونشجعك على قراءة سياساتها.</p>
+
+                <h2>تعديلات السياسة</h2>
+                <p>قد نقوم بتحديث هذه السياسة من وقت لآخر. سيتم نشر أي تغييرات على هذه الصفحة مع تحديث تاريخ آخر مراجعة.</p>
+
+                <h2>تواصل معنا</h2>
+                <p>لأي استفسار حول سياسة الخصوصية، راسلنا على:
+                    <a href="mailto:archivealifaeq@gmail.com" class="text-amber-400 hover:underline">archivealifaeq@gmail.com</a>
+                    أو من خلال <a href="{% url 'about' %}" class="text-amber-400 hover:underline">صفحة من نحن</a>.
+                </p>
+            </div>
+        </div>
+
+        <div class="text-center mt-6">
+            <a href="{% url 'index' %}" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-6 py-3 rounded-2xl transition text-sm border border-slate-600/30">
+                🏠 الرئيسية
+            </a>
+        </div>
+    </div>
+</body>
+</html>

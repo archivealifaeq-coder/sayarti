@@ -1,0 +1,14 @@
+{% if site_settings.show_ads and site_settings.adsense_client_id and slot_id %}
+<div class="ad-unit max-w-7xl mx-auto px-4 my-6">
+    <div class="text-center text-[10px] text-slate-600 mb-1 tracking-widest">إعلان</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="{{ site_settings.adsense_client_id }}"
+         data-ad-slot="{{ slot_id }}"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+</div>
+{% endif %}
