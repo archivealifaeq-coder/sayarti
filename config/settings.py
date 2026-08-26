@@ -14,7 +14,6 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-# تحميل متغيرات البيئة من ملف .env
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -32,7 +31,6 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
-# ✅ صفحة تسجيل الدخول الموحدة (تستخدمها حماية @login_required)
 LOGIN_URL = 'admin:login'
 
 
@@ -90,7 +88,6 @@ DATABASES = {
     }
 }
 
-# ✅ الإنتاج: إذا وُجد DATABASE_URL (مثل PostgreSQL من Appliku) يستخدمه تلقائياً
 if os.getenv('DATABASE_URL'):
     import dj_database_url
     DATABASES = {
@@ -139,7 +136,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# ✅ WhiteNoise - خدمة الملفات الثابتة حتى لو DEBUG=False
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -153,8 +149,6 @@ STORAGES = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# ✅ تخزين صور البنرات على S3 (مثل Hetzner Object Storage) - للإنتاج
-# فعّل USE_S3=True في السيرفر حتى لا تُفقد الصور عند إعادة النشر
 if os.getenv('USE_S3', 'False').lower() == 'true':
     STORAGES["default"] = {
         "BACKEND": "storages.backends.s3.S3Storage",
@@ -162,9 +156,9 @@ if os.getenv('USE_S3', 'False').lower() == 'true':
     AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
-    AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL')          # مثال Hetzner: https://fsn1.your-objectstorage.com
+    AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL')
     AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'fsn1')
-    AWS_QUERYSTRING_AUTH = False                                     # روابط عامة مباشرة
+    AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
     AWS_DEFAULT_ACL = 'public-read'
 
@@ -193,32 +187,34 @@ CACHES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ============================================================
+# Upload limits (defense against oversized payloads) - 10 MB
+# ============================================================
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+
 
 # ============================================================
-# ✅ إعدادات الأمان (تعمل دائماً)
+# Security headers (always on)
 # ============================================================
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
 
 # ============================================================
-# ✅ إعدادات أمان الإنتاج
-# فعّل PROD_SECURE=True في ملف .env على السيرفر بعد تجهيز HTTPS
+# Full HTTPS hardening - enabled in production via PROD_SECURE=True
 # ============================================================
 PROD_SECURE = os.getenv('PROD_SECURE', 'False').lower() == 'true'
 
 if PROD_SECURE:
-    # إجبار HTTPS
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))  # سنة كاملة
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-    # إذا كان الموقع خلف Proxy/CDN مثل nginx أو Cloudflare
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-    # روابط موثوقة لنماذج POST (مهم في Django 4+)
     _csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',') if o.strip()]

@@ -15,7 +15,7 @@ class CsvImportForm(forms.Form):
 
 
 def normalize_engine(value):
-    """تطبيع قيمة المحرك لتوحيد 2000 = 2.0 = 2L"""
+    """Normalize engine value so 2000 == 2.0 == 2L."""
     if not value:
         return value
     
@@ -43,7 +43,6 @@ def index_view(request):
 
     filters = Q()
     
-    # شروط البحث الأساسية
     if brand:
         filters &= Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
     if model:
@@ -58,18 +57,15 @@ def index_view(request):
     if spec_region:
         filters &= Q(spec_region__icontains=spec_region)
     
-    # ✅ بناء شرط المحرك بشكل مستقل (تم إصلاحه)
     engine_q = Q()
     if engine:
         normalized_engine = normalize_engine(engine)
         
-        # البدائل الأساسية
         engine_q |= Q(engine__icontains=engine)
         engine_q |= Q(engine__icontains=normalized_engine)
         engine_q |= Q(engine__icontains=engine.replace('.', ''))
         engine_q |= Q(engine__icontains=engine.replace(',', ''))
         
-        # بدائل الأرقام
         numbers = re.findall(r'(\d+\.?\d*)', engine)
         if numbers:
             num = float(numbers[0])
@@ -84,7 +80,6 @@ def index_view(request):
                 engine_q |= Q(engine__icontains=f"{int(num)}.0")
                 engine_q |= Q(engine__icontains=f"{int(num)}L")
         
-        # ربط شرط المحرك مع باقي الشروط
         filters &= engine_q
 
     if filters:
@@ -92,13 +87,10 @@ def index_view(request):
     else:
         cars = None
 
-    # جلب البنرات مع caching بسيط
     banners = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
 
-    # ✅ بطاقات المميزات (تُدار من لوحة الأدمن)
     feature_cards = FeatureCard.objects.filter(is_active=True).order_by('order', 'created_at')
 
-    # تحسين اقتراحات الماركات
     brand_suggestions = list(CarSpecification.objects.values_list('brand_ar', flat=True).distinct().order_by('brand_ar')[:100])
     
     engine_type_choices = CarSpecification.ENGINE_TYPE_CHOICES
@@ -143,7 +135,7 @@ def get_suggestions(request):
 
 
 def is_staff_user(user):
-    """التحقق من أن المستخدم لديه صلاحيات staff"""
+    """Allow only authenticated staff users."""
     return user.is_authenticated and user.is_staff
 
 
@@ -151,7 +143,7 @@ def is_staff_user(user):
 @user_passes_test(is_staff_user)
 def import_excel_view(request):
     """
-    صفحة استيراد Excel - محمية بصلاحيات المشرفين فقط
+    Excel import endpoint - staff only (validation happens inside the importer).
     """
     form = CsvImportForm()
 
@@ -159,24 +151,23 @@ def import_excel_view(request):
         excel_file = request.FILES['excel_file']
         
         try:
-            # استخدام خدمة الاستيراد الموحدة
             result = import_cars_from_excel(excel_file)
             
             if result['success']:
-                # عرض تقرير مفصل
                 success_msg = f"✅ تم الاستيراد بنجاح! إضافة {result['created']} وتحديث {result['updated']}."
                 if result['failed'] > 0:
                     success_msg += f" ❌ فشل {result['failed']} صف."
-                    # عرض تفاصيل الصفوف الفاشلة
-                    for failed_row in result['failed_rows'][:5]:  # عرض أول 5 أخطاء فقط
+                    for failed_row in result['failed_rows'][:5]:
                         messages.warning(request, f"الصف {failed_row['row_number']}: {failed_row['error']}")
                 messages.success(request, success_msg)
             else:
                 for error in result['errors']:
                     messages.error(request, f"❌ {error}")
                     
-        except Exception as e:
-            messages.error(request, f"خطأ غير متوقع: {str(e)}")
+        except Exception:
+            import logging
+            logging.getLogger('cars').exception('Excel import failed')
+            messages.error(request, "⚠️ حدث خطأ أثناء معالجة الملف. تأكد من الصيغة وحاول مجدداً.")
         
         return redirect('import_excel')
 
@@ -193,7 +184,6 @@ def mix_calculator_view(request):
             o2 = float(request.POST.get('octane2'))
             tank = float(request.POST.get('tank_capacity'))
             
-            # التحقق من صحة القيم
             if tank <= 0:
                 messages.error(request, "⚠️ سعة الخزان يجب أن تكون أكبر من صفر")
                 return render(request, 'cars/mix_calculator.html', {'cars': CarSpecification.objects.all().order_by('brand_ar', 'model_ar'), 'result': result})
@@ -226,7 +216,6 @@ def mix_calculator_view(request):
         except ZeroDivisionError:
             messages.error(request, "⚠️ حدث خطأ في الحساب. تأكد من القيم المدخلة.")
     
-    # تحسين: استخدام only() لجلب الحقول المطلوبة فقط
     cars = CarSpecification.objects.all().only('id', 'brand_ar', 'model_ar', 'year', 'octane', 'oil_capacity').order_by('brand_ar', 'model_ar')
     return render(request, 'cars/mix_calculator.html', {'cars': cars, 'result': result})
 
@@ -251,5 +240,5 @@ def about_view(request):
 def ads_txt_view(request):
     from django.http import HttpResponse
     settings_obj = SiteSettings.load()
-    content = settings_obj.ads_txt.strip() or "# ads.txt - سيتم تعبئته تلقائياً بعد القبول في Google AdSense"
+    content = settings_obj.ads_txt.strip() or "# ads.txt - populated after Google AdSense approval"
     return HttpResponse(content, content_type='text/plain; charset=utf-8')

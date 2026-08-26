@@ -138,7 +138,6 @@
 <body>
 
     <div class="import-card">
-        <!-- الهيدر -->
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-2xl font-extrabold text-white flex items-center gap-2">
@@ -151,7 +150,6 @@
             </a>
         </div>
 
-        <!-- رسائل النظام -->
         {% if messages %}
             {% for message in messages %}
                 <div class="{% if message.tags == 'success' %}message-success{% elif message.tags == 'error' %}message-error{% else %}message-warning{% endif %}">
@@ -160,7 +158,6 @@
             {% endfor %}
         {% endif %}
 
-        <!-- ✅ نموذج الرفع مع CSRF Token -->
         <form method="POST" enctype="multipart/form-data" id="upload-form">
             {% csrf_token %}
             
@@ -188,7 +185,6 @@
             </div>
         </form>
 
-        <!-- الأعمدة المطلوبة -->
         <div class="mt-8 pt-6 border-t border-slate-700/50">
             <p class="text-slate-400 text-xs text-center mb-2">📌 الأعمدة المطلوبة في ملف Excel:</p>
             <div class="columns-list">

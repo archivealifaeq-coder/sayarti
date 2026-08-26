@@ -16,14 +16,11 @@ class CsvImportForm(forms.Form):
 
 
 # ============================================================
-# ✅ إدارة مواصفات السيارات (CarSpecification)
 # ============================================================
 @admin.register(CarSpecification)
 class CarSpecificationAdmin(admin.ModelAdmin):
-    # ✅ ربط قالب قائمة العرض المخصص (يضيف زر استيراد Excel)
     change_list_template = 'admin/cars_changelist.html'
 
-    # ✅ ترتيب الحقول في قائمة العرض
     list_display = (
         'id', 
         'brand_ar_display', 
@@ -35,10 +32,8 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         'tire_size_display'
     )
     
-    # ✅ روابط سريعة
     list_display_links = ('id', 'brand_ar_display', 'model_ar_display')
     
-    # ✅ الفلاتر الجانبية
     list_filter = (
         'brand_ar', 
         'year', 
@@ -47,7 +42,6 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         'octane'
     )
     
-    # ✅ حقول البحث
     search_fields = (
         'brand_ar', 
         'brand_en', 
@@ -57,16 +51,12 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         'tire_size'
     )
     
-    # ✅ ترتيب النتائج الافتراضي
     ordering = ('brand_ar', 'model_ar', '-year')
     
-    # ✅ عدد العناصر في الصفحة
     list_per_page = 25
     
-    # ✅ الإجراءات السريعة (Actions)
     actions = ['make_gcc_spec', 'make_american_spec', 'make_european_spec', 'delete_selected']
     
-    # ✅ تقسيم الحقول إلى مجموعات في صفحة الإضافة/التعديل
     fieldsets = (
         ('📋 المعلومات الأساسية', {
             'fields': ('id', 'brand_ar', 'brand_en', 'model_ar', 'model_en', 'year', 'spec')
@@ -85,12 +75,11 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         }),
         ('📝 توصيات إضافية', {
             'fields': ('recommendations',),
-            'classes': ('collapse',)  # ✅ قابلة للطي
+            'classes': ('collapse',)
         }),
     )
 
     # ============================================================
-    # ✅ عرض محسّن للقائمة
     # ============================================================
     
     def brand_ar_display(self, obj):
@@ -141,7 +130,6 @@ class CarSpecificationAdmin(admin.ModelAdmin):
     spec_region_badge.short_description = 'المواصفات'
 
     # ============================================================
-    # ✅ الإجراءات السريعة (Actions)
     # ============================================================
     
     def make_gcc_spec(self, request, queryset):
@@ -160,7 +148,6 @@ class CarSpecificationAdmin(admin.ModelAdmin):
     make_european_spec.short_description = '🌍 تغيير المواصفات إلى أوروبي'
 
     # ============================================================
-    # ✅ استيراد Excel (مدمج)
     # ============================================================
     
     def get_urls(self):
@@ -188,8 +175,10 @@ class CarSpecificationAdmin(admin.ModelAdmin):
                         for error in result['errors']:
                             self.message_user(request, f"❌ {error}", messages.ERROR)
                             
-                except Exception as e:
-                    self.message_user(request, f"خطأ غير متوقع: {str(e)}", messages.ERROR)
+                except Exception:
+                    import logging
+                    logging.getLogger('cars').exception('Admin Excel import failed')
+                    self.message_user(request, "❌ حدث خطأ غير متوقع أثناء الاستيراد. راجع السجلات.", messages.ERROR)
             else:
                 self.message_user(request, "لم يتم اختيار ملف.", messages.WARNING)
             
@@ -216,7 +205,6 @@ class CarSpecificationAdmin(admin.ModelAdmin):
 
 
 # ============================================================
-# ✅ إدارة البنرات الإعلانية (AdBanner)
 # ============================================================
 class AdBannerForm(forms.ModelForm):
     class Meta:
@@ -258,22 +246,20 @@ class AdBannerForm(forms.ModelForm):
 class AdBannerAdmin(admin.ModelAdmin):
     form = AdBannerForm
 
-    # ✅ ترتيب أفضل للقائمة
     list_display = (
         'title_preview', 
         'position_badge', 
-        'order',              # ✅ اسم الحقل الأصلي
-        'is_active',          # ✅ اسم الحقل الأصلي
+        'order',
+        'is_active',
         'created_at_display'
     )
     
-    list_editable = ('order', 'is_active')  # ✅ الآن يتطابق مع list_display
+    list_editable = ('order', 'is_active')
     list_filter = ('position', 'is_active')
     search_fields = ('title', 'button_text')
     ordering = ('position', 'order', '-created_at')
     list_per_page = 20
 
-    # ✅ تنظيم حقول الإضافة
     fieldsets = (
         ('📝 المحتوى', {
             'fields': ('title', 'subtitle', 'position')
@@ -295,7 +281,6 @@ class AdBannerAdmin(admin.ModelAdmin):
     )
 
     # ============================================================
-    # ✅ عرض محسّن للقائمة
     # ============================================================
     
     def title_preview(self, obj):
@@ -315,7 +300,6 @@ class AdBannerAdmin(admin.ModelAdmin):
     created_at_display.short_description = 'تاريخ الإضافة'
 
     # ============================================================
-    # ✅ تحسين واجهة اختيار الألوان
     # ============================================================
     
     def formfield_for_dbfield(self, db_field, request, **kwargs):
@@ -353,7 +337,6 @@ class AdBannerAdmin(admin.ModelAdmin):
 
 
 # ============================================================
-# ✅ إدارة بطاقات المميزات القابلة للتعديل + الإعلانات
 # ============================================================
 @admin.register(FeatureCard)
 class FeatureCardAdmin(admin.ModelAdmin):
@@ -405,7 +388,6 @@ class FeatureCardAdmin(admin.ModelAdmin):
 
 
 # ============================================================
-# ✅ إعدادات الموقع (سجل واحد فقط) - الإعلانات وads.txt
 # ============================================================
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
@@ -442,14 +424,11 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
 
 # ============================================================
-# ✅ لوحة التحكم الرئيسية - إحصائيات سريعة
 # ============================================================
 
-# ✅ تغيير قالب لوحة التحكم الرئيسية
 admin.site.index_template = 'admin/custom_index.html'
 
 
-# ✅ دالة لإضافة الإحصائيات إلى سياق لوحة التحكم
 def get_dashboard_stats():
     return {
         'total_cars': CarSpecification.objects.count(),
@@ -459,7 +438,6 @@ def get_dashboard_stats():
     }
 
 
-# ✅ إضافة السياق إلى لوحة التحكم
 from django.template.context_processors import request as request_processor
 
 def admin_context_processor(request):

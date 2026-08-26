@@ -1,4 +1,4 @@
-from django.db import models
+﻿from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
@@ -107,7 +107,6 @@ class AdBanner(models.Model):
         help_text="📐 الأبعاد الموصى بها: 1400 × 500 بكسل (نسبة 2.8:1)"
     )
     
-    # ✅ حقل جديد للهواتف
     image_mobile = models.ImageField(
         upload_to='banners/mobile/',
         blank=True,
@@ -212,7 +211,7 @@ class FeatureCard(models.Model):
         verbose_name_plural = "بطاقات المميزات"
 
 class SiteSettings(models.Model):
-    """إعدادات عامة للموقع - سجل واحد فقط (ID=1)"""
+    """Global site settings - singleton row (ID=1)."""
     show_ads = models.BooleanField(
         default=False,
         verbose_name="تفعيل الإعلانات",

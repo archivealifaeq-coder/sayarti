@@ -8,8 +8,7 @@ urlpatterns = [
     path('', include('cars.urls')),
 ]
 
-# ✅ خدمة صور البنرات (media) تعمل حتى لو DEBUG=False
-# الملفات الثابتة (static) تخدمها WhiteNoise من settings.py
+# Serve uploaded media directly (works even when DEBUG=False; WhiteNoise handles /static/)
 urlpatterns += [
     re_path(r'^media/(?P<path>.*)$', media_serve, {'document_root': settings.MEDIA_ROOT}),
 ]

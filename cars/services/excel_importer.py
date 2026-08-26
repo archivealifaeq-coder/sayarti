@@ -9,22 +9,18 @@ def validate_excel_file(file):
     """
     errors = []
     
-    # التحقق من حجم الملف (حد أقصى 10 ميجابايت)
     if file.size > 10 * 1024 * 1024:
         errors.append("الملف كبير جداً. الحد الأقصى 10 ميجابايت")
     
-    # التحقق من امتداد الملف
     if not file.name.endswith(('.xlsx', '.xls')):
         errors.append("يجب أن يكون الملف بصيغة Excel (.xlsx أو .xls)")
     
-    # محاولة قراءة الملف للتحقق من سلامته
     try:
         df = pd.read_excel(file, sheet_name=0)
-    except Exception as e:
-        errors.append(f"لا يمكن قراءة الملف: {str(e)}")
+    except Exception:
+        errors.append("⚠️ تعذر قراءة ملف الإكسل. تأكد أن الامتداد .xlsx أو .xls وأن الملف غير تالف.")
         return errors, None
     
-    # التحقق من وجود الأعمدة المطلوبة
     required_columns = [
         'id', 'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR',
         'Year', 'Engine', 'Oil Visc', 'Fuel', 'Octane',
@@ -35,7 +31,6 @@ def validate_excel_file(file):
     if missing_columns:
         errors.append(f"الأعمدة الناقصة: {', '.join(missing_columns)}")
     
-    # التحقق من وجود Tire Size أو Tire PSI
     if 'Tire Size' not in df.columns and 'Tire PSI' not in df.columns:
         errors.append("يجب وجود عمود 'Tire Size' أو 'Tire PSI'")
     
@@ -47,7 +42,6 @@ def import_cars_from_excel(file):
     """
     استيراد بيانات السيارات من ملف Excel مع تقرير مفصل
     """
-    # التحقق من الملف
     errors, df = validate_excel_file(file)
     
     if errors:
@@ -69,7 +63,6 @@ def import_cars_from_excel(file):
     
     for index, row in df.iterrows():
         try:
-            # معالجة Spec
             spec_raw = row.get('Spec', 'خليجي')
             if 'خليجي' in str(spec_raw):
                 spec_region_val = 'gcc'
@@ -84,7 +77,6 @@ def import_cars_from_excel(file):
             else:
                 spec_region_val = 'other'
             
-            # معالجة نوع المحرك
             engine_str = str(row.get('Engine', ''))
             if 'turbo' in engine_str.lower() or 't-gdi' in engine_str.lower():
                 engine_type_val = 'turbo'
@@ -97,7 +89,6 @@ def import_cars_from_excel(file):
             else:
                 engine_type_val = 'regular'
             
-            # معالجة حجم الإطار (دعم كلا الاسمين)
             if 'Tire Size' in row and pd.notna(row['Tire Size']):
                 tire_size_val = str(row['Tire Size'])
             elif 'Tire PSI' in row and pd.notna(row['Tire PSI']):
@@ -105,7 +96,6 @@ def import_cars_from_excel(file):
             else:
                 tire_size_val = "غير محدد"
             
-            # إنشاء أو تحديث السجل
             obj, created = CarSpecification.objects.update_or_create(
                 id=row['id'],
                 defaults={
@@ -138,9 +128,8 @@ def import_cars_from_excel(file):
         except Exception as e:
             failed_count += 1
             failed_rows.append({
-                'row_number': index + 2,  # +2 لأن Excel يبدأ من 1 والرأس في الصف 1
-                'error': str(e),
-                'data': row.to_dict()
+                'row_number': index + 2,
+                'error': str(e)[:200],
             })
     
     return {
