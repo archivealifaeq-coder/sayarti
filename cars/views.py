@@ -117,6 +117,10 @@ def index_view(request):
 def get_suggestions(request):
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
+    year = request.GET.get('year', '').strip()
+    engine_type = request.GET.get('engine_type', '').strip()
+    spec_region = request.GET.get('spec_region', '').strip()
+    engine = request.GET.get('engine', '').strip()
 
     if brand and not model:
         models_list = list(CarSpecification.objects.filter(
@@ -125,11 +129,28 @@ def get_suggestions(request):
         return JsonResponse({'models': models_list, 'engines': []})
 
     if brand and model:
-        engines = list(CarSpecification.objects.filter(
+        qs = CarSpecification.objects.filter(
             Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand),
             Q(model_ar__icontains=model) | Q(model_en__icontains=model)
-        ).values_list('engine', flat=True).distinct().order_by('engine')[:50])
-        return JsonResponse({'models': [], 'engines': engines})
+        )
+        if year:
+            try:
+                qs = qs.filter(year=int(year))
+            except ValueError:
+                pass
+        if engine_type:
+            qs = qs.filter(engine_type=engine_type)
+        if spec_region:
+            qs = qs.filter(spec_region=spec_region)
+        if engine:
+            qs = qs.filter(Q(engine__icontains=engine))
+        engines = list(qs.values_list('engine', flat=True).distinct().order_by('engine')[:50])
+        models_list = []
+        if not engine:
+            models_list = list(CarSpecification.objects.filter(
+                Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
+            ).values_list('model_ar', flat=True).distinct().order_by('model_ar')[:50])
+        return JsonResponse({'models': models_list, 'engines': engines})
 
     return JsonResponse({'models': [], 'engines': []})
 
