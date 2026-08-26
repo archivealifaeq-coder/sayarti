@@ -5,7 +5,7 @@ from django.shortcuts import redirect
 from django import forms
 from django.http import HttpResponse
 from django.template import Template, RequestContext
-from django.utils.html import format_html
+from django.utils.html import format_html, mark_safe
 from django.db.models import Count
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
 from .services.excel_importer import import_cars_from_excel
@@ -416,11 +416,11 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
     def settings_summary(self, obj):
         if obj.show_ads and obj.adsense_client_id:
-            return format_html('<span style="color: #4ade80;">✅ الإعلانات مفعلة — {}</span>', obj.adsense_client_id)
+            return format_html('<span style="color: #4ade80;">✅ Ads enabled — {}</span>', obj.adsense_client_id)
         if obj.adsense_client_id:
-            return format_html('<span style="color: #fbbf24;">⚠️ المعرف موجود لكن الإعلانات غير مفعلة</span>')
-        return format_html('<span style="color: #64748b;">⚪ لم يتم ربط AdSense بعد</span>')
-    settings_summary.short_description = 'الحالة'
+            return mark_safe('<span style="color: #fbbf24;">⚠️ ID exists but ads disabled</span>')
+        return mark_safe('<span style="color: #64748b;">⚪ AdSense not linked yet</span>')
+    settings_summary.short_description = 'Status'
 
 
 # ============================================================
