@@ -253,7 +253,7 @@ class AdBannerAdmin(admin.ModelAdmin):
         }),
         ('🖼️ الصور', {
             'fields': ('image', 'image_mobile'),
-            'description': '📸 سطح المكتب: 1400×500 بكسل | 📱 الهاتف: 800×800 بكسل'
+            'description': '📸 سطح المكتب: 1920×820 بكسل (21:9) | 📱 الهاتف: 800×600 بكسل (4:3)'
         }),
         ('🎨 الألوان (احتياطي)', {
             'fields': ('background_color', 'text_color'),
@@ -312,8 +312,8 @@ class AdBannerAdmin(admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj=None, **kwargs)
-        form.base_fields['image'].help_text = '🖼️ الأبعاد الموصى بها: 1920 × 640 بكسل (عرض كامل - نسبة 3:1)'
-        form.base_fields['image_mobile'].help_text = '📱 الأبعاد الموصى بها: 1000 × 750 بكسل (نسبة 4:3)'
+        form.base_fields['image'].help_text = '🖼️ الأبعاد الموصى بها: 1920 × 820 بكسل (21:9) — الصورة تُقص تلقائياً'
+        form.base_fields['image_mobile'].help_text = '📱 الأبعاد الموصى بها: 800 × 600 بكسل (4:3)'
         return form
 
 

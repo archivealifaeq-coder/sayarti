@@ -104,7 +104,7 @@ class AdBanner(models.Model):
         blank=True,
         null=True,
         verbose_name="صورة البنر (سطح المكتب)",
-        help_text="📐 الأبعاد الموصى بها: 1400 × 500 بكسل (نسبة 2.8:1)"
+        help_text="📐 الأبعاد الموصى بها: 1920 × 820 بكسل (نسبة 21:9) — الصورة تُقص تلقائياً"
     )
     
     image_mobile = models.ImageField(
@@ -112,7 +112,7 @@ class AdBanner(models.Model):
         blank=True,
         null=True,
         verbose_name="صورة البنر للهواتف",
-        help_text="📱 الأبعاد الموصى بها: 800 × 800 بكسل (نسبة 1:1)"
+        help_text="📱 الأبعاد الموصى بها: 800 × 600 بكسل (نسبة 4:3)"
     )
     
     background_color = models.CharField(
