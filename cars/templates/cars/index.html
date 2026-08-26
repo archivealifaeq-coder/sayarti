@@ -629,6 +629,44 @@
         .search-input::placeholder { color: #64748b; font-weight: 400; }
         
         .input-group { position: relative; }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 220px;
+            overflow-y: auto;
+            background: rgba(15, 23, 42, 0.97);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 10px;
+            z-index: 50;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            scrollbar-width: thin;
+            scrollbar-color: #f59e0b transparent;
+        }
+        .autocomplete-dropdown .ac-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.15s;
+        }
+        .autocomplete-dropdown .ac-item:last-child { border-bottom: none; }
+        .autocomplete-dropdown .ac-item:hover,
+        .autocomplete-dropdown .ac-item.ac-active {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+        .autocomplete-dropdown .ac-empty {
+            padding: 12px 16px;
+            color: #64748b;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
         .input-group .search-icon {
             position: absolute;
             right: 16px;
@@ -1358,19 +1396,18 @@
                       role="search"
                       novalidate>
                     
-                    <div class="input-group">
+                    <div class="input-group" style="position:relative;">
                         <label for="brandInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الماركة</label>
-                        <input type="text" name="brand" id="brandInput" value="{{ brand|escape }}" placeholder="اكتب اسم الماركة..." class="search-input" list="brand-list" hx-get="{% url 'get_suggestions' %}" hx-trigger="keyup changed delay:300ms" hx-target="#suggestions-container" hx-indicator="#loading-suggestions" hx-include="[name='brand']" autocomplete="off" maxlength="100">
+                        <input type="text" name="brand" id="brandInput" value="{{ brand|escape }}" placeholder="اكتب اسم الماركة..." class="search-input" autocomplete="off" maxlength="100">
                         <span class="search-icon" aria-hidden="true">🚗</span>
-                        <datalist id="brand-list">{% for b in brand_suggestions %}<option value="{{ b|escape }}">{% endfor %}</datalist>
-                        <div id="loading-suggestions" class="htmx-indicator text-amber-400 text-xs mt-1" aria-hidden="true">جاري التحميل...</div>
+                        <div id="brand-dropdown" class="autocomplete-dropdown" style="display:none;"></div>
                     </div>
                     
-                    <div class="input-group">
+                    <div class="input-group" style="position:relative;">
                         <label for="modelInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الموديل</label>
-                        <input type="text" name="model" id="modelInput" value="{{ model|escape }}" placeholder="اكتب اسم الموديل..." class="search-input" list="model-list" hx-get="{% url 'get_suggestions' %}" hx-trigger="keyup changed delay:300ms" hx-target="#suggestions-container" hx-indicator="#loading-suggestions" hx-include="[name='brand'],[name='model']" autocomplete="off" maxlength="100">
+                        <input type="text" name="model" id="modelInput" value="{{ model|escape }}" placeholder="اختر الماركة أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
                         <span class="search-icon" aria-hidden="true">📐</span>
-                        <datalist id="model-list"></datalist>
+                        <div id="model-dropdown" class="autocomplete-dropdown" style="display:none;"></div>
                     </div>
                     
                     <div class="input-group">
@@ -1510,7 +1547,7 @@
                     </div>
                     <div class="contact-item">
                         <span class="icon">🌐</span>
-                        <span>www.sayarti.com</span>
+                        <span>www.sayarti.org</span>
                     </div>
                     <div class="social-links">
                         <a href="#" aria-label="تويتر" title="تويتر">🐦</a>
@@ -1709,36 +1746,127 @@
                 });
             }
             
-            document.addEventListener('htmx:afterSwap', function(evt) {
-                if (evt.target && evt.target.id === 'suggestions-container') {
-                    try {
-                        var data = JSON.parse(evt.detail.xhr.responseText);
-                        var modelList = document.getElementById('model-list');
-                        var engineList = document.getElementById('engine-list');
-                        
-                        if (data.models && data.models.length > 0) {
-                            modelList.innerHTML = '';
-                            data.models.forEach(function(model) {
-                                var option = document.createElement('option');
-                                option.value = model;
-                                modelList.appendChild(option);
-                            });
-                        } else {
-                            modelList.innerHTML = '';
-                        }
-                        
-                        if (data.engines && data.engines.length > 0) {
-                            engineList.innerHTML = '';
-                            data.engines.forEach(function(engine) {
-                                var option = document.createElement('option');
-                                option.value = engine;
-                                engineList.appendChild(option);
-                            });
-                        } else {
-                            engineList.innerHTML = '';
-                        }
-                    } catch (err) {}
+            var allBrands = [{% for b in brand_suggestions %}'{{ b|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+            var brandInput = document.getElementById('brandInput');
+            var modelInput = document.getElementById('modelInput');
+            var brandDropdown = document.getElementById('brand-dropdown');
+            var modelDropdown = document.getElementById('model-dropdown');
+            var acIndex = -1;
+            
+            function showDropdown(input, dropdown, items) {
+                dropdown.innerHTML = '';
+                acIndex = -1;
+                if (items.length === 0) {
+                    dropdown.innerHTML = '<div class="ac-empty">لا توجد نتائج</div>';
+                    dropdown.style.display = 'block';
+                    return;
                 }
+                items.forEach(function(item) {
+                    var div = document.createElement('div');
+                    div.className = 'ac-item';
+                    div.textContent = item;
+                    div.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        input.value = item;
+                        dropdown.style.display = 'none';
+                        input.dispatchEvent(new Event('input'));
+                    });
+                    dropdown.appendChild(div);
+                });
+                dropdown.style.display = 'block';
+            }
+            
+            function filterItems(query, items) {
+                if (!query) return items.slice(0, 15);
+                var q = query.toLowerCase();
+                return items.filter(function(item) {
+                    return item.toLowerCase().indexOf(q) !== -1;
+                }).slice(0, 15);
+            }
+            
+            brandInput.addEventListener('input', function() {
+                var val = this.value.trim();
+                var filtered = filterItems(val, allBrands);
+                showDropdown(brandInput, brandDropdown, filtered);
+                if (val) {
+                    modelInput.disabled = false;
+                    modelInput.placeholder = 'اكتب اسم الموديل...';
+                    fetchSuggestions(val, '', 'model');
+                } else {
+                    modelInput.disabled = true;
+                    modelInput.placeholder = 'اختر الماركة أولاً...';
+                    modelInput.value = '';
+                    modelDropdown.style.display = 'none';
+                }
+            });
+            
+            brandInput.addEventListener('focus', function() {
+                var val = this.value.trim();
+                var filtered = filterItems(val, allBrands);
+                showDropdown(brandInput, brandDropdown, filtered);
+            });
+            
+            modelInput.addEventListener('input', function() {
+                var brand = brandInput.value.trim();
+                var model = this.value.trim();
+                if (brand && model) {
+                    fetchSuggestions(brand, model, 'engine');
+                }
+            });
+            
+            modelInput.addEventListener('focus', function() {
+                var brand = brandInput.value.trim();
+                if (brand && this.value.trim()) {
+                    fetchSuggestions(brand, this.value.trim(), 'model');
+                }
+            });
+            
+            function fetchSuggestions(brand, model, type) {
+                var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand);
+                if (model) url += '&model=' + encodeURIComponent(model);
+                fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+                    if (type === 'model' && data.models) {
+                        var filtered = filterItems(modelInput.value.trim(), data.models);
+                        showDropdown(modelInput, modelDropdown, filtered);
+                    }
+                }).catch(function() {});
+            }
+            
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#brandInput') && !e.target.closest('#brand-dropdown')) {
+                    brandDropdown.style.display = 'none';
+                }
+                if (!e.target.closest('#modelInput') && !e.target.closest('#model-dropdown')) {
+                    modelDropdown.style.display = 'none';
+                }
+            });
+            
+            [brandInput, modelInput].forEach(function(input) {
+                var dropdown = input.id === 'brandInput' ? brandDropdown : modelDropdown;
+                input.addEventListener('keydown', function(e) {
+                    var items = dropdown.querySelectorAll('.ac-item');
+                    if (!items.length || dropdown.style.display === 'none') return;
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        acIndex = Math.min(acIndex + 1, items.length - 1);
+                        items.forEach(function(i) { i.classList.remove('ac-active'); });
+                        items[acIndex].classList.add('ac-active');
+                        items[acIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        acIndex = Math.max(acIndex - 1, 0);
+                        items.forEach(function(i) { i.classList.remove('ac-active'); });
+                        items[acIndex].classList.add('ac-active');
+                        items[acIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'Enter' && acIndex >= 0) {
+                        e.preventDefault();
+                        input.value = items[acIndex].textContent;
+                        dropdown.style.display = 'none';
+                        input.dispatchEvent(new Event('input'));
+                    } else if (e.key === 'Escape') {
+                        dropdown.style.display = 'none';
+                    }
+                });
             });
             
             var carsContainer = document.getElementById('cars-container');
