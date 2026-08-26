@@ -15,8 +15,6 @@ class CsvImportForm(forms.Form):
     excel_file = forms.FileField(label="اختر ملف الأكسل")
 
 
-# ============================================================
-# ============================================================
 @admin.register(CarSpecification)
 class CarSpecificationAdmin(admin.ModelAdmin):
     change_list_template = 'admin/cars_changelist.html'
@@ -78,9 +76,6 @@ class CarSpecificationAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-
-    # ============================================================
-    # ============================================================
     
     def brand_ar_display(self, obj):
         return format_html('<span style="font-weight: bold; color: #fbbf24;">{}</span>', obj.brand_ar)
@@ -128,9 +123,6 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         return format_html('<span style="background: {}20; padding: 2px 12px; border-radius: 12px; color: {}; font-size: 0.8rem;">{}</span>', 
                           color, color, obj.get_spec_region_display())
     spec_region_badge.short_description = 'المواصفات'
-
-    # ============================================================
-    # ============================================================
     
     def make_gcc_spec(self, request, queryset):
         updated = queryset.update(spec_region='gcc')
@@ -146,9 +138,6 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         updated = queryset.update(spec_region='european')
         self.message_user(request, f'✅ تم تحديث {updated} سيارة إلى مواصفات أوروبية', messages.SUCCESS)
     make_european_spec.short_description = '🌍 تغيير المواصفات إلى أوروبي'
-
-    # ============================================================
-    # ============================================================
     
     def get_urls(self):
         urls = super().get_urls()
@@ -204,8 +193,6 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         return HttpResponse(t.render(c))
 
 
-# ============================================================
-# ============================================================
 class AdBannerForm(forms.ModelForm):
     class Meta:
         model = AdBanner
@@ -279,9 +266,6 @@ class AdBannerAdmin(admin.ModelAdmin):
             'fields': ('order', 'is_active')
         }),
     )
-
-    # ============================================================
-    # ============================================================
     
     def title_preview(self, obj):
         icon = '📢' if obj.position == 'ticker' else '🎠'
@@ -298,9 +282,6 @@ class AdBannerAdmin(admin.ModelAdmin):
     def created_at_display(self, obj):
         return format_html('<span style="color: #64748b; font-size: 0.8rem;">{}</span>', obj.created_at.strftime('%Y-%m-%d %H:%M'))
     created_at_display.short_description = 'تاريخ الإضافة'
-
-    # ============================================================
-    # ============================================================
     
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == 'position':
@@ -336,8 +317,6 @@ class AdBannerAdmin(admin.ModelAdmin):
         return form
 
 
-# ============================================================
-# ============================================================
 @admin.register(FeatureCard)
 class FeatureCardAdmin(admin.ModelAdmin):
     list_display = (
@@ -387,8 +366,6 @@ class FeatureCardAdmin(admin.ModelAdmin):
         return form
 
 
-# ============================================================
-# ============================================================
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     list_display = ('settings_summary',)
@@ -422,9 +399,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         return mark_safe('<span style="color: #64748b;">⚪ AdSense not linked yet</span>')
     settings_summary.short_description = 'Status'
 
-
-# ============================================================
-# ============================================================
 
 admin.site.index_template = 'admin/custom_index.html'
 
