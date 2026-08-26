@@ -1416,13 +1416,6 @@
                         <span class="search-icon" aria-hidden="true">📅</span>
                     </div>
                     
-                    <div class="input-group" style="position:relative;">
-                        <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك</label>
-                        <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="تظهر بعد اختيار السيارة..." class="search-input" autocomplete="off" maxlength="100" disabled>
-                        <span class="search-icon" aria-hidden="true">⚙️</span>
-                        <div id="engine-dropdown" class="autocomplete-dropdown" style="display:none;"></div>
-                    </div>
-                    
                     <div>
                         <label for="engineTypeSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">نوع المحرك</label>
                         <select name="engine_type" id="engineTypeSelect" class="search-select">
@@ -1437,6 +1430,13 @@
                             <option value="">-- الكل --</option>
                             {% for sr in spec_region_choices %}<option value="{{ sr.value|escape }}" {% if spec_region == sr.value %}selected{% endif %}>{{ sr.label|escape }}</option>{% endfor %}
                         </select>
+                    </div>
+                    
+                    <div class="input-group" style="position:relative;">
+                        <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك</label>
+                        <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="تظهر بعد اختيار السيارة..." class="search-input" autocomplete="off" maxlength="100" disabled>
+                        <span class="search-icon" aria-hidden="true">⚙️</span>
+                        <div id="engine-dropdown" class="autocomplete-dropdown" style="display:none;"></div>
                     </div>
                     
                     <div id="suggestions-container" class="hidden" aria-hidden="true"></div>
@@ -1871,7 +1871,7 @@
                 var specRegion = specRegionSelect.value;
                 if (!brand || brand.length < 2 || !model || model.length < 2) {
                     engineInput.disabled = true;
-                    engineInput.placeholder = 'تظهر بعد اختيار السيارة...';
+                    engineInput.placeholder = 'تظهر بعد اختيار الماركة والموديل...';
                     engineInput.value = '';
                     engineDropdown.style.display = 'none';
                     return;
@@ -1891,6 +1891,27 @@
                     }
                 }).catch(function() {});
             }
+
+            function enableEngineIfNeeded() {
+                var brand = brandInput.value.trim();
+                var model = modelInput.value.trim();
+                if (brand && brand.length >= 2 && model && model.length >= 2) {
+                    engineInput.disabled = false;
+                    engineInput.placeholder = 'اضغط لرؤية المحركات المتاحة...';
+                } else {
+                    engineInput.disabled = true;
+                    engineInput.placeholder = 'تظهر بعد اختيار الماركة والموديل...';
+                    engineInput.value = '';
+                    engineDropdown.style.display = 'none';
+                }
+            }
+
+            brandInput.addEventListener('input', function() {
+                enableEngineIfNeeded();
+            });
+            modelInput.addEventListener('input', function() {
+                enableEngineIfNeeded();
+            });
 
             yearInput.addEventListener('change', fetchEngineSuggestions);
             engineTypeSelect.addEventListener('change', fetchEngineSuggestions);
@@ -1921,12 +1942,7 @@
 
             engineInput.addEventListener('focus', function() {
                 if (!this.disabled) {
-                    var val = this.value.trim();
-                    var brand = brandInput.value.trim();
-                    var model = modelInput.value.trim();
-                    if (brand.length >= 2 && model.length >= 2) {
-                        fetchEngineSuggestions();
-                    }
+                    fetchEngineSuggestions();
                 }
             });
 
