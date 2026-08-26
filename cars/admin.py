@@ -275,8 +275,8 @@ class AdBannerAdmin(admin.ModelAdmin):
     
     def position_badge(self, obj):
         if obj.position == 'ticker':
-            return format_html('<span style="background: #3b82f620; padding: 2px 12px; border-radius: 12px; color: #60a5fa;">📢 شريط متحرك</span>')
-        return format_html('<span style="background: #f59e0b20; padding: 2px 12px; border-radius: 12px; color: #fbbf24;">🎠 سلايدر</span>')
+            return mark_safe('<span style="background: #3b82f620; padding: 2px 12px; border-radius: 12px; color: #60a5fa;">📢 شريط متحرك</span>')
+        return mark_safe('<span style="background: #f59e0b20; padding: 2px 12px; border-radius: 12px; color: #fbbf24;">🎠 سلايدر</span>')
     position_badge.short_description = 'الموقع'
     
     def created_at_display(self, obj):
@@ -352,8 +352,8 @@ class FeatureCardAdmin(admin.ModelAdmin):
 
     def type_badge(self, obj):
         if obj.image:
-            return format_html('<span style="background: #ef444420; padding: 2px 12px; border-radius: 12px; color: #f87171;">📢 إعلان</span>')
-        return format_html('<span style="background: #22c55e20; padding: 2px 12px; border-radius: 12px; color: #4ade80;">⭐ مميزة</span>')
+            return mark_safe('<span style="background: #ef444420; padding: 2px 12px; border-radius: 12px; color: #f87171;">📢 إعلان</span>')
+        return mark_safe('<span style="background: #22c55e20; padding: 2px 12px; border-radius: 12px; color: #4ade80;">⭐ مميزة</span>')
     type_badge.short_description = 'النوع'
 
     def created_at_display(self, obj):
