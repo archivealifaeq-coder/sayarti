@@ -1131,7 +1131,7 @@
                 <a href="{% url 'index' %}" class="nav-link active" aria-current="page">الرئيسية</a>
                 <a href="{% url 'mix_calculator' %}" class="nav-link">🧮 حاسبة الخلط</a>
                 <a href="#cars-section" class="nav-link">🚗 السيارات</a>
-                <a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>
+                {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
             <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
         </div>
@@ -1498,7 +1498,7 @@
                         <li><a href="#cars-section">🚗 السيارات</a></li>
                         <li><a href="{% url 'about' %}">ℹ️ من نحن</a></li>
                         <li><a href="{% url 'privacy' %}">🔒 سياسة الخصوصية</a></li>
-                        <li><a href="/admin/" rel="nofollow">🔐 لوحة التحكم</a></li>
+                        {% if user.is_staff %}<li><a href="/admin/" rel="nofollow">🔐 لوحة التحكم</a></li>{% endif %}
                     </ul>
                 </div>
                 
