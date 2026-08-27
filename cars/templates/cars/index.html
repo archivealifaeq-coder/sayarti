@@ -659,6 +659,55 @@
         }
         .search-select:focus { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12); }
         .search-select option { background: #1e293b; color: #f1f5f9; }
+
+        .chip-wrap { margin-top: 8px; }
+        .chip-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 2px 8px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(245, 158, 11, 0.35) transparent;
+        }
+        .chip-row::-webkit-scrollbar { height: 4px; }
+        .chip-row::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.35); border-radius: 999px; }
+        .chip-row::-webkit-scrollbar-track { background: transparent; }
+        .chip {
+            flex-shrink: 0;
+            white-space: nowrap;
+            padding: 7px 16px;
+            border-radius: 9999px;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            background: rgba(245, 158, 11, 0.08);
+            color: #fbbf24;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .chip:hover {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #0f172a;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+            border-color: transparent;
+        }
+        .chip:active { transform: scale(0.95); }
+        .chip.selected {
+            background: #f59e0b;
+            color: #0f172a;
+            border-color: transparent;
+            font-weight: 800;
+        }
+        .chip-sub { color: inherit; font-size: 0.72rem; direction: ltr; opacity: 0.75; }
+        .chip-empty {
+            color: #64748b;
+            font-size: 0.82rem;
+            padding: 6px 2px;
+            white-space: nowrap;
+        }
         
         .btn-primary {
             background: linear-gradient(135deg, #fbbf24, #f59e0b);
@@ -1360,18 +1409,25 @@
                       novalidate>
                     
                     <div>
-                        <label for="brandSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الماركة</label>
-                        <select name="brand" id="brandSelect" class="search-select">
-                            <option value="">-- الكل --</option>
-                            {% for b in brand_suggestions_en %}<option value="{{ b.ar|escape }}" {% if brand == b.ar %}selected{% endif %}>{{ b.ar|escape }}{% if b.en %} ({{ b.en|escape }}){% endif %}</option>{% endfor %}
-                        </select>
+                        <label for="brandInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الماركة</label>
+                        <div class="input-group">
+                            <input type="text" name="brand" id="brandInput" value="{{ brand|escape }}" placeholder="اكتب الماركة... مثال: تويوتا" class="search-input" autocomplete="off" maxlength="100">
+                            <span class="search-icon" aria-hidden="true">🚗</span>
+                        </div>
+                        <div class="chip-wrap" id="brandChipWrap">
+                            <div class="chip-row" id="brandChips" role="list"></div>
+                        </div>
                     </div>
                     
                     <div>
-                        <label for="modelSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الموديل</label>
-                        <select name="model" id="modelSelect" class="search-select" disabled>
-                            <option value="">-- اختر الماركة أولاً --</option>
-                        </select>
+                        <label for="modelInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الموديل</label>
+                        <div class="input-group">
+                            <input type="text" name="model" id="modelInput" value="{{ model|escape }}" placeholder="اختر الماركة أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
+                            <span class="search-icon" aria-hidden="true">📐</span>
+                        </div>
+                        <div class="chip-wrap" id="modelChipWrap">
+                            <div class="chip-row" id="modelChips" role="list"></div>
+                        </div>
                     </div>
                     
                     <div class="input-group">
@@ -1397,10 +1453,14 @@
                     </div>
                     
                     <div>
-                        <label for="engineSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك</label>
-                        <select name="engine" id="engineSelect" class="search-select" disabled>
-                            <option value="">-- اختر الماركة والموديل أولاً --</option>
-                        </select>
+                        <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك</label>
+                        <div class="input-group">
+                            <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="اختر الماركة والموديل أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
+                            <span class="search-icon" aria-hidden="true">⚙️</span>
+                        </div>
+                        <div class="chip-wrap" id="engineChipWrap">
+                            <div class="chip-row" id="engineChips" role="list"></div>
+                        </div>
                     </div>
                     
                     <div id="suggestions-container" class="hidden" aria-hidden="true"></div>
@@ -1709,60 +1769,173 @@
                 });
             }
             
-            var brandSelect = document.getElementById('brandSelect');
-            var modelSelect = document.getElementById('modelSelect');
-            var engineSelect = document.getElementById('engineSelect');
+            var brandInput = document.getElementById('brandInput');
+            var modelInput = document.getElementById('modelInput');
+            var engineInput = document.getElementById('engineInput');
+            var brandChips = document.getElementById('brandChips');
+            var modelChips = document.getElementById('modelChips');
+            var engineChips = document.getElementById('engineChips');
+            var brandChipWrap = document.getElementById('brandChipWrap');
+            var modelChipWrap = document.getElementById('modelChipWrap');
+            var engineChipWrap = document.getElementById('engineChipWrap');
             var engineTypeSelect = document.getElementById('engineTypeSelect');
             var specRegionSelect = document.getElementById('specRegionSelect');
             var yearInput = document.getElementById('yearInput');
 
-            function fillSelect(sel, items, placeholder, valueOf) {
-                sel.innerHTML = '';
-                var empty = document.createElement('option');
-                empty.value = '';
-                empty.textContent = placeholder;
-                sel.appendChild(empty);
-                items.forEach(function(item) {
-                    var o = document.createElement('option');
-                    if (typeof item === 'string') {
-                        o.value = item;
-                        o.textContent = item;
-                    } else {
-                        o.value = item.ar;
-                        o.textContent = item.ar + (item.en ? ' (' + item.en + ')' : '');
-                    }
-                    if (valueOf && o.value === valueOf) o.selected = true;
-                    sel.appendChild(o);
-                });
-                sel.disabled = false;
+            var allBrands = [
+                {% for b in brand_suggestions_en %}{ ar: '{{ b.ar|escapejs }}', en: '{{ b.en|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            var popularBrands = [
+                {% for b in popular_brands %}{ ar: '{{ b.ar|escapejs }}', en: '{{ b.en|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            var brandQuery = '';
+            var modelQuery = '';
+            var engineQuery = '';
+            var lastModels = [];
+            var lastEngines = [];
+            var inputTimer = null;
+
+            function accepts(q, txt) {
+                if (!txt) return false;
+                return txt.toLowerCase().indexOf(q) !== -1;
             }
 
-            function loadModels(cb) {
-                var brand = brandSelect.value.trim();
+            function renderChips(container, items, selected, addSub) {
+                container.innerHTML = '';
+                items.forEach(function(item) {
+                    var chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'chip' + (selected && item.ar === selected ? ' selected' : '');
+                    var txt = document.createTextNode(item.ar);
+                    chip.appendChild(txt);
+                    if (addSub && item.en && item.en !== item.ar) {
+                        var sub = document.createElement('span');
+                        sub.className = 'chip-sub';
+                        sub.textContent = ' ' + item.en;
+                        chip.appendChild(sub);
+                    }
+                    chip.setAttribute('aria-pressed', selected && item.ar === selected ? 'true' : 'false');
+                    chip.addEventListener('click', function() {
+                        var which = container === brandChips ? 'brand' : (container === modelChips ? 'model' : 'engine');
+                        onPicked(which, item.ar);
+                    });
+                    container.appendChild(chip);
+                });
+                if (items.length === 0) {
+                    var empty = document.createElement('div');
+                    empty.className = 'chip-empty';
+                    empty.textContent = 'لا توجد نتائج مطابقة';
+                    container.appendChild(empty);
+                }
+            }
+
+            function renderBrandChips() {
+                var list;
+                if (brandQuery.length >= 1) {
+                    list = allBrands.filter(function(b) {
+                        return accepts(brandQuery, b.ar) || accepts(brandQuery, b.en);
+                    });
+                } else {
+                    list = popularBrands.length ? popularBrands : allBrands.slice(0, 12);
+                }
+                renderChips(brandChips, list.slice(0, 14), brandInput.value.trim(), true);
+            }
+
+            function renderModelChips() {
+                var list;
+                if (modelQuery.length >= 1) {
+                    list = lastModels.filter(function(m) {
+                        return accepts(modelQuery, m.ar) || accepts(modelQuery, m.en);
+                    });
+                } else {
+                    list = lastModels;
+                }
+                renderChips(modelChips, list.slice(0, 14), modelInput.value.trim(), true);
+            }
+
+            function renderEngineChips() {
+                var list;
+                if (engineQuery.length >= 1) {
+                    list = lastEngines.filter(function(e) {
+                        return accepts(engineQuery, e);
+                    });
+                } else {
+                    list = lastEngines;
+                }
+                renderChips(engineChips, list.slice(0, 16), engineInput.value.trim(), false);
+            }
+
+            function onPicked(which, value) {
+                if (which === 'brand') {
+                    brandInput.value = value;
+                    brandQuery = '';
+                    modelInput.value = '';
+                    engineInput.value = '';
+                    modelQuery = '';
+                    engineQuery = '';
+                    isReadyModel(false);
+                    isReadyEngine(false);
+                    renderBrandChips();
+                    loadModels();
+                    loadEngines();
+                } else if (which === 'model') {
+                    modelInput.value = value;
+                    modelQuery = '';
+                    engineInput.value = '';
+                    engineQuery = '';
+                    isReadyEngine(false);
+                    renderModelChips();
+                    loadEngines();
+                } else if (which === 'engine') {
+                    engineInput.value = value;
+                    engineQuery = '';
+                    renderEngineChips();
+                }
+            }
+
+            function isReadyModel(ready) {
+                modelInput.disabled = !ready;
+                if (!ready) {
+                    modelInput.placeholder = 'اختر الماركة أولاً...';
+                    lastModels = [];
+                    renderModelChips();
+                } else {
+                    modelInput.placeholder = 'اكتب الموديل... أو اختر من الشرائح';
+                }
+            }
+
+            function isReadyEngine(ready) {
+                engineInput.disabled = !ready;
+                if (!ready) {
+                    engineInput.placeholder = 'اختر الماركة والموديل أولاً...';
+                    lastEngines = [];
+                    renderEngineChips();
+                } else {
+                    engineInput.placeholder = 'اكتب سعة المحرك... أو اختر من الشرائح';
+                }
+            }
+
+            function loadModels() {
+                var brand = brandInput.value.trim();
                 if (!brand) {
-                    fillSelect(modelSelect, [], '-- اختر الماركة أولاً --');
-                    modelSelect.disabled = true;
-                    fillSelect(engineSelect, [], '-- اختر الماركة والموديل أولاً --');
-                    engineSelect.disabled = true;
+                    isReadyModel(false);
                     return;
                 }
                 var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand);
                 fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                    var models = (data.models || []).map(function(m) { return { ar: m.ar, en: m.en }; });
-                    fillSelect(modelSelect, models, '-- اختر الموديل --');
-                    if (cb) cb();
+                    lastModels = (data.models || []).map(function(m) { return { ar: m.ar, en: m.en }; });
+                    isReadyModel(true);
+                    renderModelChips();
                 }).catch(function() {
-                    fillSelect(modelSelect, [], '-- تعذر التحميل --');
-                    if (cb) cb();
+                    isReadyModel(false);
                 });
             }
 
-            function loadEngines(cb) {
-                var brand = brandSelect.value.trim();
-                var model = modelSelect.value.trim();
+            function loadEngines() {
+                var brand = brandInput.value.trim();
+                var model = modelInput.value.trim();
                 if (!brand || !model) {
-                    fillSelect(engineSelect, [], '-- اختر الماركة والموديل أولاً --');
-                    engineSelect.disabled = true;
+                    isReadyEngine(false);
                     return;
                 }
                 var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model);
@@ -1773,38 +1946,64 @@
                 if (engineType) url += '&engine_type=' + encodeURIComponent(engineType);
                 if (specRegion) url += '&spec_region=' + encodeURIComponent(specRegion);
                 fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                    fillSelect(engineSelect, data.engines || [], '-- اختر سعة المحرك --');
-                    if (cb) cb();
+                    lastEngines = (data.engines || []).map(function(e) { return { ar: e, en: '' }; });
+                    isReadyEngine(true);
+                    renderEngineChips();
                 }).catch(function() {
-                    fillSelect(engineSelect, [], '-- تعذر التحميل --');
-                    if (cb) cb();
+                    isReadyEngine(false);
                 });
             }
 
-            brandSelect.addEventListener('change', loadModels);
-            modelSelect.addEventListener('change', loadEngines);
-            yearInput.addEventListener('change', function() { if (modelSelect.value) loadEngines(); });
-            engineTypeSelect.addEventListener('change', function() { if (modelSelect.value) loadEngines(); });
-            specRegionSelect.addEventListener('change', function() { if (modelSelect.value) loadEngines(); });
+            brandInput.addEventListener('input', function() {
+                clearTimeout(inputTimer);
+                inputTimer = setTimeout(function() {
+                    brandQuery = brandInput.value.trim().toLowerCase();
+                    renderBrandChips();
+                    loadModels();
+                }, 120);
+            });
 
-            (function initSelects() {
+            modelInput.addEventListener('input', function() {
+                clearTimeout(inputTimer);
+                inputTimer = setTimeout(function() {
+                    modelQuery = modelInput.value.trim().toLowerCase();
+                    renderModelChips();
+                    loadEngines();
+                }, 120);
+            });
+
+            engineInput.addEventListener('input', function() {
+                clearTimeout(inputTimer);
+                inputTimer = setTimeout(function() {
+                    engineQuery = engineInput.value.trim().toLowerCase();
+                    renderEngineChips();
+                }, 120);
+            });
+
+            yearInput.addEventListener('change', function() { if (modelInput.value) loadEngines(); });
+            engineTypeSelect.addEventListener('change', function() { if (modelInput.value) loadEngines(); });
+            specRegionSelect.addEventListener('change', function() { if (modelInput.value) loadEngines(); });
+
+            (function initChips() {
                 var initialBrand = '{{ brand|escapejs }}';
                 var initialModel = '{{ model|escapejs }}';
                 var initialEngine = '{{ engine|escapejs }}';
-                brandSelect.value = initialBrand;
+                brandInput.value = initialBrand;
+                renderBrandChips();
                 if (initialBrand) {
-                    loadModels(function() {
-                        if (initialModel) {
-                            modelSelect.value = initialModel;
-                            loadEngines(function() {
-                                if (initialEngine) engineSelect.value = initialEngine;
-                            });
-                        }
-                    });
+                    loadModels();
+                    isReadyModel(true);
+                    if (initialModel) {
+                        modelInput.value = initialModel;
+                        loadEngines();
+                        isReadyEngine(true);
+                        if (initialEngine) engineInput.value = initialEngine;
+                    }
                 } else {
-                    modelSelect.disabled = true;
-                    engineSelect.disabled = true;
+                    isReadyModel(false);
+                    isReadyEngine(false);
                 }
+                renderBrandChips();
             })();
             
             var carsContainer = document.getElementById('cars-container');

@@ -1,4 +1,4 @@
-import pandas as pd
+﻿import pandas as pd
 import re
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -11,7 +11,7 @@ from .services.excel_importer import import_cars_from_excel
 
 
 class CsvImportForm(forms.Form):
-    excel_file = forms.FileField(label="اختر ملف الأكسل")
+    excel_file = forms.FileField(label="Ø§Ø®ØªØ± Ù…Ù„Ù Ø§Ù„Ø£ÙƒØ³Ù„")
 
 
 def normalize_engine(value):
@@ -91,14 +91,20 @@ def index_view(request):
 
     feature_cards = FeatureCard.objects.filter(is_active=True).order_by('order', 'created_at')
 
-    brand_suggestions = list(CarSpecification.objects.values_list('brand_ar', flat=True).distinct().order_by('brand_ar')[:100])
-    brand_pairs = list(CarSpecification.objects.values('brand_ar', 'brand_en').distinct()[:100])
+    brand_pairs = list(CarSpecification.objects.values('brand_ar', 'brand_en').distinct())
     en_by_ar = {}
     for p in brand_pairs:
         en_by_ar.setdefault(p['brand_ar'], p['brand_en'])
+    brand_suggestions = sorted(en_by_ar.keys())
     brand_suggestions_en = [
         {'ar': ar, 'en': en_by_ar.get(ar, '')}
         for ar in brand_suggestions
+    ]
+    from collections import Counter
+    brand_counts = Counter(CarSpecification.objects.values_list('brand_ar', flat=True))
+    popular_brands = [
+        {'ar': ar, 'en': en_by_ar.get(ar, '')}
+        for ar, _ in brand_counts.most_common(12)
     ]
     
     engine_type_choices = CarSpecification.ENGINE_TYPE_CHOICES
@@ -111,6 +117,7 @@ def index_view(request):
         'feature_cards': feature_cards,
         'brand_suggestions': brand_suggestions,
         'brand_suggestions_en': brand_suggestions_en,
+        'popular_brands': popular_brands,
         'engine_type_choices': engine_type_choices,
         'spec_region_choices': spec_region_display,
         'brand': brand,
@@ -134,7 +141,7 @@ def get_suggestions(request):
     if brand and not model:
         models_list = list(CarSpecification.objects.filter(
             Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
-        ).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:50])
+        ).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:400])
         models = [{'ar': m[0], 'en': m[1]} for m in models_list]
         return JsonResponse({'models': models, 'engines': []})
 
@@ -154,12 +161,12 @@ def get_suggestions(request):
             qs = qs.filter(spec_region=spec_region)
         if engine:
             qs = qs.filter(Q(engine__icontains=engine))
-        engines_raw = list(qs.values_list('engine', flat=True).distinct().order_by('engine')[:50])
+        engines_raw = list(qs.values_list('engine', flat=True).distinct().order_by('engine')[:200])
         models = []
         if not engine:
             models_list = list(CarSpecification.objects.filter(
                 Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
-            ).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:50])
+            ).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:400])
             models = [{'ar': m[0], 'en': m[1]} for m in models_list]
         return JsonResponse({'models': models, 'engines': engines_raw})
 
@@ -186,20 +193,20 @@ def import_excel_view(request):
             result = import_cars_from_excel(excel_file)
             
             if result['success']:
-                success_msg = f"✅ تم الاستيراد بنجاح! إضافة {result['created']} وتحديث {result['updated']}."
+                success_msg = f"âœ… ØªÙ… Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø¨Ù†Ø¬Ø§Ø­! Ø¥Ø¶Ø§ÙØ© {result['created']} ÙˆØªØ­Ø¯ÙŠØ« {result['updated']}."
                 if result['failed'] > 0:
-                    success_msg += f" ❌ فشل {result['failed']} صف."
+                    success_msg += f" âŒ ÙØ´Ù„ {result['failed']} ØµÙ."
                     for failed_row in result['failed_rows'][:5]:
-                        messages.warning(request, f"الصف {failed_row['row_number']}: {failed_row['error']}")
+                        messages.warning(request, f"Ø§Ù„ØµÙ {failed_row['row_number']}: {failed_row['error']}")
                 messages.success(request, success_msg)
             else:
                 for error in result['errors']:
-                    messages.error(request, f"❌ {error}")
+                    messages.error(request, f"âŒ {error}")
                     
         except Exception:
             import logging
             logging.getLogger('cars').exception('Excel import failed')
-            messages.error(request, "⚠️ حدث خطأ أثناء معالجة الملف. تأكد من الصيغة وحاول مجدداً.")
+            messages.error(request, "âš ï¸ Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„Ù…Ù„Ù. ØªØ£ÙƒØ¯ Ù…Ù† Ø§Ù„ØµÙŠØºØ© ÙˆØ­Ø§ÙˆÙ„ Ù…Ø¬Ø¯Ø¯Ø§Ù‹.")
         
         return redirect('import_excel')
 
@@ -217,15 +224,15 @@ def mix_calculator_view(request):
             tank = float(request.POST.get('tank_capacity'))
             
             if tank <= 0:
-                messages.error(request, "⚠️ سعة الخزان يجب أن تكون أكبر من صفر")
+                messages.error(request, "âš ï¸ Ø³Ø¹Ø© Ø§Ù„Ø®Ø²Ø§Ù† ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† Ø£ÙƒØ¨Ø± Ù…Ù† ØµÙØ±")
                 return render(request, 'cars/mix_calculator.html', {'cars': CarSpecification.objects.all().order_by('brand_ar', 'model_ar'), 'result': result})
             
             if o1 < 80 or o1 > 120 or o2 < 80 or o2 > 120:
-                messages.error(request, "⚠️ رقم الأوكتان يجب أن يكون بين 80 و 120")
+                messages.error(request, "âš ï¸ Ø±Ù‚Ù… Ø§Ù„Ø£ÙˆÙƒØªØ§Ù† ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨ÙŠÙ† 80 Ùˆ 120")
                 return render(request, 'cars/mix_calculator.html', {'cars': CarSpecification.objects.all().order_by('brand_ar', 'model_ar'), 'result': result})
             
             if not (min(o1, o2) <= target <= max(o1, o2)):
-                messages.error(request, "⚠️ الأوكتان المطلوب يجب أن يكون بين النوعين")
+                messages.error(request, "âš ï¸ Ø§Ù„Ø£ÙˆÙƒØªØ§Ù† Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨ÙŠÙ† Ø§Ù„Ù†ÙˆØ¹ÙŠÙ†")
             else:
                 if o1 != o2:
                     r1 = (target - o2) / (o1 - o2)
@@ -242,11 +249,11 @@ def mix_calculator_view(request):
                     'target': target,
                     'tank': tank,
                 }
-                messages.success(request, "✅ تم حساب الخلطة بنجاح!")
+                messages.success(request, "âœ… ØªÙ… Ø­Ø³Ø§Ø¨ Ø§Ù„Ø®Ù„Ø·Ø© Ø¨Ù†Ø¬Ø§Ø­!")
         except ValueError:
-            messages.error(request, "⚠️ يرجى إدخال أرقام صحيحة.")
+            messages.error(request, "âš ï¸ ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø£Ø±Ù‚Ø§Ù… ØµØ­ÙŠØ­Ø©.")
         except ZeroDivisionError:
-            messages.error(request, "⚠️ حدث خطأ في الحساب. تأكد من القيم المدخلة.")
+            messages.error(request, "âš ï¸ Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­Ø³Ø§Ø¨. ØªØ£ÙƒØ¯ Ù…Ù† Ø§Ù„Ù‚ÙŠÙ… Ø§Ù„Ù…Ø¯Ø®Ù„Ø©.")
     
     cars = CarSpecification.objects.all().only('id', 'brand_ar', 'model_ar', 'year', 'octane', 'oil_capacity').order_by('brand_ar', 'model_ar')
     return render(request, 'cars/mix_calculator.html', {'cars': cars, 'result': result})
@@ -256,7 +263,7 @@ def recommendations_view(request, car_id):
     try:
         car = CarSpecification.objects.get(id=car_id)
     except CarSpecification.DoesNotExist:
-        messages.error(request, "⚠️ السيارة غير موجودة")
+        messages.error(request, "âš ï¸ Ø§Ù„Ø³ÙŠØ§Ø±Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©")
         return redirect('index')
     return render(request, 'cars/recommendations.html', {'car': car})
 
