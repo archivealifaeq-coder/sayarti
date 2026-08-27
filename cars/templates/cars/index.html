@@ -30,6 +30,90 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
     <meta name="apple-mobile-web-app-title" content="سيارتي"/>
 
+    <style>
+        .pwa-install-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0a0f1a;
+            font-weight: 800;
+            font-size: 0.82rem;
+            padding: 8px 16px;
+            border-radius: 60px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 18px rgba(245, 158, 11, 0.3);
+            white-space: nowrap;
+        }
+        .pwa-install-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 30px rgba(245, 158, 11, 0.45); }
+        .pwa-install-fab {
+            position: fixed;
+            bottom: 84px;
+            left: 22px;
+            z-index: 9991;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0a0f1a;
+            font-weight: 800;
+            font-size: 0.85rem;
+            padding: 12px 22px;
+            border-radius: 60px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: 0 10px 35px rgba(245, 158, 11, 0.4);
+            animation: installPulse 2.6s ease-in-out infinite;
+        }
+        @keyframes installPulse {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .pwa-install-fab:hover { transform: translateY(-3px) scale(1.05); }
+        #pwaModal { display: none; }
+        #pwaModal.open { display: flex; }
+        .pwa-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: rgba(2, 6, 16, 0.75);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .pwa-modal-box {
+            background: #111a2e;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            border-radius: 22px;
+            padding: 26px 24px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+        }
+        .pwa-modal-box h3 { color: #fbbf24; font-weight: 900; font-size: 1.2rem; margin-bottom: 6px; }
+        .pwa-modal-box p { color: #cbd5e1; font-size: 0.9rem; line-height: 1.8; }
+        .pwa-modal-steps { text-align: right; color: #cbd5e1; font-size: 0.9rem; line-height: 2; margin: 12px 0; }
+        .pwa-modal-steps b { color: #fbbf24; }
+        .pwa-modal-close {
+            margin-top: 14px;
+            background: rgba(51, 65, 85, 0.7);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px 28px;
+            border-radius: 40px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .pwa-modal-close:hover { background: rgba(51, 65, 85, 1); }
+    </style>
+
     {% if site_settings.adsense_client_id %}
     <!-- ✅ Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site_settings.adsense_client_id }}" crossorigin="anonymous"></script>
@@ -1193,6 +1277,7 @@
                 <a href="#cars-section" class="nav-link">🚗 السيارات</a>
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
+            <button type="button" id="installBtn" class="pwa-install-btn md:flex hidden" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
             <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
         </div>
     </nav>
@@ -2131,10 +2216,79 @@
             }
             
             console.log('🚗 سيارتي - تم تحميل الصفحة بنجاح ✨');
-            
+
+            /* ============================================ //
+               PWA INSTALL - زر تثبيت ظاهر + نافذة إرشادات  //
+            // ============================================ */
+            var deferredPrompt = null;
+            var installBtn = document.getElementById('installBtn');
+
+            function openPwaModal() {
+                var modal = document.getElementById('pwaModal');
+                if (modal) modal.classList.add('open');
+            }
+
+            function doInstall() {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function(choiceResult) {
+                        if (choiceResult.outcome === 'dismissed') {
+                            openPwaModal();
+                        }
+                        deferredPrompt = null;
+                        if (installBtn) installBtn.style.display = 'none';
+                        var fab = document.getElementById('pwaInstallFab');
+                        if (fab) fab.style.display = 'none';
+                    });
+                } else {
+                    openPwaModal();
+                }
+            }
+
+            if (installBtn) installBtn.addEventListener('click', doInstall);
+
+            window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (installBtn) {
+                    installBtn.style.display = 'inline-flex';
+                    installBtn.classList.remove('hidden');
+                    installBtn.classList.add('md:flex');
+                }
+            });
+
+            window.addEventListener('appinstalled', function() {
+                deferredPrompt = null;
+                if (installBtn) installBtn.style.display = 'none';
+                var fab = document.getElementById('pwaInstallFab');
+                if (fab) fab.style.display = 'none';
+            });
+
+            var modalClose = document.getElementById('pwaModalClose');
+            if (modalClose) modalClose.addEventListener('click', function() {
+                document.getElementById('pwaModal').classList.remove('open');
+            });
+
         })();
     </script>
-    
+
+    <button type="button" id="pwaInstallFab" class="pwa-install-fab md:hidden" aria-label="تثبيت التطبيق">📲 ثبّت التطبيق</button>
+
+    <div id="pwaModal">
+        <div class="pwa-modal-overlay" onclick="if(event.target===this)this.parentElement.classList.remove('open')">
+            <div class="pwa-modal-box" role="dialog" aria-modal="true" aria-label="طريقة تثبيت التطبيق">
+                <h3>📲 تثبيت تطبيق سيارتي</h3>
+                <p>أضف سيارتي إلى شاشتك الرئيسية لتستخدمه كتطبيق كامل أونلاين وأوفلاين:</p>
+                <div class="pwa-modal-steps">
+                    <div>1️⃣ اضغط زر المشاركة <b>⬆️</b> في المتصفح</div>
+                    <div>2️⃣ اختر <b>"إضافة إلى الشاشة الرئيسية"</b></div>
+                    <div>3️⃣ اضغط <b>"إضافة"</b> — وسيظهر تطبيق 🚗</div>
+                </div>
+                <button type="button" class="pwa-modal-close" id="pwaModalClose">حسناً، فهمت</button>
+            </div>
+        </div>
+    </div>
+
 <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
