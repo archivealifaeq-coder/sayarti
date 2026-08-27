@@ -3,6 +3,29 @@ from django.db import transaction
 from cars.models import CarSpecification
 
 
+def _cell(row, col, default=''):
+    """قراءة آمنة لأي خلية: ترجع default عند غياب العمود أو قيمة فارغة/NaN."""
+    try:
+        val = row.get(col, default)
+    except Exception:
+        return default
+    if val is None:
+        return default
+    if isinstance(val, float) and pd.isna(val):
+        return default
+    if isinstance(val, str) and not val.strip():
+        return default
+    return val
+
+
+def _year_value(row):
+    """تحويل عمود السنة مع دعم الأرقام '2,000' أو 2000.0."""
+    raw = row['Year']
+    if isinstance(raw, str):
+        raw = raw.replace(',', '').replace(' ', '').strip()
+    return int(float(raw))
+
+
 def validate_excel_file(file):
     """
     التحقق من صحة ملف Excel قبل البدء في الاستيراد
@@ -68,7 +91,7 @@ def import_cars_from_excel(file):
     
     for index, row in df.iterrows():
         try:
-            spec_raw = row.get('Spec', 'خليجي')
+            spec_raw = _cell(row, 'Spec', 'خليجي')
             if 'خليجي' in str(spec_raw):
                 spec_region_val = 'gcc'
             elif 'أمريكي' in str(spec_raw):
@@ -82,7 +105,7 @@ def import_cars_from_excel(file):
             else:
                 spec_region_val = 'other'
             
-            engine_str = str(row.get('Engine', ''))
+            engine_str = str(_cell(row, 'Engine', ''))
             if 'turbo' in engine_str.lower() or 't-gdi' in engine_str.lower():
                 engine_type_val = 'turbo'
             elif 'hybrid' in engine_str.lower():
@@ -94,47 +117,44 @@ def import_cars_from_excel(file):
             else:
                 engine_type_val = 'regular'
             
-            if 'Tire Size' in row and pd.notna(row['Tire Size']):
-                tire_size_val = str(row['Tire Size'])
-            elif 'Tire PSI' in row and pd.notna(row['Tire PSI']):
-                tire_size_val = str(row['Tire PSI'])
-            else:
+            tire_size_val = _cell(row, 'Tire Size')
+            if not tire_size_val:
+                tire_size_val = _cell(row, 'Tire PSI')
+            if not tire_size_val:
                 tire_size_val = "غير محدد"
 
-            battery_val = (
-                row.get('Battery', row.get('Battery Size', ''))
-                if pd.notna(row.get('Battery', row.get('Battery Size', pd.NA)))
-                else ''
-            )
-            if pd.notna(row.get('Battery Capacity', '')):
-                battery_val = row['Battery Capacity']
+            battery_val = _cell(row, 'Battery Capacity')
+            if not battery_val:
+                battery_val = _cell(row, 'Battery')
+            if not battery_val:
+                battery_val = _cell(row, 'Battery Size')
             
             obj, created = CarSpecification.objects.update_or_create(
-                id=row['id'],
+                id=int(float(row['id'])),
                 defaults={
-                    'brand_en': row['Brand_EN'],
-                    'brand_ar': row['Brand_AR'],
-                    'model_en': row['Model_EN'],
-                    'model_ar': row['Model_AR'],
-                    'year': row['Year'],
-                    'spec': row.get('Spec', ''),
-                    'trim': row.get('Trim', row.get('Class', '')),
+                    'brand_en': _cell(row, 'Brand_EN'),
+                    'brand_ar': _cell(row, 'Brand_AR'),
+                    'model_en': _cell(row, 'Model_EN'),
+                    'model_ar': _cell(row, 'Model_AR'),
+                    'year': _year_value(row),
+                    'spec': _cell(row, 'Spec'),
+                    'trim': _cell(row, 'Trim') or _cell(row, 'Class'),
                     'engine_type': engine_type_val,
                     'spec_region': spec_region_val,
-                    'engine': row['Engine'],
-                    'oil_visc': row['Oil Visc'],
-                    'oil_visc_high_km': row.get('Oil Visc (>100k)', ''),
-                    'fuel': row['Fuel'],
-                    'octane': row['Octane'],
-                    'spark': row['Spark'],
+                    'engine': _cell(row, 'Engine'),
+                    'oil_visc': _cell(row, 'Oil Visc'),
+                    'oil_visc_high_km': _cell(row, 'Oil Visc (>100k)'),
+                    'fuel': _cell(row, 'Fuel'),
+                    'octane': _cell(row, 'Octane'),
+                    'spark': _cell(row, 'Spark'),
                     'tire_size': tire_size_val,
-                    'oil_capacity': row['Oil Capacity'],
-                    'recommendations': row.get('Recommendations', ''),
-                    'oil_brands': row.get('Oil Brands', ''),
+                    'oil_capacity': _cell(row, 'Oil Capacity'),
+                    'recommendations': _cell(row, 'Recommendations'),
+                    'oil_brands': _cell(row, 'Oil Brands'),
                     'battery': battery_val,
-                    'transmission_type': row.get('Transmission Type', ''),
-                    'transmission_oil_spec': row.get('Transmission Oil Spec', ''),
-                    'transmission_oil_brands': row.get('Transmission Oil Brands', ''),
+                    'transmission_type': _cell(row, 'Transmission Type'),
+                    'transmission_oil_spec': _cell(row, 'Transmission Oil Spec'),
+                    'transmission_oil_brands': _cell(row, 'Transmission Oil Brands'),
                 }
             )
             
