@@ -8,6 +8,17 @@
     <title>من نحن | سيارتي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+
+    <!-- ===== PWA ===== -->
+    <link rel="manifest" href="/manifest.json"/>
+    <meta name="theme-color" content="#0f172a"/>
+    <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/shared/icons/icon-192.png"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="سيارتي"/>
+
     {% if site_settings.adsense_client_id %}
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site_settings.adsense_client_id }}" crossorigin="anonymous"></script>
     {% endif %}
@@ -81,5 +92,14 @@
             </a>
         </div>
     </div>
+<script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.warn('فشل تسجيل Service Worker:', err);
+                });
+            });
+        }
+    </script>
 </body>
 </html>

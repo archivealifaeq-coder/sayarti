@@ -1,13 +1,49 @@
 ﻿import pandas as pd
 import re
+from pathlib import Path
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django import forms
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
 from .services.excel_importer import import_cars_from_excel
+
+
+SW_FILE = Path(__file__).resolve().parent / 'static' / 'shared' / 'sw.js'
+
+
+def manifest_view(request):
+    manifest = {
+        "name": "سيارتي - دليل مواصفات السيارات الذكي",
+        "short_name": "سيارتي",
+        "description": "دليل مواصفات السيارات - مواصفات، زيوت، إطارات، وتوصيات لكل سيارة.",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#0f172a",
+        "theme_color": "#0f172a",
+        "dir": "rtl",
+        "lang": "ar",
+        "orientation": "portrait-primary",
+        "categories": ["automotive", "utilities"],
+        "icons": [
+            {"src": "/static/shared/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": "/static/shared/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": "/static/shared/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ],
+        "prefer_related_applications": False,
+    }
+    return JsonResponse(manifest)
+
+
+def sw_view(request):
+    code = SW_FILE.read_text(encoding='utf-8') if SW_FILE.exists() else ''
+    response = HttpResponse(code, content_type='application/javascript; charset=utf-8')
+    response['Service-Worker-Allowed'] = '/'
+    response['Cache-Control'] = 'public, max-age=0, must-revalidate'
+    return response
 
 
 class CsvImportForm(forms.Form):
