@@ -85,6 +85,38 @@ class CarSpecification(models.Model):
         help_text="مثال: Mobil 1, Castrol, Total"
     )
 
+    battery = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="البطارية (الحجم/السعة)",
+        help_text="مثال: 55D23L، 60Ah، 12V 70Ah"
+    )
+
+    transmission_type = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="نوع ناقل الحركة",
+        help_text="مثال: أوتوماتيك 6 سرعات، CVT، Manual"
+    )
+
+    transmission_oil_spec = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="مواصفات زيت الناقل",
+        help_text="مثال: ATF WS، ATF SP-III، Dexron VI"
+    )
+
+    transmission_oil_brands = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="ماركات زيت الناقل",
+        help_text="مثال: Toyota Genuine ATF, Idemitsu, AISIN"
+    )
+
     class Meta:
         indexes = [
             models.Index(fields=['brand_ar']),

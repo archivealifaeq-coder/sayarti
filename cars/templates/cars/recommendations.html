@@ -246,11 +246,33 @@
                 <span class="label">🧴 سعة الزيت</span>
                 <span class="value">{{ car.oil_capacity|default:"-" }}</span>
             </div>
+            <div class="info-item">
+                <span class="label">🔋 البطارية</span>
+                <span class="value">{{ car.battery|default:"غير محدد" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">⚙️ ناقل الحركة</span>
+                <span class="value">{{ car.transmission_type|default:"غير محدد" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">🛢️ زيت الناقل</span>
+                <span class="value">{{ car.transmission_oil_spec|default:"غير محدد" }}</span>
+            </div>
             <div class="info-item md:col-span-2">
                 <span class="label">🏷️ ماركات الزيت الموصى بها</span>
                 <div class="value">
                     {% if car.oil_brands %}
                         <span class="oil-brands-tag">{{ car.oil_brands }}</span>
+                    {% else %}
+                        <span class="text-slate-500 text-sm">لم يتم تحديد ماركات محددة</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-item md:col-span-2">
+                <span class="label">🏷️ ماركات زيت الناقل الموصى بها</span>
+                <div class="value">
+                    {% if car.transmission_oil_brands %}
+                        <span class="oil-brands-tag">{{ car.transmission_oil_brands }}</span>
                     {% else %}
                         <span class="text-slate-500 text-sm">لم يتم تحديد ماركات محددة</span>
                     {% endif %}

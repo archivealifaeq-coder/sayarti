@@ -48,7 +48,9 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         'model_en', 
         'trim',
         'id', 
-        'tire_size'
+        'tire_size',
+        'transmission_type',
+        'battery'
     )
     
     ordering = ('brand_ar', 'model_ar', '-year')
@@ -66,6 +68,9 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         }),
         ('🛢️ الزيت', {
             'fields': ('oil_visc', 'oil_visc_high_km', 'oil_capacity', 'oil_brands')
+        }),
+        ('⚡ البطارية وناقل الحركة', {
+            'fields': ('battery', 'transmission_type', 'transmission_oil_spec', 'transmission_oil_brands')
         }),
         ('⛽ الوقود', {
             'fields': ('fuel', 'octane')

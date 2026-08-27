@@ -26,7 +26,11 @@ def validate_excel_file(file):
         'Year', 'Engine', 'Oil Visc', 'Fuel', 'Octane',
         'Spark', 'Oil Capacity'
     ]
-    optional_columns = ['Spec', 'Trim', 'Class', 'Recommendations', 'Oil Brands', 'Oil Visc (>100k)']
+    optional_columns = [
+        'Spec', 'Trim', 'Class', 'Recommendations', 'Oil Brands', 'Oil Visc (>100k)',
+        'Battery', 'Battery Size', 'Battery Capacity',
+        'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands'
+    ]
     
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
@@ -96,6 +100,14 @@ def import_cars_from_excel(file):
                 tire_size_val = str(row['Tire PSI'])
             else:
                 tire_size_val = "غير محدد"
+
+            battery_val = (
+                row.get('Battery', row.get('Battery Size', ''))
+                if pd.notna(row.get('Battery', row.get('Battery Size', pd.NA)))
+                else ''
+            )
+            if pd.notna(row.get('Battery Capacity', '')):
+                battery_val = row['Battery Capacity']
             
             obj, created = CarSpecification.objects.update_or_create(
                 id=row['id'],
@@ -119,6 +131,10 @@ def import_cars_from_excel(file):
                     'oil_capacity': row['Oil Capacity'],
                     'recommendations': row.get('Recommendations', ''),
                     'oil_brands': row.get('Oil Brands', ''),
+                    'battery': battery_val,
+                    'transmission_type': row.get('Transmission Type', ''),
+                    'transmission_oil_spec': row.get('Transmission Oil Spec', ''),
+                    'transmission_oil_brands': row.get('Transmission Oil Brands', ''),
                 }
             )
             
