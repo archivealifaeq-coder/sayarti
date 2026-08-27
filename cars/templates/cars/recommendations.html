@@ -11,7 +11,7 @@
     {% endif %}
     <style>
         * { font-family: 'Cairo', sans-serif; }
-        body { background: #0b1120; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+        body { background: #0b1120; min-height: 100vh; padding: 20px; margin: 0; }
         
         .bg-glow {
             position: fixed;
@@ -28,6 +28,7 @@
         .main-card {
             max-width: 1000px;
             width: 100%;
+            margin: 0 auto;
             background: rgba(20, 30, 50, 0.75);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
@@ -37,7 +38,6 @@
             box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(245, 158, 11, 0.1) inset;
             position: relative;
             overflow: hidden;
-            transition: transform 0.3s ease;
         }
         .main-card::before {
             content: '';
@@ -64,49 +64,146 @@
             letter-spacing: 0.5px;
             backdrop-filter: blur(4px);
         }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px 20px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 24px 28px;
-            border-radius: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-top: 16px;
-        }
-        .info-item {
+        
+        /* ============================================ */
+        /*  TABS - Professional pill design             */
+        /* ============================================ */
+        .tabs-wrap {
             display: flex;
-            flex-direction: column;
-        }
-        .info-item .label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #94a3b8;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .info-item .value {
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: #f1f5f9;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .info-item .value .highlight {
-            color: #fbbf24;
-        }
-
-        .rec-box {
-            background: rgba(0, 0, 0, 0.4);
-            border-right: 4px solid #fbbf24;
-            border-radius: 20px;
-            padding: 24px 30px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 100px;
+            padding: 6px;
             margin-top: 28px;
             position: relative;
+            gap: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            flex-direction: row;
+        }
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-radius: 100px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: #94a3b8;
+            transition: all 0.25s ease;
+            position: relative;
+            z-index: 1;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            color: #0b1120;
+        }
+        .tab-indicator {
+            position: absolute;
+            top: 6px;
+            bottom: 6px;
+            right: 6px;
+            width: calc(50% - 6px);
+            border-radius: 100px;
+            background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+            box-shadow: 0 6px 24px rgba(245, 158, 11, 0.4);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 0;
+        }
+        .tabs-wrap[data-active="2"] .tab-indicator {
+            transform: translateX(-100%);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeSlide 0.4s ease;
+            margin-top: 24px;
+        }
+        .tab-content.active { display: block; }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============================================ */
+        /*  SPEC SECTIONS                               */
+        /* ============================================ */
+        .spec-group {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .spec-group-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #fbbf24;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .spec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .spec-chip {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+        .spec-chip:hover {
+            background: rgba(245, 158, 11, 0.05);
+            border-color: rgba(245, 158, 11, 0.15);
+            transform: translateY(-2px);
+        }
+        .spec-chip .chip-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .spec-chip .chip-value {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #f1f5f9;
+        }
+        .spec-chip .chip-value.highlight { color: #fbbf24; }
+        .spec-chip .chip-value.muted { color: #64748b; font-weight: 600; font-size: 0.9rem; }
+
+        /* ============================================ */
+        /*  RECOMMENDATIONS                             */
+        /* ============================================ */
+        .rec-box {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(0, 0, 0, 0.3));
+            border-right: 4px solid #fbbf24;
+            border-radius: 24px;
+            padding: 26px 30px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .rec-box::after {
+            content: '🛠️';
+            position: absolute;
+            left: -10px;
+            bottom: -20px;
+            font-size: 6rem;
+            opacity: 0.04;
+            transform: rotate(-15deg);
         }
         .rec-box p {
             color: #e2e8f0;
@@ -114,6 +211,64 @@
             font-size: 1rem;
             white-space: pre-line;
             margin: 0;
+            position: relative;
+        }
+        .rec-oil-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .rec-oil-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 18px;
+            padding: 16px 20px;
+        }
+        .rec-oil-icon {
+            width: 46px;
+            height: 46px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 14px;
+        }
+        .rec-oil-body .rec-oil-title {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            font-weight: 700;
+        }
+        .rec-oil-body .rec-oil-value {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #fbbf24;
+            margin-top: 2px;
+        }
+        .rec-oil-body .rec-oil-brand {
+            color: #34d399;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .oil-brands-tag {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .oil-brands-tag span {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            padding: 3px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
         .action-btn {
@@ -138,41 +293,26 @@
             color: #000;
         }
 
-        .badge-spec {
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: #60a5fa;
-            padding: 2px 14px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-        .badge-engine {
-            background: rgba(251, 191, 36, 0.15);
-            border: 1px solid rgba(251, 191, 36, 0.25);
-            color: #fcd34d;
-            padding: 2px 14px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        .oil-brands-tag {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            color: #34d399;
-            padding: 4px 16px;
-            border-radius: 30px;
+        .trim-pill {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(244, 114, 182, 0.12);
+            border: 1px solid rgba(244, 114, 182, 0.25);
+            color: #f472b6;
+            font-weight: 800;
             font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-block;
-            margin-top: 4px;
+            padding: 4px 16px;
+            border-radius: 100px;
         }
 
         @media (max-width: 640px) {
-            .main-card { padding: 24px; border-radius: 32px; }
-            .info-grid { grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
-            .info-item .value { font-size: 0.95rem; }
+            body { padding: 12px; }
+            .main-card { padding: 22px; border-radius: 32px; }
+            .tab-btn { font-size: 0.9rem; padding: 12px 12px; gap: 6px; }
+            .spec-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .spec-chip { padding: 12px 14px; }
+            .spec-chip .chip-value { font-size: 0.92rem; }
+            .rec-box { padding: 20px; }
         }
     </style>
 </head>
@@ -192,6 +332,9 @@
                     <h1 class="text-4xl md:text-5xl font-black text-white tracking-tight">
                         {{ car.brand_ar }} <span class="text-amber-400">{{ car.model_ar }}</span>
                     </h1>
+                    {% if car.trim %}
+                    <span class="trim-pill">{{ car.trim }}</span>
+                    {% endif %}
                 </div>
                 <div class="flex items-center gap-3 mt-1 flex-wrap">
                     <p class="text-slate-400 text-sm font-semibold">
@@ -213,93 +356,155 @@
             </div>
         </div>
 
-        <div class="info-grid">
-            <div class="info-item">
-                <span class="label">🛞 المحرك / السعة</span>
-                <span class="value">{{ car.engine|default:"غير محدد" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">🛢️ لزوجة الزيت (قياسي)</span>
-                <span class="value highlight">{{ car.oil_visc|default:"-" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">📈 لزوجة الزيت (+100 ألف كم)</span>
-                <span class="value highlight">{{ car.oil_visc_high_km|default:"غير محدد" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">⛽ رقم الأوكتان</span>
-                <span class="value"><span class="highlight text-2xl">{{ car.octane }}</span> <span class="text-sm text-slate-400">RON</span></span>
-            </div>
-            <div class="info-item">
-                <span class="label">🧪 نوع الوقود</span>
-                <span class="value">{{ car.fuel|default:"بنزين" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">⚡ شمعات الاحتراق</span>
-                <span class="value">{{ car.spark|default:"-" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">🛞 حجم الإطار</span>
-                <span class="value">{{ car.tire_size|default:"غير محدد" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">🧴 سعة الزيت</span>
-                <span class="value">{{ car.oil_capacity|default:"-" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">🔋 البطارية</span>
-                <span class="value">{{ car.battery|default:"غير محدد" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">⚙️ ناقل الحركة</span>
-                <span class="value">{{ car.transmission_type|default:"غير محدد" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">🛢️ زيت الناقل</span>
-                <span class="value">{{ car.transmission_oil_spec|default:"غير محدد" }}</span>
-            </div>
-            <div class="info-item md:col-span-2">
-                <span class="label">🏷️ ماركات الزيت الموصى بها</span>
-                <div class="value">
-                    {% if car.oil_brands %}
-                        <span class="oil-brands-tag">{{ car.oil_brands }}</span>
-                    {% else %}
-                        <span class="text-slate-500 text-sm">لم يتم تحديد ماركات محددة</span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="info-item md:col-span-2">
-                <span class="label">🏷️ ماركات زيت الناقل الموصى بها</span>
-                <div class="value">
-                    {% if car.transmission_oil_brands %}
-                        <span class="oil-brands-tag">{{ car.transmission_oil_brands }}</span>
-                    {% else %}
-                        <span class="text-slate-500 text-sm">لم يتم تحديد ماركات محددة</span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="info-item md:col-span-2">
-                <span class="label">📝 ملاحظات المواصفات</span>
-                <span class="value text-sm font-normal text-slate-300">{{ car.spec|default:"لا توجد ملاحظات إضافية" }}</span>
-            </div>
+        <!-- ============================================ -->
+        <!--  TABS                                        -->
+        <!-- ============================================ -->
+        <div class="tabs-wrap" id="tabsWrap" data-active="1">
+            <div class="tab-indicator"></div>
+            <button class="tab-btn active" data-tab="1" type="button">
+                <span>🔧</span> المواصفات
+            </button>
+            <button class="tab-btn" data-tab="2" type="button">
+                <span>🛠️</span> التوصيات
+            </button>
         </div>
 
-        {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_top %}
-        <div class="rec-box">
-            <div class="flex items-center gap-3 mb-3">
-                <span class="text-2xl">📋</span>
-                <h3 class="text-xl font-black text-white tracking-wide">توصيات الصيانة المعتمدة</h3>
-                <span class="flex-1"></span>
-                <span class="text-xs text-amber-400/70 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20 text-center">ابو الشباب هذا معيار الزيوت المتوافقة مع محرك سيارتك</span>
+        <!-- ============================================ -->
+        <!--  TAB 1 - SPECIFICATIONS                     -->
+        <!-- ============================================ -->
+        <div class="tab-content active" id="tab1">
+            {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_top %}
+
+            <div class="spec-group">
+                <div class="spec-group-title">🔥 المحرك والوقود</div>
+                <div class="spec-grid">
+                    <div class="spec-chip">
+                        <span class="chip-label">🛞 المحرك / السعة</span>
+                        <span class="chip-value">{{ car.engine|default:"غير محدد" }}</span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">⛽ رقم الأوكتان</span>
+                        <span class="chip-value highlight">{{ car.octane }} <span class="chip-value muted">RON</span></span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">🧪 نوع الوقود</span>
+                        <span class="chip-value">{{ car.fuel|default:"بنزين" }}</span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">⚡ شمعات الاحتراق</span>
+                        <span class="chip-value">{{ car.spark|default:"-" }}</span>
+                    </div>
+                </div>
             </div>
-            {% if car.recommendations %}
-                <p>{{ car.recommendations }}</p>
-            {% else %}
-                <p class="text-slate-400 text-center py-2">
-                    😕 لا توجد توصيات محددة لهذه السيارة حالياً.<br/>
-                    <span class="text-xs text-slate-600">يمكنك إضافة توصيات من لوحة التحكم (Admin)</span>
-                </p>
+
+            <div class="spec-group">
+                <div class="spec-group-title">⚙️ ناقل الحركة والكهرباء</div>
+                <div class="spec-grid">
+                    <div class="spec-chip">
+                        <span class="chip-label">ناقل الحركة</span>
+                        <span class="chip-value">{{ car.transmission_type|default:"غير محدد" }}</span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">🛢️ زيت الناقل</span>
+                        <span class="chip-value">{{ car.transmission_oil_spec|default:"غير محدد" }}</span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">🔋 البطارية</span>
+                        <span class="chip-value">{{ car.battery|default:"غير محدد" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spec-group">
+                <div class="spec-group-title">🧴 زيوت الصيانة والإطارات</div>
+                <div class="spec-grid">
+                    <div class="spec-chip">
+                        <span class="chip-label">🛢️ لزوجة الزيت (قياسي)</span>
+                        <span class="chip-value highlight">{{ car.oil_visc|default:"-" }}</span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">📈 لزوجة الزيت (+100 ألف كم)</span>
+                        <span class="chip-value highlight">{{ car.oil_visc_high_km|default:"غير محدد" }}</span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">🧴 سعة الزيت</span>
+                        <span class="chip-value">{{ car.oil_capacity|default:"-" }}</span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">🛞 حجم الإطار</span>
+                        <span class="chip-value">{{ car.tire_size|default:"غير محدد" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            {% if car.spec %}
+            <div class="spec-group">
+                <div class="spec-group-title">📝 ملاحظات المواصفات</div>
+                <p class="text-slate-300 text-sm leading-relaxed">{{ car.spec }}</p>
+            </div>
             {% endif %}
+        </div>
+
+        <!-- ============================================ -->
+        <!--  TAB 2 - RECOMMENDATIONS                    -->
+        <!-- ============================================ -->
+        <div class="tab-content" id="tab2">
+            <div class="rec-box">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-2xl">📋</span>
+                    <h3 class="text-xl font-black text-white tracking-wide">توصيات الصيانة المعتمدة</h3>
+                    <span class="flex-1"></span>
+                    <span class="text-xs text-amber-400/70 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20 text-center">الزيوت المتوافقة مع محرك سيارتك</span>
+                </div>
+                {% if car.recommendations %}
+                    <p>{{ car.recommendations }}</p>
+                {% else %}
+                    <p class="text-slate-400 text-center py-2">
+                        😕 لا توجد توصيات محددة لهذه السيارة حالياً.<br/>
+                        <span class="text-xs text-slate-600">يمكنك إضافة توصيات من لوحة التحكم (Admin)</span>
+                    </p>
+                {% endif %}
+            </div>
+
+            <div class="rec-oil-grid">
+                <div class="rec-oil-item">
+                    <div class="rec-oil-icon">🛢️</div>
+                    <div class="rec-oil-body">
+                        <div class="rec-oil-title">زيت المحرك (قياسي)</div>
+                        <div class="rec-oil-value">{{ car.oil_visc|default:"-" }}</div>
+                        {% if car.oil_brands %}
+                        <div class="rec-oil-brand oil-brands-tag">
+                            <span>{{ car.oil_brands }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if car.oil_visc_high_km %}
+                <div class="rec-oil-item">
+                    <div class="rec-oil-icon">📈</div>
+                    <div class="rec-oil-body">
+                        <div class="rec-oil-title">زيت المحرك (+100 ألف كم)</div>
+                        <div class="rec-oil-value">{{ car.oil_visc_high_km }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if car.transmission_oil_spec %}
+                <div class="rec-oil-item">
+                    <div class="rec-oil-icon">⚙️</div>
+                    <div class="rec-oil-body">
+                        <div class="rec-oil-title">زيت ناقل الحركة</div>
+                        <div class="rec-oil-value">{{ car.transmission_oil_spec }}</div>
+                        {% if car.transmission_oil_brands %}
+                        <div class="rec-oil-brand">
+                            <span>{{ car.transmission_oil_brands }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_bottom %}
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-4 mt-8 pt-4 border-t border-slate-700/40">
@@ -316,12 +521,30 @@
             </a>
         </div>
 
-        {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_bottom %}
         <div class="mt-6 text-center text-[10px] text-slate-600/60 border-t border-slate-800/40 pt-4 flex justify-between">
             <span>🚗 سيارتي · قاعدة بيانات الصيانة الذكية</span>
-            <span dir="ltr" class="font-mono">v2.0 · {{ car.year }}</span>
+            <span dir="ltr" class="font-mono">v2.1 · {{ car.year }}</span>
         </div>
     </div>
 
+    <script>
+        (function() {
+            var wrap = document.getElementById('tabsWrap');
+            var btns = wrap.querySelectorAll('.tab-btn');
+            var contents = document.querySelectorAll('.tab-content');
+
+            btns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var tab = btn.getAttribute('data-tab');
+                    wrap.setAttribute('data-active', tab);
+                    btns.forEach(function(b) { b.classList.toggle('active', b === btn); });
+                    contents.forEach(function(c) {
+                        c.classList.toggle('active', c.id === 'tab' + tab);
+                    });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            });
+        })();
+    </script>
 </body>
 </html>
