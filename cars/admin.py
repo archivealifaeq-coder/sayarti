@@ -99,7 +99,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
     def trim_display(self, obj):
         if obj.trim:
             return format_html('<span style="color: #f472b6; font-weight: bold;">{}</span>', obj.trim)
-        return format_html('<span style="color: #64748b;">—</span>')
+        return mark_safe('<span style="color: #64748b;">—</span>')
     trim_display.short_description = 'الفئة (Trim)'
     
     def octane_display(self, obj):
