@@ -1518,7 +1518,7 @@
                     <div class="car-card" data-car-id="{{ car.id }}">
                         <div class="badge-octane">⛽ اوكتان {{ car.octane|escape }}</div>
                         <div class="mb-2">
-                            <h3 class="car-title">{{ car.brand_ar|escape }} {{ car.model_ar|escape }}</h3>
+                            <h3 class="car-title">{{ car.brand_ar|escape }} {{ car.model_ar|escape }}{% if car.trim %} <span class="text-pink-400 text-base">({{ car.trim|escape }})</span>{% endif %}</h3>
                             <p class="car-subtitle">{{ car.brand_en|escape }} {{ car.model_en|escape }} <span class="highlight">| {{ car.year|escape }}</span>{% if car.engine_type %}<span class="highlight">| {{ car.get_engine_type_display|escape }}</span>{% endif %}{% if car.spec_region %}<span class="text-slate-500">| {{ car.get_spec_region_display|escape }}</span>{% endif %}</p>
                         </div>
                         <div class="engine-badge"><span>⚙️ المحرك</span><span class="value">{{ car.engine|escape }}</span></div>

@@ -26,6 +26,7 @@ def validate_excel_file(file):
         'Year', 'Engine', 'Oil Visc', 'Fuel', 'Octane',
         'Spark', 'Oil Capacity'
     ]
+    optional_columns = ['Spec', 'Trim', 'Class', 'Recommendations', 'Oil Brands', 'Oil Visc (>100k)']
     
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
@@ -105,6 +106,7 @@ def import_cars_from_excel(file):
                     'model_ar': row['Model_AR'],
                     'year': row['Year'],
                     'spec': row.get('Spec', ''),
+                    'trim': row.get('Trim', row.get('Class', '')),
                     'engine_type': engine_type_val,
                     'spec_region': spec_region_val,
                     'engine': row['Engine'],

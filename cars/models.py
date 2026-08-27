@@ -17,6 +17,14 @@ class CarSpecification(models.Model):
     )
     spec = models.CharField(max_length=100, blank=True, null=True)
 
+    trim = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="الفئة (Trim)",
+        help_text="مثال: GLX، EX، سمارت، فل كامل"
+    )
+
     ENGINE_TYPE_CHOICES = [
         ('regular', 'عادي'),
         ('hybrid', 'هايبرد'),

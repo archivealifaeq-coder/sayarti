@@ -24,6 +24,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         'brand_ar_display', 
         'model_ar_display', 
         'year_display', 
+        'trim_display', 
         'engine_type_badge', 
         'spec_region_badge', 
         'octane_display', 
@@ -45,6 +46,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         'brand_en', 
         'model_ar', 
         'model_en', 
+        'trim',
         'id', 
         'tire_size'
     )
@@ -57,7 +59,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('📋 المعلومات الأساسية', {
-            'fields': ('id', 'brand_ar', 'brand_en', 'model_ar', 'model_en', 'year', 'spec')
+            'fields': ('id', 'brand_ar', 'brand_en', 'model_ar', 'model_en', 'year', 'trim', 'spec')
         }),
         ('⚙️ المحرك والمواصفات', {
             'fields': ('engine', 'engine_type', 'spec_region')
@@ -88,6 +90,12 @@ class CarSpecificationAdmin(admin.ModelAdmin):
     def year_display(self, obj):
         return format_html('<span style="background: #1e293b; padding: 2px 10px; border-radius: 12px; color: #60a5fa;">{}</span>', obj.year)
     year_display.short_description = 'السنة'
+
+    def trim_display(self, obj):
+        if obj.trim:
+            return format_html('<span style="color: #f472b6; font-weight: bold;">{}</span>', obj.trim)
+        return format_html('<span style="color: #64748b;">—</span>')
+    trim_display.short_description = 'الفئة (Trim)'
     
     def octane_display(self, obj):
         return format_html('<span style="background: rgba(245, 158, 11, 0.15); padding: 2px 12px; border-radius: 12px; color: #fbbf24; font-weight: bold;">{}</span>', obj.octane)
