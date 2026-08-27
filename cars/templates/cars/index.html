@@ -679,29 +679,36 @@
             font-size: 0.85rem;
             text-align: center;
         }
+        .autocomplete-dropdown .ac-header {
+            padding: 8px 16px;
+            color: #fbbf24;
+            font-size: 0.78rem;
+            font-weight: 800;
+            background: rgba(245, 158, 11, 0.08);
+            border-bottom: 1px solid rgba(245, 158, 11, 0.12);
+            position: sticky;
+            top: 0;
+        }
 
         @media (max-width: 768px) {
             .autocomplete-dropdown {
-                position: fixed;
-                top: auto;
-                bottom: 0;
+                position: absolute;
+                top: calc(100% + 6px);
                 left: 0;
                 right: 0;
-                max-height: 50vh;
-                border-radius: 16px 16px 0 0;
-                border-bottom: none;
+                max-height: 38vh;
+                border-radius: 14px;
                 border: 1px solid rgba(245, 158, 11, 0.3);
-                border-bottom: none;
-                box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7);
-                animation: slideUp 0.25s ease;
+                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+                animation: dropDown 0.18s ease;
             }
             .autocomplete-dropdown .ac-item {
-                padding: 14px 20px;
+                padding: 13px 16px;
                 font-size: 1rem;
             }
-            @keyframes slideUp {
-                from { transform: translateY(100%); }
-                to { transform: translateY(0); }
+            @keyframes dropDown {
+                from { opacity: 0; transform: translateY(-8px); }
+                to { opacity: 1; transform: translateY(0); }
             }
         }
 
@@ -1803,38 +1810,61 @@
             var allBrands = allBrandsData.map(function(b) { return b[0]; });
             allBrandsData.forEach(function(b) { brandEnMap[b[0]] = b[1]; });
 
-            function showDropdown(input, dropdown, items) {
+            // ====== Fuzzy "هل تقصد" helper ======
+            function levenshtein(a, b) {
+                var m = a.length, n = b.length;
+                if (Math.abs(m - n) > 3) return 99;
+                var dp = [];
+                for (var i = 0; i <= m; i++) dp[i] = [i];
+                for (var j = 0; j <= n; j++) dp[0][j] = j;
+                for (i = 1; i <= m; i++) {
+                    for (j = 1; j <= n; j++) {
+                        var cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+                    }
+                }
+                return dp[m][n];
+            }
+
+            function itemText(item) {
+                if (typeof item === 'string') return (item + ' ' + (brandEnMap[item] || '')).toLowerCase();
+                return ((item.ar || '') + ' ' + (item.en || '')).toLowerCase();
+            }
+
+            function getValues(item) {
+                var ar, en;
+                if (typeof item === 'string') { ar = item; en = brandEnMap[item] || ''; }
+                else { ar = item.ar; en = item.en || ''; }
+                return { ar: ar, en: en };
+            }
+
+            function suggestDropdown(input, dropdown, items, header) {
                 dropdown.innerHTML = '';
                 acIndex = -1;
                 if (items.length === 0) {
-                    dropdown.innerHTML = '<div class="ac-empty">لا توجد نتائج</div>';
+                    dropdown.innerHTML = '<div class="ac-empty">لا توجد نتائج مطابقة</div>';
                     dropdown.style.display = 'block';
                     return;
                 }
+                if (header) {
+                    var head = document.createElement('div');
+                    head.className = 'ac-header';
+                    head.textContent = header;
+                    dropdown.appendChild(head);
+                }
                 items.forEach(function(item) {
+                    var v = getValues(item);
                     var div = document.createElement('div');
                     div.className = 'ac-item';
-                    if (typeof item === 'string') {
-                        div.setAttribute('data-ar', item);
-                        var arSpan = document.createElement('span');
-                        arSpan.className = 'ac-ar';
-                        arSpan.textContent = item;
-                        var enSpan = document.createElement('span');
-                        enSpan.className = 'ac-en';
-                        enSpan.textContent = brandEnMap[item] || '';
-                        div.appendChild(arSpan);
-                        div.appendChild(enSpan);
-                    } else {
-                        div.setAttribute('data-ar', item.ar);
-                        var arSpan = document.createElement('span');
-                        arSpan.className = 'ac-ar';
-                        arSpan.textContent = item.ar;
-                        var enSpan = document.createElement('span');
-                        enSpan.className = 'ac-en';
-                        enSpan.textContent = item.en || '';
-                        div.appendChild(arSpan);
-                        div.appendChild(enSpan);
-                    }
+                    div.setAttribute('data-ar', v.ar);
+                    var arSpan = document.createElement('span');
+                    arSpan.className = 'ac-ar';
+                    arSpan.textContent = v.ar;
+                    var enSpan = document.createElement('span');
+                    enSpan.className = 'ac-en';
+                    enSpan.textContent = v.en;
+                    div.appendChild(arSpan);
+                    div.appendChild(enSpan);
                     div.addEventListener('mousedown', function(e) {
                         e.preventDefault();
                         input.value = div.getAttribute('data-ar');
@@ -1846,18 +1876,53 @@
                 dropdown.style.display = 'block';
             }
 
-            function filterItems(query, items, getVal) {
+            function filterItems(query, items) {
                 if (!query || query.length < 1) return [];
                 var q = query.toLowerCase();
                 return items.filter(function(item) {
-                    var text;
-                    if (typeof item === 'string') {
-                        text = item.toLowerCase() + ' ' + (brandEnMap[item] || '').toLowerCase();
-                    } else {
-                        text = (item.ar || '').toLowerCase() + ' ' + (item.en || '').toLowerCase();
-                    }
-                    return text.indexOf(q) !== -1;
+                    return itemText(item).indexOf(q) !== -1;
                 }).slice(0, 15);
+            }
+
+            // Typo detection: 1-2 chars difference -> "هل تقصد؟"
+            function nearMatches(query, items) {
+                var q = query.toLowerCase();
+                var scored = [];
+                items.forEach(function(item) {
+                    var text = itemText(item);
+                    var best = 99;
+                    text.split(' ').forEach(function(part) {
+                        if (!part) return;
+                        var d = levenshtein(q, part);
+                        if (d < best) best = d;
+                    });
+                    if (best <= 2 && best > 0) {
+                        scored.push({ item: item, dist: best });
+                    }
+                });
+                scored.sort(function(a, b) { return a.dist - b.dist; });
+                var seen = {}, out = [];
+                scored.slice(0, 3).forEach(function(s) {
+                    var key = getValues(s.item).ar;
+                    if (!seen[key]) { seen[key] = true; out.push(s.item); }
+                });
+                return out;
+            }
+
+            function showQuietDropdown(input, dropdown, query, items) {
+                if (!query || query.length < 2) { dropdown.style.display = 'none'; return; }
+                var direct = filterItems(query, items);
+                if (direct.length > 0) {
+                    suggestDropdown(input, dropdown, direct, null);
+                } else {
+                    var near = nearMatches(query, items);
+                    if (near.length > 0) {
+                        suggestDropdown(input, dropdown, near, 'هل تقصد؟');
+                    } else {
+                        dropdown.innerHTML = '<div class="ac-empty">لا توجد نتائج مطابقة</div>';
+                        dropdown.style.display = 'block';
+                    }
+                }
             }
 
             function closeAllDropdowns() {
@@ -1866,109 +1931,36 @@
                 engineDropdown.style.display = 'none';
             }
 
+            // BRAND: quiet suggestions after 2 chars, with "did you mean?"
             brandInput.addEventListener('input', function() {
-                var val = this.value.trim();
-                if (val.length < 2) { brandDropdown.style.display = 'none'; return; }
-                var filtered = filterItems(val, allBrands);
-                showDropdown(brandInput, brandDropdown, filtered);
+                showQuietDropdown(brandInput, brandDropdown, this.value.trim(), allBrands);
             });
 
-            brandInput.addEventListener('focus', function() {
-                var val = this.value.trim();
-                if (val.length >= 2) {
-                    showDropdown(brandInput, brandDropdown, filterItems(val, allBrands));
-                }
-            });
-
-            brandInput.addEventListener('input', function() {
-                var val = this.value.trim();
-                if (val.length >= 2) {
-                    fetchModelSuggestions(val);
-                }
-            });
-
-            function fetchModelSuggestions(brand) {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(function() {
-                    var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand);
-                    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                        if (data.models && data.models.length > 0) {
-                            showDropdown(modelInput, modelDropdown, filterItems(modelInput.value.trim(), data.models));
-                        }
-                    }).catch(function() {});
-                }, 200);
-            }
-
+            // MODEL: fetch + quiet suggestions after 2 chars
             modelInput.addEventListener('input', function() {
                 var val = this.value.trim();
-                if (val.length < 2) { modelDropdown.style.display = 'none'; return; }
                 var brand = brandInput.value.trim();
-                if (brand.length >= 2) {
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(function() {
-                        var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(val);
-                        fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                            if (data.models && data.models.length > 0) {
-                                showDropdown(modelInput, modelDropdown, filterItems(val, data.models));
-                            }
-                        }).catch(function() {});
-                    }, 200);
-                }
+                if (val.length < 2 || brand.length < 2) { modelDropdown.style.display = 'none'; return; }
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(function() {
+                    var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(val);
+                    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+                        if (data.models && data.models.length > 0) {
+                            showQuietDropdown(modelInput, modelDropdown, val, data.models);
+                        } else {
+                            modelDropdown.style.display = 'none';
+                        }
+                    }).catch(function() { modelDropdown.style.display = 'none'; });
+                }, 250);
             });
 
-            modelInput.addEventListener('focus', function() {
-                var val = this.value.trim();
-                if (val.length >= 2) {
-                    var brand = brandInput.value.trim();
-                    if (brand.length >= 2) {
-                        clearTimeout(debounceTimer);
-                        debounceTimer = setTimeout(function() {
-                            var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(val);
-                            fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                                if (data.models && data.models.length > 0) {
-                                    showDropdown(modelInput, modelDropdown, filterItems(val, data.models));
-                                }
-                            }).catch(function() {});
-                        }, 200);
-                    }
-                }
-            });
-
-            function fetchEngineSuggestions() {
+            // ENGINE: enable state without auto-opening
+            function updateEngineState() {
                 var brand = brandInput.value.trim();
                 var model = modelInput.value.trim();
-                var year = yearInput.value.trim();
-                var engineType = engineTypeSelect.value;
-                var specRegion = specRegionSelect.value;
-                if (!brand || brand.length < 2 || !model || model.length < 2) {
-                    engineInput.disabled = true;
-                    engineInput.placeholder = 'تظهر بعد اختيار الماركة والموديل...';
-                    engineInput.value = '';
-                    engineDropdown.style.display = 'none';
-                    return;
-                }
-                var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model);
-                if (year) url += '&year=' + encodeURIComponent(year);
-                if (engineType) url += '&engine_type=' + encodeURIComponent(engineType);
-                if (specRegion) url += '&spec_region=' + encodeURIComponent(specRegion);
-                fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                    if (data.engines && data.engines.length > 0) {
-                        engineInput.disabled = false;
-                        engineInput.placeholder = 'اختر سعة المحرك...';
-                        showDropdown(engineInput, engineDropdown, filterItems(engineInput.value.trim(), data.engines));
-                    } else {
-                        engineInput.disabled = false;
-                        engineInput.placeholder = 'اكتب يدوياً...';
-                    }
-                }).catch(function() {});
-            }
-
-            function enableEngineIfNeeded() {
-                var brand = brandInput.value.trim();
-                var model = modelInput.value.trim();
-                if (brand && brand.length >= 2 && model && model.length >= 2) {
+                if (brand.length >= 2 && model.length >= 2) {
                     engineInput.disabled = false;
-                    engineInput.placeholder = 'اضغط لرؤية المحركات المتاحة...';
+                    engineInput.placeholder = 'اضغط واكتب سعة المحرك...';
                 } else {
                     engineInput.disabled = true;
                     engineInput.placeholder = 'تظهر بعد اختيار الماركة والموديل...';
@@ -1977,22 +1969,21 @@
                 }
             }
 
-            brandInput.addEventListener('input', function() {
-                enableEngineIfNeeded();
-            });
-            modelInput.addEventListener('input', function() {
-                enableEngineIfNeeded();
-            });
+            brandInput.addEventListener('input', updateEngineState);
+            modelInput.addEventListener('input', updateEngineState);
+            yearInput.addEventListener('change', updateEngineState);
+            engineTypeSelect.addEventListener('change', updateEngineState);
+            specRegionSelect.addEventListener('change', updateEngineState);
 
-            yearInput.addEventListener('change', fetchEngineSuggestions);
-            engineTypeSelect.addEventListener('change', fetchEngineSuggestions);
-            specRegionSelect.addEventListener('change', fetchEngineSuggestions);
-
+            // ENGINE: quiet suggestions only while typing
             engineInput.addEventListener('input', function() {
                 var val = this.value.trim();
-                if (val.length < 1) { engineDropdown.style.display = 'none'; return; }
                 var brand = brandInput.value.trim();
                 var model = modelInput.value.trim();
+                if (val.length < 1 || brand.length < 2 || model.length < 2) {
+                    engineDropdown.style.display = 'none';
+                    return;
+                }
                 var year = yearInput.value.trim();
                 var engineType = engineTypeSelect.value;
                 var specRegion = specRegionSelect.value;
@@ -2005,16 +1996,10 @@
                     url += '&engine=' + encodeURIComponent(val);
                     fetch(url).then(function(r) { return r.json(); }).then(function(data) {
                         if (data.engines && data.engines.length > 0) {
-                            showDropdown(engineInput, engineDropdown, filterItems(val, data.engines));
+                            suggestDropdown(engineInput, engineDropdown, filterItems(val, data.engines), null);
                         }
                     }).catch(function() {});
-                }, 200);
-            });
-
-            engineInput.addEventListener('focus', function() {
-                if (!this.disabled) {
-                    fetchEngineSuggestions();
-                }
+                }, 250);
             });
 
             document.addEventListener('click', function(e) {
@@ -2051,7 +2036,7 @@
                         items[acIndex].scrollIntoView({ block: 'nearest' });
                     } else if (e.key === 'Enter' && acIndex >= 0) {
                         e.preventDefault();
-                        input.value = items[acIndex].textContent;
+                        input.value = items[acIndex].getAttribute('data-ar') || items[acIndex].textContent;
                         dropdown.style.display = 'none';
                         input.dispatchEvent(new Event('input'));
                     } else if (e.key === 'Escape') {
