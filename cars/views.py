@@ -92,6 +92,14 @@ def index_view(request):
     feature_cards = FeatureCard.objects.filter(is_active=True).order_by('order', 'created_at')
 
     brand_suggestions = list(CarSpecification.objects.values_list('brand_ar', flat=True).distinct().order_by('brand_ar')[:100])
+    brand_pairs = list(CarSpecification.objects.values('brand_ar', 'brand_en').distinct()[:100])
+    en_by_ar = {}
+    for p in brand_pairs:
+        en_by_ar.setdefault(p['brand_ar'], p['brand_en'])
+    brand_suggestions_en = [
+        {'ar': ar, 'en': en_by_ar.get(ar, '')}
+        for ar in brand_suggestions
+    ]
     
     engine_type_choices = CarSpecification.ENGINE_TYPE_CHOICES
     spec_region_choices = CarSpecification.SPEC_REGION_CHOICES
@@ -102,6 +110,7 @@ def index_view(request):
         'banners': banners,
         'feature_cards': feature_cards,
         'brand_suggestions': brand_suggestions,
+        'brand_suggestions_en': brand_suggestions_en,
         'engine_type_choices': engine_type_choices,
         'spec_region_choices': spec_region_display,
         'brand': brand,
@@ -125,8 +134,9 @@ def get_suggestions(request):
     if brand and not model:
         models_list = list(CarSpecification.objects.filter(
             Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
-        ).values_list('model_ar', flat=True).distinct().order_by('model_ar')[:50])
-        return JsonResponse({'models': models_list, 'engines': []})
+        ).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:50])
+        models = [{'ar': m[0], 'en': m[1]} for m in models_list]
+        return JsonResponse({'models': models, 'engines': []})
 
     if brand and model:
         qs = CarSpecification.objects.filter(
@@ -144,13 +154,14 @@ def get_suggestions(request):
             qs = qs.filter(spec_region=spec_region)
         if engine:
             qs = qs.filter(Q(engine__icontains=engine))
-        engines = list(qs.values_list('engine', flat=True).distinct().order_by('engine')[:50])
-        models_list = []
+        engines_raw = list(qs.values_list('engine', flat=True).distinct().order_by('engine')[:50])
+        models = []
         if not engine:
             models_list = list(CarSpecification.objects.filter(
                 Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
-            ).values_list('model_ar', flat=True).distinct().order_by('model_ar')[:50])
-        return JsonResponse({'models': models_list, 'engines': engines})
+            ).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:50])
+            models = [{'ar': m[0], 'en': m[1]} for m in models_list]
+        return JsonResponse({'models': models, 'engines': engines_raw})
 
     return JsonResponse({'models': [], 'engines': []})
 
