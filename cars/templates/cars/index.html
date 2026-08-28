@@ -1790,7 +1790,7 @@
                             <input type="text" id="qsFreeInput" class="qs-input" placeholder="مثال: كورله، سوناتا 2008، كامري هايبرد صيني" autocomplete="off" maxlength="120" enterkeyhint="search">
                             <span class="qs-input-icon" aria-hidden="true">🚗</span>
                         </div>
-                        <div class="qs-hint" id="qsFreeHint">💡 اكتب اسم السيارة كما تتذكره — سنعثر عليها حتى لو اختلفت كتابتها</div>
+                        <div class="qs-hint" id="qsFreeHint">💡 اكتب اسم السيارة كما تتذكره ثم اضغط زر البحث ⏎ — سنصحح الاسم ونستكمل معك النسخة والسنة</div>
                     </div>
                 </div>
 
@@ -2623,15 +2623,15 @@
                 if (detailPane) detailPane.classList.toggle('active', !isQuick);
                 try { localStorage.setItem('sayarti_tab', tab); } catch (e) {}
                 if (!isQuick) qsReset();
-                else {
-                    var qi = document.getElementById('qsFreeInput');
-                    if (qi) qi.focus();
-                }
             }
 
             var tabQuickBtn = document.getElementById('tabBtnQuick');
             var tabDetailBtn = document.getElementById('tabBtnDetail');
-            if (tabQuickBtn) tabQuickBtn.addEventListener('click', function() { switchTab('quick'); });
+            if (tabQuickBtn) tabQuickBtn.addEventListener('click', function() {
+                switchTab('quick');
+                var qi = document.getElementById('qsFreeInput');
+                if (qi) qi.focus();
+            });
             if (tabDetailBtn) tabDetailBtn.addEventListener('click', function() { switchTab('detail'); });
 
             (function() {
@@ -2656,7 +2656,6 @@
             var qsCombos = document.getElementById('qsCombos');
             var qsYears = document.getElementById('qsYears');
             var qsNoCands = document.getElementById('qsNoCands');
-            var qsTimer3 = null;
             var qsSeq = 0;
             var qsLastCand = '';
             var qsStage = 0;           // 0 = سؤال رئيسي، 1 = نسخ، 2 = سنوات
@@ -2972,7 +2971,7 @@
                 if (form) form.requestSubmit();
             }
 
-            function qsLive(forced) {
+            function qsLive() {
                 var v = qsFreeInput.value.trim();
                 qsTypedYear = null;
                 qsPlannedFilter = null;
@@ -2980,7 +2979,6 @@
                     qsStage = 0;
                     qsLastCand = '';
                     qsCandsList = [];
-                    clearTimeout(qsOpenTimer);
                     if (qsSecCands) qsSecCands.style.display = 'block';
                     if (qsSecCombos) qsSecCombos.style.display = 'none';
                     if (qsSecYears) qsSecYears.style.display = 'none';
@@ -2999,26 +2997,18 @@
                         var key = JSON.stringify(cands.map(function(c) {
                             return (c.label || c.model_ar || c.brand_ar) + ':' + c.count;
                         }));
-                        if (key === qsLastCand) return;
-                        qsLastCand = key;
-                        qsRenderCandidates(data);
-                        clearTimeout(qsOpenTimer);
-                        if (v.length >= 3 && qsStage === 0) {
-                            qsOpenTimer = setTimeout(function() { qsShowPanel(); }, forced ? 0 : 650);
+                        if (key !== qsLastCand) {
+                            qsLastCand = key;
+                            qsRenderCandidates(data);
                         }
+                        qsShowPanel();
                     })
-                    .catch(function() { if (seq === qsSeq) qsHidePanel(); });
+                    .catch(function() { if (seq === qsSeq) qsShowPanel(); });
             }
 
             var qsPlannedFilter = null;
-            var qsOpenTimer = null;
 
             if (qsFreeInput) {
-                qsFreeInput.addEventListener('input', function() {
-                    clearTimeout(qsTimer3);
-                    clearTimeout(qsOpenTimer);
-                    qsTimer3 = setTimeout(qsLive, 350);
-                });
                 qsFreeInput.addEventListener('focus', function() {
                     if (!document.getElementById('qsOverlay').hidden) return;
                     qsReset();
@@ -3026,7 +3016,7 @@
                 qsFreeInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        qsLive(true);
+                        qsLive();
                     }
                 });
             }
