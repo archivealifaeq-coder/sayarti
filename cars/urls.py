@@ -7,6 +7,7 @@ urlpatterns = [
     path('mix/', views.mix_calculator_view, name='mix_calculator'),
     path('get-suggestions/', views.get_suggestions, name='get_suggestions'),
     path('quick-search/', views.quick_search_view, name='quick_search'),
+    path('quick-variants/', views.quick_variants, name='quick_variants'),
     path('car/<int:car_id>/recommendations/', views.recommendations_view, name='recommendations'),
     path('privacy/', views.privacy_view, name='privacy'),
     path('about/', views.about_view, name='about'),

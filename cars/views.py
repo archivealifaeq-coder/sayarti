@@ -3,7 +3,7 @@ from pathlib import Path
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import JsonResponse, HttpResponse
 from django import forms
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
@@ -56,7 +56,11 @@ RELAX_LABELS = {
     'engine_type': 'نوع المحرك',
     'year': 'سنة الصنع',
     'engine': 'سعة المحرك',
+    'fuel': 'نوع الوقود',
 }
+
+FUEL_PRIORITY = ['بنزين', 'ديزل', 'هايبرد', 'كهرباء', 'غاز']
+REGION_PRIORITY = ['american', 'gcc', 'european', 'japanese', 'chinese', 'other']
 
 
 def _filters(request):
@@ -72,6 +76,7 @@ def _filters(request):
     engine = request.GET.get('engine', '').strip()
     engine_type = request.GET.get('engine_type', '').strip()
     spec_region = request.GET.get('spec_region', '').strip()
+    fuel = request.GET.get('fuel', '').strip()
 
     required = Q()
     if brand:
@@ -91,6 +96,9 @@ def _filters(request):
         optional.append(('engine_type', Q(engine_type__icontains=engine_type)))
     if spec_region:
         optional.append(('spec_region', Q(spec_region__icontains=spec_region)))
+    if fuel:
+        f = fold_ar(fuel)
+        optional.append(('fuel', Q(fuel__icontains=f)))
     if engine:
         e = fold_engine(engine)
         optional.append(('engine', Q(engine_norm__icontains=e)))
@@ -114,6 +122,7 @@ def index_view(request):
     engine = request.GET.get('engine', '').strip()
     engine_type = request.GET.get('engine_type', '').strip()
     spec_region = request.GET.get('spec_region', '').strip()
+    fuel = request.GET.get('fuel', '').strip()
 
     required, optional = _filters(request)
 
@@ -178,6 +187,7 @@ for ar, _ in brand_counts.most_common(12)
         'engine': engine,
         'engine_type': engine_type,
         'spec_region': spec_region,
+        'fuel': fuel,
         'relaxed': [RELAX_LABELS.get(k, k) for k in relaxed],
     }
     return render(request, 'cars/index.html', context)
@@ -255,6 +265,91 @@ def _candidate_label(item):
     if item.get('year'):
         parts.append(str(item['year']))
     return ' '.join(parts) if parts else ''
+
+
+def _urlq(value):
+    from urllib.parse import quote_plus
+    return quote_plus(value or '', encoding='utf-8')
+
+
+def quick_variants(request):
+    """بطاقات النسخ المجمّعة للبحث السريع حسب (الماركة + الموديل + السنة).
+
+    كل بطاقة تجمع ثلاث عناصر من بياناتك الفعلية: نوع السيارة + نوع الوقود +
+    مواصفة المنطقة، مع عدّاد، وكل صف في الجدول يظهر كبطاقة مستقلة (وإن تعددت
+    نسخ المحرك ضمن الوقود والمواصفة نفسها تظهر كل نسخة كبطاقة).
+    """
+    brand = request.GET.get('brand', '').strip()
+    model = request.GET.get('model', '').strip()
+    if not brand:
+        return JsonResponse({'years': [], 'variants': {}})
+
+    qs = CarSpecification.objects.filter(
+        Q(brand_norm__icontains=fold_ar(brand)) | Q(brand_en__icontains=brand)
+    )
+    if model:
+        qs = qs.filter(Q(model_norm__icontains=fold_ar(model)) | Q(model_en__icontains=model))
+
+    region_label = dict(CarSpecification.SPEC_REGION_CHOICES)
+    rows = list(qs.values('model_ar', 'year', 'fuel', 'spec_region', 'engine', 'engine_type'))
+
+    model_label = ''
+    years = set()
+    bands_by_year = {}
+    for r in rows:
+        if not model_label and r['model_ar']:
+            model_label = r['model_ar']
+        year = r['year']
+        if not year:
+            continue
+        years.add(year)
+        bands = bands_by_year.setdefault(year, {})
+        key = (r['fuel'] or '', r['spec_region'] or '')
+        subs = bands.setdefault(key, {})
+        ek = (r['engine'] or '', r['engine_type'] or '')
+        subs[ek] = subs.get(ek, 0) + 1
+
+    def fuel_rank(f):
+        return FUEL_PRIORITY.index(f) if f in FUEL_PRIORITY else len(FUEL_PRIORITY) + 1
+
+    def region_rank(r):
+        return REGION_PRIORITY.index(r) if r in REGION_PRIORITY else len(REGION_PRIORITY) + 1
+
+    variants = {}
+    for year, bands in bands_by_year.items():
+        cards = []
+        keys = sorted(bands.items(), key=lambda kv: (fuel_rank(kv[0][0]), region_rank(kv[0][1])))
+        for (fuel, region), subs in keys:
+            sub_list = sorted(subs.items(), key=lambda s: s[1], reverse=True)
+            for (engine, et), cnt in sub_list:
+                parts = [model_label, region_label.get(region, region)]
+                if fuel and fold_ar(fuel) not in fold_ar(model_label):
+                    parts.insert(1, fuel)
+                if len(sub_list) > 1 and engine:
+                    parts.append(engine)
+                label = ' '.join(p for p in parts if p)
+                url = '/?brand=%s&model=%s&year=%d&fuel=%s&spec_region=%s&engine=%s&engine_type=%s' % (
+                    _urlq(brand), _urlq(model), year, _urlq(fuel), _urlq(region), _urlq(engine), _urlq(et))
+                cards.append({
+                    'year': year,
+                    'fuel': fuel,
+                    'spec_region': region,
+                    'spec_region_label': region_label.get(region, region),
+                    'engine': engine,
+                    'engine_type': et,
+                    'count': cnt,
+                    'label': label,
+                    'url': url,
+                })
+        variants[str(year)] = cards
+
+    return JsonResponse({
+        'brand': brand,
+        'model': model,
+        'model_label': model_label,
+        'years': sorted(years, reverse=True),
+        'variants': variants,
+    })
 
 
 def is_staff_user(user):
