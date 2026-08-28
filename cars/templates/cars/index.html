@@ -1250,47 +1250,41 @@
         /* ============================================ */
         /*  QUICK SEARCH (البحث السريع)                */
         /* ============================================ */
-        .quick-search-btn {
-            background: rgba(245, 158, 11, 0.12);
-            border: 1px solid rgba(245, 158, 11, 0.35);
-            color: #fbbf24;
-            border-radius: 9999px;
-            padding: 8px 14px;
-            font-size: 0.9rem;
+        /* ============================================ */
+        /*  SEARCH TABS (سريع / مفصّل)                  */
+        /* ============================================ */
+        .search-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .search-tab {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(71, 85, 105, 0.6);
+            color: #94a3b8;
+            font-size: 0.95rem;
             font-weight: 700;
+            padding: 10px 26px;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.25s ease;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            gap: 8px;
         }
-        .quick-search-btn:hover { background: rgba(245, 158, 11, 0.25); transform: translateY(-1px); }
-        .quick-search-panel {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 10001;
-            background: rgba(10, 15, 26, 0.98);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-            padding: 20px 24px 24px;
-            display: none;
+        .search-tab:hover { color: #e2e8f0; border-color: rgba(245, 158, 11, 0.45); }
+        .search-tab.active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0f172a;
+            border-color: transparent;
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
         }
-        .quick-search-panel.open { display: block; animation: qsIn 0.25s ease; }
-        @keyframes qsIn { from { transform: translateY(-14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .qs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-        .qs-title { color: #fbbf24; font-size: 1.05rem; font-weight: 800; }
-        .qs-close {
-            background: rgba(51, 65, 85, 0.6);
-            border: none; color: #cbd5e1;
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: all 0.2s ease;
-        }
-        .qs-close:hover { background: rgba(51, 65, 85, 1); color: #fff; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .quick-tab-inner { max-width: 720px; margin: 0 auto; padding: 4px 0 6px; }
         .qs-input-wrapper { position: relative; max-width: 720px; margin: 0 auto; }
         .qs-input {
             width: 100%;
@@ -1299,13 +1293,13 @@
             border-radius: 16px;
             color: #e2e8f0;
             font-size: 1.05rem;
-            padding: 14px 48px 14px 18px;
+            padding: 14px 46px 14px 18px;
             outline: none;
             transition: border 0.25s ease;
         }
         .qs-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
-        .qs-input-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #fbbf24; font-size: 1.2rem; pointer-events: none; }
-        .qs-hint { text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 10px; }
+        .qs-input-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #fbbf24; font-size: 1.2rem; pointer-events: none; }
+        .qs-hint { text-align: center; color: #94a3b8; font-size: 0.82rem; margin-top: 10px; }
         .qs-results { max-width: 720px; margin: 14px auto 0; display: none; }
         .qs-results.show { display: block; }
         .qs-result {
@@ -1384,27 +1378,10 @@
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
             <button type="button" id="installBtn" class="pwa-install-btn md:flex hidden" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
-            <button type="button" id="quickSearchBtn" class="quick-search-btn" aria-label="بحث سريع">🔎 <span class="hidden md:inline">بحث سريع</span></button>
             <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
         </div>
     </nav>
 
-    <!-- ============================================ -->
-    <!--  QUICK SEARCH PANEL (شريط منبثق لا يزعج)      -->
-    <!-- ============================================ -->
-    <div class="quick-search-panel" id="quickSearchPanel" role="dialog" aria-modal="false" aria-label="البحث السريع">
-        <div class="qs-head">
-            <span class="qs-title">🔎 البحث السريع</span>
-            <button type="button" class="qs-close" id="quickSearchClose" aria-label="إغلاق">✕</button>
-        </div>
-        <div class="qs-input-wrapper">
-            <input type="text" id="quickSearchInput" class="qs-input" placeholder="اكتب ما تريد... مثال: سوناتا 2008" autocomplete="off" maxlength="120">
-            <span class="qs-input-icon" aria-hidden="true">🔍</span>
-        </div>
-        <p class="qs-hint">💡 جرّب: «هيونداي سوناتا 2008»، «سونت 2012»، «سونيته 2008»</p>
-        <div class="qs-results" id="quickSearchResults"></div>
-    </div>
-    
     <!-- ============================================ -->
     <!--  TICKER                                     -->
     <!-- ============================================ -->
@@ -1615,7 +1592,24 @@
         <div class="max-w-7xl mx-auto px-4 section-spacing" id="cars-section">
             <div class="glass-card" id="search-section">
                 <h3 class="text-xl md:text-2xl font-extrabold text-white mb-4 md:mb-6 text-center">🔍 ابحث عن سيارتك</h3>
-                
+
+                <div class="search-tabs" role="tablist" aria-label="نوع البحث">
+                    <button type="button" class="search-tab active" id="tabBtnQuick" data-tab="quick" role="tab" aria-selected="true" aria-controls="tab-quick">🔍 بحث سريع</button>
+                    <button type="button" class="search-tab" id="tabBtnDetail" data-tab="detail" role="tab" aria-selected="false" aria-controls="tab-detail">🧭 بحث مفصّل</button>
+                </div>
+
+                <div class="tab-panel active" id="tab-quick" role="tabpanel" aria-labelledby="tabBtnQuick">
+                    <div class="quick-tab-inner">
+                        <div class="qs-input-wrapper">
+                            <input type="text" id="quickSearchInput" class="qs-input" placeholder="اكتب اسم سيارتك بحرية... مثال: سوناتا 2008" autocomplete="off" maxlength="120">
+                            <span class="qs-input-icon" aria-hidden="true">🔍</span>
+                        </div>
+                        <p class="qs-hint">💡 جرّب: «سونيته 2008»، «سونت 2012»، «كورولا» — سيفهمك حتى مع الأخطاء الإملائية</p>
+                        <div class="qs-results" id="quickSearchResults"></div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tab-detail" role="tabpanel" aria-labelledby="tabBtnDetail">
                 <form hx-get="{% url 'index' %}"
                       hx-target="#cars-container"
                       hx-select="#cars-container"
@@ -1688,6 +1682,7 @@
                         <a href="{% url 'index' %}" class="btn-secondary px-6 md:px-8 py-3 md:py-4 text-base md:text-lg">إعادة تعيين</a>
                     </div>
                 </form>
+                </div>
             </div>
         </div>
         
@@ -2425,39 +2420,73 @@
             });
 
             /* ============================================ //
-               QUICK SEARCH - البحث السريع الذكي            //
+               SEARCH TABS + QUICK SEARCH: التبويبات داخل بطاقة البحث //
             // ============================================ */
-            var qsPanel = document.getElementById('quickSearchPanel');
-            var qsBtn = document.getElementById('quickSearchBtn');
-            var qsClose = document.getElementById('quickSearchClose');
+            function switchTab(tab) {
+                var quickBtn = document.getElementById('tabBtnQuick');
+                var detailBtn = document.getElementById('tabBtnDetail');
+                var quickPane = document.getElementById('tab-quick');
+                var detailPane = document.getElementById('tab-detail');
+                if (!quickBtn || !detailBtn) return;
+                var isQuick = (tab === 'quick');
+                quickBtn.classList.toggle('active', isQuick);
+                detailBtn.classList.toggle('active', !isQuick);
+                quickBtn.setAttribute('aria-selected', isQuick ? 'true' : 'false');
+                detailBtn.setAttribute('aria-selected', isQuick ? 'false' : 'true');
+                if (quickPane) quickPane.classList.toggle('active', isQuick);
+                if (detailPane) detailPane.classList.toggle('active', !isQuick);
+                try { localStorage.setItem('sayarti_tab', tab); } catch (e) {}
+                if (isQuick) {
+                    var qi = document.getElementById('quickSearchInput');
+                    if (qi) qi.focus();
+                }
+            }
+
+            var tabQuickBtn = document.getElementById('tabBtnQuick');
+            var tabDetailBtn = document.getElementById('tabBtnDetail');
+            if (tabQuickBtn) tabQuickBtn.addEventListener('click', function() { switchTab('quick'); });
+            if (tabDetailBtn) tabDetailBtn.addEventListener('click', function() { switchTab('detail'); });
+
+            (function() {
+                var saved = null;
+                try { saved = localStorage.getItem('sayarti_tab'); } catch (e) {}
+                if (saved !== 'quick' && saved !== 'detail') saved = 'quick';
+                switchTab(saved);
+            })();
+
             var qsInput = document.getElementById('quickSearchInput');
             var qsResults = document.getElementById('quickSearchResults');
             var qsTimer = null;
 
-            function qsOpen() {
-                if (!qsPanel) return;
-                qsPanel.classList.add('open');
-                if (qsInput) { qsInput.focus(); }
-                if (qsResults) {
-                    qsResults.innerHTML = '';
-                    qsResults.classList.remove('show');
-                }
+            function escapeHtml(s) {
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
-            function qsClosePanel() {
-                if (qsPanel) qsPanel.classList.remove('open');
+
+            function applyQuick(c) {
+                var brandEl = document.getElementById('brandInput');
+                var modelEl = document.getElementById('modelInput');
+                var yearEl = document.getElementById('yearInput');
+                var ety = document.getElementById('engineTypeSelect');
+                var srg = document.getElementById('specRegionSelect');
+                var engEl = document.getElementById('engineInput');
+                if (brandEl) brandEl.value = c.brand_ar || '';
+                if (modelEl) modelEl.value = c.model_ar || '';
+                if (yearEl) yearEl.value = c.year || '';
+                if (ety) ety.value = '';
+                if (srg) srg.value = '';
+                if (engEl) engEl.value = '';
+                if (brandEl) brandEl.dispatchEvent(new Event('input', { bubbles: true }));
+                if (modelEl) modelEl.dispatchEvent(new Event('input', { bubbles: true }));
+                switchTab('detail');
+                var form = document.getElementById('searchForm');
+                if (form) form.requestSubmit();
             }
-            if (qsBtn) qsBtn.addEventListener('click', qsOpen);
-            if (qsClose) qsClose.addEventListener('click', qsClosePanel);
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') qsClosePanel();
-            });
 
             function qsRender(data) {
                 if (!qsResults) return;
                 qsResults.innerHTML = '';
                 var cands = (data && data.candidates) || [];
                 if (!cands.length) {
-                    qsResults.innerHTML = '';
                     var empty = document.createElement('div');
                     empty.className = 'qs-empty';
                     empty.textContent = 'لم نعثر على تفسير لمصطلحك... جرّب مثالاً مثل: «سوناتا 2008»';
@@ -2469,6 +2498,7 @@
                     var a = document.createElement('a');
                     a.className = 'qs-result';
                     a.href = c.url;
+                    a.setAttribute('role', 'button');
                     var label = document.createElement('span');
                     label.className = 'qs-label';
                     if (c.corrected) {
@@ -2481,13 +2511,15 @@
                     count.className = 'qs-count';
                     count.textContent = c.count > 0 ? (c.count + ' نتيجة') : 'لا نتائج';
                     a.appendChild(count);
+                    (function(item) {
+                        a.addEventListener('click', function(ev) {
+                            ev.preventDefault();
+                            applyQuick(item);
+                        });
+                    })(c);
                     qsResults.appendChild(a);
                 });
                 qsResults.classList.add('show');
-            }
-
-            function escapeHtml(s) {
-                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
 
             if (qsInput) {
@@ -2499,7 +2531,7 @@
                         return;
                     }
                     qsTimer = setTimeout(function() {
-                        fetch('{% url "quick_search" %}?q=' + encodeURIComponent(v))
+                        fetch("{% url 'quick_search' %}?q=" + encodeURIComponent(v))
                             .then(function(r) { return r.json(); })
                             .then(qsRender)
                             .catch(function() {
@@ -2510,7 +2542,7 @@
                 qsInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
                         var first = qsResults.querySelector('a.qs-result');
-                        if (first) { e.preventDefault(); window.location.href = first.href; }
+                        if (first) { e.preventDefault(); first.click(); }
                     }
                 });
             }

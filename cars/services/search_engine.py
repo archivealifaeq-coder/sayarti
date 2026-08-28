@@ -159,7 +159,8 @@ def find_interpretation(q, top=3):
             'count': count,
         })
 
-    # بدائل: الموديل المعروف كتفسير مستقل حتى لو كانت الماركة مجهولة
+    # بدائل: الموديل المعروف كتفسير مستقل حتى لو كانت الماركة مجهولة،
+    # مع استخراج ماركة هذا الموديل من البيانات نفسها لتظهر التفسيرات كاملة.
     alt_names = []
     if not model_ar and remaining:
         pairs_all = list(CarSpecification.objects.values_list(
@@ -170,7 +171,22 @@ def find_interpretation(q, top=3):
 
     for m3, m3en in alt_names:
         cnt = _car_count('', m3, year)
-        if not any(i['model_ar'] == m3 for i in interpretations):
+        brands_for = list(CarSpecification.objects.filter(
+            model_norm__icontains=m3
+        ).values('brand_ar', 'brand_en').annotate(bc=Count('id')).order_by('-bc')[:3])
+        if brands_for:
+            for br in brands_for:
+                bcnt = _car_count(br['brand_ar'], m3, year)
+                if bcnt <= 0:
+                    continue
+                cand = {
+                    'brand_ar': br['brand_ar'], 'brand_en': br['brand_en'],
+                    'model_ar': m3, 'model_en': m3en,
+                    'year': year, 'corrected': True, 'count': bcnt,
+                }
+                if not any(i['brand_ar'] == br['brand_ar'] and i['model_ar'] == m3 for i in interpretations):
+                    interpretations.append(cand)
+        elif cnt > 0 and not any(i['model_ar'] == m3 for i in interpretations):
             interpretations.append({
                 'brand_ar': '', 'brand_en': '',
                 'model_ar': m3, 'model_en': m3en,
