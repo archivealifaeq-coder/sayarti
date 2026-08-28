@@ -1329,107 +1329,154 @@
         .qs-empty { text-align: center; color: #64748b; padding: 18px 8px; font-size: 0.95rem; }
 
         /* ============================================ */
-        /*  QUICK SEARCH GUIDED (بحث سريع مرشد)        */
+        /*  QUICK SEARCH RIBBON (شريط الاقتراحات)       */
         /* ============================================ */
-        .qs-step { margin-bottom: 8px; }
         .qs-step-label {
             display: block; text-align: center;
             color: #94a3b8; font-size: 0.9rem; font-weight: 800;
             margin-bottom: 10px;
         }
         .qs-step-label b { color: #fbbf24; }
-        .qs-suggest { max-width: 720px; margin: 12px auto 0; display: none; }
-        .qs-suggest.show { display: block; }
-        .qs-suggest-title { text-align: center; color: #64748b; font-size: 0.78rem; margin-bottom: 8px; }
-        .qs-suggest-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-        .qs-suggest-card {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(15, 23, 42, 0.9));
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            color: #fde68a;
+        .qs-hint { text-align: center; color: #94a3b8; font-size: 0.82rem; margin-top: 10px; }
+
+        .qs-ribbon {
+            position: fixed;
+            left: 0; right: 0;
+            bottom: 0;
+            z-index: 5000;
+            transform: translateY(108%);
+            transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+        }
+        .qs-ribbon.open { transform: translateY(0); pointer-events: auto; }
+        .qs-ribbon-inner {
+            background: linear-gradient(180deg, rgba(20, 27, 47, 0.97), rgba(10, 15, 26, 0.99));
+            border-top: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 22px 22px 0 0;
+            padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+            box-shadow: 0 -18px 60px rgba(0, 0, 0, 0.55), 0 -2px 24px rgba(245, 158, 11, 0.12);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            max-height: 48vh;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+        .qs-ribbon-sec { margin-bottom: 6px; }
+        .qs-ribbon-sec:last-child { margin-bottom: 0; }
+        .qs-ribbon-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.72rem; font-weight: 800; color: #fbbf24;
+            margin: 0 4px 8px;
+            opacity: 0.92;
+            white-space: nowrap;
+        }
+        .qs-ribbon-title::before {
+            content: '';
+            width: 18px; height: 2px;
             border-radius: 9999px;
-            padding: 8px 16px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            background: linear-gradient(90deg, #fbbf24, transparent);
+            flex: 0 0 auto;
+        }
+        .qs-ribbon-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            padding: 2px 2px 8px;
+        }
+        .qs-ribbon-row::-webkit-scrollbar { display: none; }
+
+        .qs-pill {
+            flex: 0 0 auto;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-        }
-        .qs-suggest-card:hover {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #0f172a;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.35);
-        }
-        .qs-suggest-card .count {
-            background: rgba(245, 158, 11, 0.25);
-            color: #fde68a;
+            gap: 8px;
             border-radius: 9999px;
-            padding: 2px 8px;
-            font-size: 0.72rem;
-        }
-        .qs-suggest-card:hover .count { background: rgba(0, 0, 0, 0.25); color: #fff; }
-        .qs-year-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 720px; margin: 0 auto; }
-        .qs-year-chip {
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(71, 85, 105, 0.7);
-            color: #e2e8f0;
-            min-width: 74px;
-            padding: 10px 18px;
-            border-radius: 14px;
+            padding: 10px 16px;
+            font-size: 0.92rem;
             font-weight: 800;
-            font-size: 1rem;
+            line-height: 1.3;
             cursor: pointer;
-            transition: all 0.25s ease;
+            border: 1px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
         }
-        .qs-year-chip:hover { border-color: #f59e0b; color: #fbbf24; }
-        .qs-year-chip.selected {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #0f172a;
-            border-color: transparent;
-            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.35);
+        .qs-pill .cnt {
+            background: rgba(0, 0, 0, 0.22);
+            color: #fff;
+            border-radius: 9999px;
+            padding: 2px 9px;
+            font-size: 0.72rem;
+            font-weight: 800;
         }
-        .qs-variant-list {
-            max-width: 720px;
-            margin: 14px auto 0;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 10px;
+
+        /* مرشّحات التصحيح الذهبية */
+        .qs-pill-gold {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0a0f1a;
+            box-shadow: 0 6px 18px rgba(245, 158, 11, 0.32);
         }
-        .qs-variant-card {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(71, 85, 105, 0.8);
-            border-radius: 14px;
-            padding: 12px 14px;
-            color: #e2e8f0;
-            cursor: pointer;
-            text-align: right;
-            transition: all 0.25s ease;
-        }
-        .qs-variant-card:hover {
-            border-color: #f59e0b;
-            background: rgba(30, 41, 59, 0.95);
+        .qs-pill-gold:hover, .qs-pill-gold:focus-visible {
             transform: translateY(-2px);
+            box-shadow: 0 10px 26px rgba(245, 158, 11, 0.5);
         }
-        .qs-variant-card .v-label { font-size: 0.95rem; font-weight: 800; color: #fff; }
-        .qs-variant-card .v-count { color: #fbbf24; font-size: 0.82rem; font-weight: 700; }
-        .qs-back {
-            display: block;
-            margin: 12px auto 0;
+
+        /* بطاقات النسخ الزجاجية */
+        .qs-pill-glass {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(15, 23, 42, 0.78));
+            border: 1px solid rgba(251, 191, 36, 0.42);
+            color: #fde68a;
+        }
+        .qs-pill-glass:hover, .qs-pill-glass:focus-visible {
+            transform: translateY(-2px);
+            border-color: #fbbf24;
+            color: #fff;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.28), rgba(15, 23, 42, 0.85));
+        }
+        .qs-pill-glass.selected {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0a0f1a;
+            border-color: transparent;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
+        .qs-pill-glass.selected .cnt { background: rgba(0, 0, 0, 0.2); }
+
+        /* أزرار السنوات */
+        .qs-pill-year {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(71, 85, 105, 0.8);
+            color: #e2e8f0;
+            min-width: 66px;
+            justify-content: center;
+        }
+        .qs-pill-year:hover, .qs-pill-year:focus-visible { border-color: #f59e0b; color: #fbbf24; }
+        .qs-pill-year.selected {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0a0f1a;
+            border-color: transparent;
+            box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4);
+        }
+
+        .qs-ribbon-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            margin: 2px 4px 4px;
             background: transparent;
             border: none;
             color: #fbbf24;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 700;
             cursor: pointer;
             text-decoration: underline dotted;
         }
-        .qs-back:hover { color: #fff; }
-        .qs-step .chip-row { max-width: 720px; margin: 10px auto 0; justify-content: center; }
+        .qs-ribbon-back:hover { color: #fff; }
+        .qs-ribbon-err {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 10px 6px 12px;
+        }
 
         /* ============================================ */
         /*  RELAXED SEARCH NOTE                        */
@@ -1703,32 +1750,32 @@
 
                 <div class="tab-panel active" id="tab-quick" role="tabpanel" aria-labelledby="tabBtnQuick">
                     <div class="quick-tab-inner">
-                        <div class="qs-step" id="qsStepBrand">
-                            <label class="qs-step-label">١) <b>الماركة</b> — اكتب أول حرف وانتظر الاقتراح</label>
-                            <div class="qs-input-wrapper">
-                                <input type="text" id="qsBrandInput" class="qs-input" placeholder="مثال: ت أو t" autocomplete="off" maxlength="100">
-                                <span class="qs-input-icon" aria-hidden="true">🚗</span>
-                            </div>
-                            <div class="qs-suggest" id="qsBrandSuggest"></div>
-                            <div class="chip-row" id="qsBrandChips" role="list"></div>
+                        <label class="qs-step-label" for="qsFreeInput">اكتب اسم السيارة كما تتذكره واترك الباقي علينا</label>
+                        <div class="qs-input-wrapper">
+                            <input type="text" id="qsFreeInput" class="qs-input" placeholder="مثال: كورله، سوناتا 2008، كامري هايبرد صيني" autocomplete="off" maxlength="120" enterkeyhint="search">
+                            <span class="qs-input-icon" aria-hidden="true">🚗</span>
                         </div>
+                        <div class="qs-hint" id="qsFreeHint">💡 اكتب اسم السيارة كما تتذكره — سنعثر عليها حتى لو اختلفت كتابتها</div>
+                    </div>
+                </div>
 
-                        <div class="qs-step" id="qsStepModel" style="display:none">
-                            <label class="qs-step-label">٢) <b>الموديل</b> — اكتب اسم الموديل وانتظر الاقتراح</label>
-                            <div class="qs-input-wrapper">
-                                <input type="text" id="qsModelInput" class="qs-input" placeholder="مثال: كورلا" autocomplete="off" maxlength="100">
-                                <span class="qs-input-icon" aria-hidden="true">📐</span>
-                            </div>
-                            <div class="qs-suggest" id="qsModelSuggest"></div>
-                            <div class="chip-row" id="qsModelChips" role="list"></div>
-                            <button type="button" class="qs-back" data-qs-back="1">→ تعديل الماركة</button>
+                <!-- شريط الاقتراحات: يلصق أعلى لوحة المفاتيح فلا يختفي خلفها -->
+                <div class="qs-ribbon" id="qsRibbon" aria-label="اقتراحات البحث السريع">
+                    <div class="qs-ribbon-inner">
+                        <div class="qs-ribbon-sec" id="qsSecCandidates">
+                            <div class="qs-ribbon-title" id="qsCandTitle">هل تقصد؟</div>
+                            <div class="qs-ribbon-row" id="qsCandidates"></div>
+                            <div class="qs-ribbon-err" id="qsNoCands" style="display:none">لم نعثر على نتائج — جرّب اسماً آخر أو مثالاً مثل «سوناتا 2008»</div>
                         </div>
-
-                        <div class="qs-step" id="qsStepYear" style="display:none">
-                            <label class="qs-step-label">٣) <b>سنة الصنع</b> — اختر السنة المتوفرة</label>
-                            <div class="qs-year-row" id="qsYearChips"></div>
-                            <div class="qs-variant-list" id="qsVariantCards"></div>
-                            <button type="button" class="qs-back" data-qs-back="2">→ تعديل الموديل</button>
+                        <div class="qs-ribbon-sec" id="qsSecCombos" style="display:none">
+                            <div class="qs-ribbon-title" id="qsComboTitle">اختر النسخة</div>
+                            <div class="qs-ribbon-row" id="qsCombos"></div>
+                            <button type="button" class="qs-ribbon-back" id="qsBackYears">→ تغيير البحث</button>
+                        </div>
+                        <div class="qs-ribbon-sec" id="qsSecYears" style="display:none">
+                            <div class="qs-ribbon-title" id="qsYearTitle">اختر السنة</div>
+                            <div class="qs-ribbon-row" id="qsYears"></div>
+                            <button type="button" class="qs-ribbon-back" id="qsBackCombos">→ اختر نسخة أخرى</button>
                         </div>
                     </div>
                 </div>
@@ -2545,7 +2592,7 @@
             });
 
             /* ============================================ //
-               SEARCH TABS + QUICK SEARCH GUIDED: التبويبات والبحث المرشد //
+               SEARCH TABS + QUICK SEARCH RIBBON: التبويبات وشريط الاقتراحات //
             // ============================================ */
             function switchTab(tab) {
                 var quickBtn = document.getElementById('tabBtnQuick');
@@ -2561,8 +2608,9 @@
                 if (quickPane) quickPane.classList.toggle('active', isQuick);
                 if (detailPane) detailPane.classList.toggle('active', !isQuick);
                 try { localStorage.setItem('sayarti_tab', tab); } catch (e) {}
-                if (isQuick) {
-                    var qi = document.getElementById('qsBrandInput');
+                if (!isQuick) qsReset();
+                else {
+                    var qi = document.getElementById('qsFreeInput');
                     if (qi) qi.focus();
                 }
             }
@@ -2579,207 +2627,186 @@
                 switchTab(saved);
             })();
 
-            var qsStepBrand = document.getElementById('qsStepBrand');
-            var qsStepModel = document.getElementById('qsStepModel');
-            var qsStepYear = document.getElementById('qsStepYear');
-            var qsBrandInput = document.getElementById('qsBrandInput');
-            var qsModelInput = document.getElementById('qsModelInput');
-            var qsBrandSuggest = document.getElementById('qsBrandSuggest');
-            var qsModelSuggest = document.getElementById('qsModelSuggest');
-            var qsBrandChips = document.getElementById('qsBrandChips');
-            var qsModelChips = document.getElementById('qsModelChips');
-            var qsYearChips = document.getElementById('qsYearChips');
-            var qsVariantCards = document.getElementById('qsVariantCards');
-            var lastQSModels = [];
-            var qsVariants = null;
-            var qsTimer2 = null;
+            var qsFreeInput = document.getElementById('qsFreeInput');
+            var qsRibbon = document.getElementById('qsRibbon');
+            var qsSecCands = document.getElementById('qsSecCandidates');
+            var qsSecCombos = document.getElementById('qsSecCombos');
+            var qsSecYears = document.getElementById('qsSecYears');
+            var qsCandTitle = document.getElementById('qsCandTitle');
+            var qsComboTitle = document.getElementById('qsComboTitle');
+            var qsYearTitle = document.getElementById('qsYearTitle');
+            var qsCandidates = document.getElementById('qsCandidates');
+            var qsCombos = document.getElementById('qsCombos');
+            var qsYears = document.getElementById('qsYears');
+            var qsNoCands = document.getElementById('qsNoCands');
+            var qsTimer3 = null;
+            var qsStage = 0;           // 0 = اقتراحات، 1 = نسخ، 2 = سنوات
+            var qsPicked = null;       // المرشَّح المختار: {brand_ar, model_ar}
+            var qsCombosData = [];
+            var qsPickedCombo = null;
+            var qsTypedYear = null;
 
-            function qsGoTo(n) {
-                if (qsStepBrand) qsStepBrand.style.display = (n === 1) ? 'block' : 'none';
-                if (qsStepModel) qsStepModel.style.display = (n === 2) ? 'block' : 'none';
-                if (qsStepYear) qsStepYear.style.display = (n === 3) ? 'block' : 'none';
-                if (n === 1 && qsBrandInput) qsBrandInput.focus();
-                if (n === 2 && qsModelInput) qsModelInput.focus();
+            var QS_FUEL_WORDS = {
+                'هايبرد': 'هايبرد', 'هجين': 'هايبرد', 'hybrid': 'هايبرد',
+                'بنزين': 'بنزين', 'بيزين': 'بنزين',
+                'ديزل': 'ديزل', 'سولار': 'ديزل', 'diesel': 'ديزل',
+                'كهرباء': 'كهرباء', 'كهربي': 'كهرباء', 'electric': 'كهرباء',
+                'غاز': 'غاز', 'gpl': 'غاز'
+            };
+            var QS_REGION_WORDS = {
+                'خليجي': 'gcc', 'خليجى': 'gcc', 'gcc': 'gcc',
+                'امريكي': 'american', 'أمريكي': 'american', 'امريكى': 'american', 'امريكا': 'american', 'usa': 'american',
+                'صيني': 'chinese', 'صينى': 'chinese', 'china': 'chinese',
+                'ياباني': 'japanese', 'يابانى': 'japanese', 'japan': 'japanese',
+                'اوروبي': 'european', 'أوروبي': 'european', 'اوروبى': 'european', 'europe': 'european'
+            };
+
+            function qsOpen() { if (qsRibbon) qsRibbon.classList.add('open'); }
+            function qsClose() { if (qsRibbon) qsRibbon.classList.remove('open'); }
+
+            function qsReset() {
+                qsStage = 0;
+                qsPicked = null;
+                qsCombosData = [];
+                qsPickedCombo = null;
+                qsTypedYear = null;
+                if (qsCandidates) qsCandidates.innerHTML = '';
+                if (qsCombos) qsCombos.innerHTML = '';
+                if (qsYears) qsYears.innerHTML = '';
+                if (qsSecCands) qsSecCands.style.display = 'block';
+                if (qsSecCombos) qsSecCombos.style.display = 'none';
+                if (qsSecYears) qsSecYears.style.display = 'none';
+                if (qsNoCands) qsNoCands.style.display = 'none';
+                qsClose();
             }
 
-            function qsClearSuggest(box) {
-                if (box) { box.innerHTML = ''; box.classList.remove('show'); }
-            }
-
-            function qsRenderSuggest(box, items, onPick) {
-                if (!box) return;
-                qsClearSuggest(box);
-                if (!items || !items.length) return;
-                var title = document.createElement('div');
-                title.className = 'qs-suggest-title';
-                title.textContent = 'اقترح لك:';
-                box.appendChild(title);
-                var row = document.createElement('div');
-                row.className = 'qs-suggest-row';
-                items.forEach(function(it) {
-                    var b = document.createElement('button');
-                    b.type = 'button';
-                    b.className = 'qs-suggest-card';
-                    b.textContent = it.label;
-                    if (it.count) {
-                        var c = document.createElement('span');
-                        c.className = 'count';
-                        c.textContent = it.count;
-                        b.appendChild(c);
-                    }
-                    b.addEventListener('click', function(ev) {
-                        ev.preventDefault();
-                        onPick(it);
-                    });
-                    row.appendChild(b);
+            function qsMakePill(label, cls, count, onClick) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'qs-pill ' + cls;
+                var ls = document.createElement('span');
+                ls.textContent = label;
+                b.appendChild(ls);
+                if (count) {
+                    var c = document.createElement('span');
+                    c.className = 'cnt';
+                    c.textContent = count;
+                    b.appendChild(c);
+                }
+                b.addEventListener('click', function(ev) {
+                    ev.preventDefault();
+                    onClick();
                 });
-                box.appendChild(row);
-                box.classList.add('show');
+                return b;
             }
 
-            function qsRenderChipList(container, items, selected, onPick) {
-                if (!container) return;
-                container.innerHTML = '';
-                items.forEach(function(it) {
-                    var chip = document.createElement('button');
-                    chip.type = 'button';
-                    chip.className = 'chip' + (selected && it.ar === selected ? ' selected' : '');
-                    chip.textContent = it.ar;
-                    if (it.en && it.en !== it.ar) {
-                        var sub = document.createElement('span');
-                        sub.className = 'chip-sub';
-                        sub.textContent = ' ' + it.en;
-                        chip.appendChild(sub);
-                    }
-                    chip.addEventListener('click', function() { onPick(it.ar); });
-                    container.appendChild(chip);
+            function qsRenderCandidateRows(data) {
+                if (!qsCandidates) return;
+                qsCandidates.innerHTML = '';
+                var cands = (data && data.candidates) || [];
+                var hasCorr = cands.some(function(c) { return c.corrected; });
+                if (qsCandTitle) qsCandTitle.textContent = hasCorr ? 'هل تقصد؟' : 'اختر السيارة';
+                if (qsNoCands) qsNoCands.style.display = cands.length ? 'none' : 'block';
+                cands.slice(0, 5).forEach(function(c) {
+                    qsCandidates.appendChild(qsMakePill(c.label, 'qs-pill-gold', c.count > 0 ? c.count : null, function() {
+                        qsPickCandidate(c);
+                    }));
                 });
-                if (!items.length) {
-                    var empty = document.createElement('div');
-                    empty.className = 'chip-empty';
-                    empty.textContent = 'لا توجد نتائج مطابقة';
-                    container.appendChild(empty);
-                }
+                if (cands.length) qsOpen();
+                else if (qsStage === 0) qsClose();
             }
 
-            function qsRefineBrand() {
-                var v = qsBrandInput.value.trim();
-                var q = foldArJs(v);
-                if (v.length === 0) {
-                    qsClearSuggest(qsBrandSuggest);
-                    qsRenderChipList(qsBrandChips, popularBrands.length ? popularBrands : allBrands, '', qsPickBrand);
-                    return;
-                }
-                var matched = allBrands.filter(function(b) { return accepts(q, b.ar) || accepts(q, b.en); });
-                var picked = matched.slice(0, 4).map(function(b) { return { ar: b.ar, label: b.ar, en: b.en }; });
-                qsRenderChipList(qsBrandChips, matched.slice(0, 40), '', qsPickBrand);
-                qsRenderSuggest(qsBrandSuggest, picked, function(b) { qsPickBrand(b.ar); });
+            function qsDetectFuelRegion(text, combos) {
+                var q = foldArJs(text);
+                var fuelKw = null, regionKw = null, yr = null;
+                Object.keys(QS_FUEL_WORDS).forEach(function(k) {
+                    if (q.indexOf(foldArJs(k)) !== -1) fuelKw = QS_FUEL_WORDS[k];
+                });
+                Object.keys(QS_REGION_WORDS).forEach(function(k) {
+                    if (q.indexOf(foldArJs(k)) !== -1) regionKw = QS_REGION_WORDS[k];
+                });
+                var m = String(text).match(/(19|20)\d{2}/);
+                if (m) yr = parseInt(m[0], 10);
+                var list = combos;
+                if (fuelKw) list = list.filter(function(x) { return x.fuel === fuelKw; });
+                if (regionKw) list = list.filter(function(x) { return x.spec_region === regionKw; });
+                return { list: list, fuel: fuelKw, region: regionKw, year: yr };
             }
 
-            function qsPickBrand(nameAr) {
-                if (!nameAr) return;
-                qsBrandInput.value = nameAr;
-                qsClearSuggest(qsBrandSuggest);
-                qsRenderChipList(qsBrandChips, [{ ar: nameAr }], nameAr, qsPickBrand);
-                lastQSModels = [];
-                qsModelInput.value = '';
-                qsRenderChipList(qsModelChips, [], '');
-                qsVariantCards.innerHTML = '';
-                qsYearChips.innerHTML = '';
-                var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(nameAr);
-                fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                    lastQSModels = (data.models || []).map(function(m) { return { ar: m.ar, en: m.en }; });
-                    qsGoTo(2);
-                }).catch(function() { qsGoTo(2); });
-            }
-
-            function qsRefineModel() {
-                var v = qsModelInput.value.trim();
-                var q = foldArJs(v);
-                if (v.length === 0) {
-                    qsClearSuggest(qsModelSuggest);
-                    qsRenderChipList(qsModelChips, lastQSModels, '', qsPickModel);
-                    return;
-                }
-                var matched = lastQSModels.filter(function(m) { return accepts(q, m.ar) || accepts(q, m.en); });
-                var picked = matched.slice(0, 4).map(function(m) { return { ar: m.ar, label: m.ar }; });
-                qsRenderChipList(qsModelChips, matched.slice(0, 40), '', qsPickModel);
-                qsRenderSuggest(qsModelSuggest, picked, function(m) { qsPickModel(m.ar); });
-            }
-
-            function qsPickModel(nameAr) {
-                if (!nameAr) return;
-                qsModelInput.value = nameAr;
-                qsClearSuggest(qsModelSuggest);
-                qsRenderChipList(qsModelChips, [{ ar: nameAr }], nameAr, qsPickModel);
-                qsVariantCards.innerHTML = '';
-                qsYearChips.innerHTML = '';
-                var brand = qsBrandInput.value.trim();
-                fetch('{% url "quick_variants" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(nameAr))
+            function qsPickCandidate(c) {
+                if (!c) return;
+                qsFreeInput.value = c.label || c.model_ar || '';
+                qsPicked = { brand_ar: c.brand_ar, model_ar: c.model_ar };
+                qsStage = 1;
+                if (qsSecCands) qsSecCands.style.display = 'none';
+                if (qsSecCombos) qsSecCombos.style.display = 'block';
+                if (qsSecYears) qsSecYears.style.display = 'none';
+                if (qsCombos) qsCombos.innerHTML = '';
+                if (qsYears) qsYears.innerHTML = '';
+                if (qsComboTitle) qsComboTitle.textContent = 'اختر النسخة';
+                fetch('{% url "quick_variants" %}?brand=' + encodeURIComponent(c.brand_ar) + '&model=' + encodeURIComponent(c.model_ar))
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
-                        qsVariants = data;
-                        qsRenderYears();
-                        qsGoTo(3);
+                        var list = data.combos || [];
+                        var pf = qsPlannedFilter || { fuel: null, region: null, year: null };
+                        if (pf.fuel) list = list.filter(function(x) { return x.fuel === pf.fuel; });
+                        if (pf.region) list = list.filter(function(x) { return x.spec_region === pf.region; });
+                        qsTypedYear = pf.year;
+                        qsCombosData = list;
+                        qsRenderCombos(list);
+                        if (list.length === 1) qsPickCombo(list[0]);
+                        else qsOpen();
                     })
-                    .catch(function() { qsGoTo(3); });
+                    .catch(function() { qsOpen(); });
             }
 
-            function qsRenderYears() {
-                qsYearChips.innerHTML = '';
-                if (!qsVariants) return;
-                var years = qsVariants.years || [];
-                if (!years.length) {
-                    var empty = document.createElement('div');
-                    empty.className = 'chip-empty';
-                    empty.textContent = 'لا تتوفر نسخ لهذا الموديل';
-                    qsYearChips.appendChild(empty);
+            function qsRenderCombos(combos) {
+                if (!qsCombos) return;
+                qsCombos.innerHTML = '';
+                if (!combos.length) {
+                    var b = qsMakePill('لا تتوفر نسخ لهذه السيارة', 'qs-pill-year', null, function() {});
+                    b.disabled = true;
+                    qsCombos.appendChild(b);
                     return;
                 }
-                years.forEach(function(y) {
-                    var b = document.createElement('button');
-                    b.type = 'button';
-                    b.className = 'qs-year-chip';
-                    b.textContent = y;
-                    b.addEventListener('click', function() {
-                        var all = qsYearChips.querySelectorAll('.qs-year-chip');
-                        all.forEach(function(x) { x.classList.remove('selected'); });
-                        b.classList.add('selected');
-                        qsRenderVariants(y);
-                    });
-                    qsYearChips.appendChild(b);
+                combos.forEach(function(c) {
+                    qsCombos.appendChild(qsMakePill(c.label, 'qs-pill-glass', c.count, function() {
+                        qsPickCombo(c);
+                    }));
                 });
             }
 
-            function qsRenderVariants(year) {
-                if (!qsVariantCards) return;
-                qsVariantCards.innerHTML = '';
-                var cards = (qsVariants && qsVariants.variants && qsVariants.variants[String(year)]) || [];
-                if (!cards.length) {
-                    var empty = document.createElement('div');
-                    empty.className = 'chip-empty';
-                    empty.textContent = 'لا تتوفر نسخ في هذه السنة';
-                    qsVariantCards.appendChild(empty);
-                    return;
-                }
-                cards.forEach(function(v) {
-                    var el = document.createElement('button');
-                    el.type = 'button';
-                    el.className = 'qs-variant-card';
-                    var lab = document.createElement('span');
-                    lab.className = 'v-label';
-                    lab.textContent = v.label;
-                    el.appendChild(lab);
-                    var cnt = document.createElement('span');
-                    cnt.className = 'v-count';
-                    cnt.textContent = v.count + ' سيارة';
-                    el.appendChild(cnt);
-                    el.addEventListener('click', function() { qsRunCard(v); });
-                    qsVariantCards.appendChild(el);
+            function qsPickCombo(c) {
+                qsPickedCombo = c;
+                qsStage = 2;
+                if (qsSecCands) qsSecCands.style.display = 'none';
+                if (qsSecCombos) qsSecCombos.style.display = 'none';
+                if (qsSecYears) qsSecYears.style.display = 'block';
+                if (qsYears) qsYears.innerHTML = '';
+                if (qsYearTitle) qsYearTitle.textContent = 'اختر السنة — ' + c.label;
+                (c.years || []).forEach(function(y) {
+                    qsYears.appendChild(qsMakePill(String(y), 'qs-pill-year', null, function() {
+                        qsRun(y);
+                    }));
                 });
+                if (qsTypedYear) qsPickTypedYear(qsTypedYear);
+                qsOpen();
             }
 
-            function qsRunCard(v) {
+            function qsPickTypedYear(year) {
+                if (!qsYears) return;
+                var chips = qsYears.querySelectorAll('.qs-pill-year');
+                for (var i = 0; i < chips.length; i++) {
+                    if (parseInt(chips[i].childNodes[0].textContent, 10) === year) {
+                        qsRun(year);
+                        return;
+                    }
+                }
+            }
+
+            function qsRun(year) {
+                if (!qsPicked) return;
+                var combo = qsPickedCombo || {};
                 var brandEl = document.getElementById('brandInput');
                 var modelEl = document.getElementById('modelInput');
                 var yearEl = document.getElementById('yearInput');
@@ -2787,13 +2814,19 @@
                 var ety = document.getElementById('engineTypeSelect');
                 var srg = document.getElementById('specRegionSelect');
                 var engEl = document.getElementById('engineInput');
-                if (brandEl) brandEl.value = qsBrandInput.value.trim();
-                if (modelEl) modelEl.value = qsModelInput.value.trim();
-                if (yearEl) yearEl.value = v.year || '';
-                if (fuelEl) fuelEl.value = v.fuel || '';
-                if (ety) ety.value = v.engine_type || '';
-                if (srg) srg.value = v.spec_region || '';
-                if (engEl) engEl.value = v.engine || '';
+                if (brandEl) brandEl.value = qsPicked.brand_ar || '';
+                if (modelEl) {
+                    modelEl.disabled = false;
+                    modelEl.value = qsPicked.model_ar || '';
+                }
+                if (yearEl) yearEl.value = year || '';
+                if (fuelEl) fuelEl.value = combo.fuel || '';
+                if (ety) ety.value = combo.engine_type || '';
+                if (srg) srg.value = combo.spec_region || '';
+                if (engEl) {
+                    engEl.disabled = false;
+                    engEl.value = combo.engine || '';
+                }
                 if (brandEl) brandEl.dispatchEvent(new Event('input', { bubbles: true }));
                 if (modelEl) modelEl.dispatchEvent(new Event('input', { bubbles: true }));
                 switchTab('detail');
@@ -2801,39 +2834,99 @@
                 if (form) form.requestSubmit();
             }
 
-            document.querySelectorAll('[data-qs-back]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var n = parseInt(btn.getAttribute('data-qs-back'), 10);
-                    qsGoTo(n);
+            function qsLive() {
+                var v = qsFreeInput.value.trim();
+                qsTypedYear = null;
+                qsPlannedFilter = null;
+                if (v.length < 2) {
+                    qsStage = 0;
+                    if (qsCandidates) qsCandidates.innerHTML = '';
+                    if (qsNoCands) qsNoCands.style.display = 'none';
+                    if (qsSecCands) qsSecCands.style.display = 'block';
+                    if (qsSecCombos) qsSecCombos.style.display = 'none';
+                    if (qsSecYears) qsSecYears.style.display = 'none';
+                    qsClose();
+                    return;
+                }
+                qsStage = 0;
+                qsPicked = null;
+                qsPlannedFilter = qsDetectFuelRegion(v, []);
+                fetch('{% url "quick_search" %}?q=' + encodeURIComponent(v))
+                    .then(function(r) { return r.json(); })
+                    .then(qsRenderCandidateRows)
+                    .catch(function() { qsClose(); });
+            }
+
+            var qsPlannedFilter = null;
+
+            if (qsFreeInput) {
+                qsFreeInput.addEventListener('input', function() {
+                    clearTimeout(qsTimer3);
+                    qsTimer3 = setTimeout(qsLive, 180);
                 });
+                qsFreeInput.addEventListener('focus', function() {
+                    if (qsStage > 0) qsOpen();
+                });
+                qsFreeInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (qsStage === 0) {
+                            var first = qsCandidates ? qsCandidates.querySelector('.qs-pill') : null;
+                            if (first) first.click();
+                            return;
+                        }
+                        if (qsStage === 1) {
+                            var c2 = qsCombos ? qsCombos.querySelector('.qs-pill') : null;
+                            if (c2) c2.click();
+                            return;
+                        }
+                        if (qsStage === 2) {
+                            var y = qsYears ? qsYears.querySelector('.qs-pill') : null;
+                            if (y) y.click();
+                        }
+                    }
+                });
+            }
+
+            var qsBackYears = document.getElementById('qsBackYears');
+            var qsBackCombos = document.getElementById('qsBackCombos');
+            if (qsBackYears) qsBackYears.addEventListener('click', function() {
+                qsStage = 1;
+                if (qsSecYears) qsSecYears.style.display = 'none';
+                if (qsSecCombos) qsSecCombos.style.display = 'block';
+            });
+            if (qsBackCombos) qsBackCombos.addEventListener('click', function() {
+                qsStage = 0;
+                if (qsSecYears) qsSecYears.style.display = 'none';
+                if (qsSecCombos) qsSecCombos.style.display = 'none';
+                if (qsSecCands) qsSecCands.style.display = 'block';
+                qsFreeInput.focus();
             });
 
-            if (qsBrandInput) {
-                qsBrandInput.addEventListener('input', function() {
-                    clearTimeout(qsTimer2);
-                    qsTimer2 = setTimeout(qsRefineBrand, 120);
-                });
-                qsBrandInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        var first = qsBrandSuggest.querySelector('.qs-suggest-card');
-                        if (first) { e.preventDefault(); first.click(); }
-                    }
-                });
-            }
-            if (qsModelInput) {
-                qsModelInput.addEventListener('input', function() {
-                    clearTimeout(qsTimer2);
-                    qsTimer2 = setTimeout(qsRefineModel, 120);
-                });
-                qsModelInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        var first = qsModelSuggest.querySelector('.qs-suggest-card') || qsModelChips.querySelector('button.chip');
-                        if (first) { e.preventDefault(); first.click(); }
-                    }
-                });
-            }
+            document.addEventListener('pointerdown', function(e) {
+                if (!qsRibbon || !qsFreeInput) return;
+                if (qsRibbon.classList.contains('open') &&
+                    !qsRibbon.contains(e.target) &&
+                    e.target !== qsFreeInput) {
+                    qsReset();
+                }
+            });
 
-            qsRefineBrand();
+            function qsPositionRibbon() {
+                if (!qsRibbon) return;
+                var vv = window.visualViewport;
+                if (vv && vv.height < window.innerHeight) {
+                    var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+                    qsRibbon.style.bottom = (kb + 8) + 'px';
+                } else {
+                    qsRibbon.style.bottom = '0px';
+                }
+            }
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', qsPositionRibbon);
+                window.visualViewport.addEventListener('scroll', qsPositionRibbon);
+            }
+            qsPositionRibbon();
 
         })();
     </script>

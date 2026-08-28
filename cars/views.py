@@ -267,22 +267,16 @@ def _candidate_label(item):
     return ' '.join(parts) if parts else ''
 
 
-def _urlq(value):
-    from urllib.parse import quote_plus
-    return quote_plus(value or '', encoding='utf-8')
-
-
 def quick_variants(request):
-    """بطاقات النسخ المجمّعة للبحث السريع حسب (الماركة + الموديل + السنة).
+    """نسخ السيارة المجمّعة للبحث السريع: كل بطاقة = نوع + وقود + مواصفة + سنواتها.
 
-    كل بطاقة تجمع ثلاث عناصر من بياناتك الفعلية: نوع السيارة + نوع الوقود +
-    مواصفة المنطقة، مع عدّاد، وكل صف في الجدول يظهر كبطاقة مستقلة (وإن تعددت
-    نسخ المحرك ضمن الوقود والمواصفة نفسها تظهر كل نسخة كبطاقة).
+    لا تلاعب بالنتائج إطلاقاً: البطاقة مجرد تجميع للبيانات الفعلية، واختيارها
+    يملأ نفس فلاتر البحث المفصّل ليعرض النتائج نفسها تماماً.
     """
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
     if not brand:
-        return JsonResponse({'years': [], 'variants': {}})
+        return JsonResponse({'combos': [], 'model_label': ''})
 
     qs = CarSpecification.objects.filter(
         Q(brand_norm__icontains=fold_ar(brand)) | Q(brand_en__icontains=brand)
@@ -294,20 +288,22 @@ def quick_variants(request):
     rows = list(qs.values('model_ar', 'year', 'fuel', 'spec_region', 'engine', 'engine_type'))
 
     model_label = ''
-    years = set()
-    bands_by_year = {}
+    by_spec = {}
     for r in rows:
         if not model_label and r['model_ar']:
             model_label = r['model_ar']
         year = r['year']
         if not year:
             continue
-        years.add(year)
-        bands = bands_by_year.setdefault(year, {})
-        key = (r['fuel'] or '', r['spec_region'] or '')
-        subs = bands.setdefault(key, {})
-        ek = (r['engine'] or '', r['engine_type'] or '')
-        subs[ek] = subs.get(ek, 0) + 1
+        fuel = r['fuel'] or ''
+        region = r['spec_region'] or ''
+        engine = r['engine'] or ''
+        et = r['engine_type'] or ''
+        spec = by_spec.setdefault((fuel, region), {'count': 0, 'engines': {}})
+        spec['count'] += 1
+        eg = spec['engines'].setdefault((engine, et), {'count': 0, 'years': set()})
+        eg['count'] += 1
+        eg['years'].add(year)
 
     def fuel_rank(f):
         return FUEL_PRIORITY.index(f) if f in FUEL_PRIORITY else len(FUEL_PRIORITY) + 1
@@ -315,40 +311,32 @@ def quick_variants(request):
     def region_rank(r):
         return REGION_PRIORITY.index(r) if r in REGION_PRIORITY else len(REGION_PRIORITY) + 1
 
-    variants = {}
-    for year, bands in bands_by_year.items():
-        cards = []
-        keys = sorted(bands.items(), key=lambda kv: (fuel_rank(kv[0][0]), region_rank(kv[0][1])))
-        for (fuel, region), subs in keys:
-            sub_list = sorted(subs.items(), key=lambda s: s[1], reverse=True)
-            for (engine, et), cnt in sub_list:
-                parts = [model_label, region_label.get(region, region)]
-                if fuel and fold_ar(fuel) not in fold_ar(model_label):
-                    parts.insert(1, fuel)
-                if len(sub_list) > 1 and engine:
-                    parts.append(engine)
-                label = ' '.join(p for p in parts if p)
-                url = '/?brand=%s&model=%s&year=%d&fuel=%s&spec_region=%s&engine=%s&engine_type=%s' % (
-                    _urlq(brand), _urlq(model), year, _urlq(fuel), _urlq(region), _urlq(engine), _urlq(et))
-                cards.append({
-                    'year': year,
-                    'fuel': fuel,
-                    'spec_region': region,
-                    'spec_region_label': region_label.get(region, region),
-                    'engine': engine,
-                    'engine_type': et,
-                    'count': cnt,
-                    'label': label,
-                    'url': url,
-                })
-        variants[str(year)] = cards
+    combos = []
+    for (fuel, region), spec in sorted(by_spec.items(), key=lambda kv: (fuel_rank(kv[0][0]), region_rank(kv[0][1]))):
+        engines = sorted(spec['engines'].items(), key=lambda s: s[1]['count'], reverse=True)
+        for (engine, et), eg in engines:
+            parts = [model_label, region_label.get(region, region)]
+            if fuel and fold_ar(fuel) not in fold_ar(model_label):
+                parts.insert(1, fuel)
+            if len(engines) > 1 and engine:
+                parts.append(engine)
+            label = ' '.join(p for p in parts if p)
+            combos.append({
+                'fuel': fuel,
+                'spec_region': region,
+                'spec_region_label': region_label.get(region, region),
+                'engine': engine,
+                'engine_type': et,
+                'count': eg['count'],
+                'years': sorted(eg['years'], reverse=True),
+                'label': label,
+            })
 
     return JsonResponse({
         'brand': brand,
         'model': model,
         'model_label': model_label,
-        'years': sorted(years, reverse=True),
-        'variants': variants,
+        'combos': combos,
     })
 
 
