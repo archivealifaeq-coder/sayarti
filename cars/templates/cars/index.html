@@ -1765,29 +1765,6 @@
                     </div>
                 </div>
 
-                <!-- لوحة الاقتراحات: ورقة ثابتة تلتصق أعلى لوحة المفاتيح فلا تختفي خلفها -->
-                <div class="qs-panel qs-sheet" id="qsPanel" hidden>
-                    <div class="qs-panel-sec" id="qsSecCands">
-                        <div class="qs-panel-title" id="qsCandTitle">هل تقصد؟</div>
-                        <button type="button" class="qs-main" id="qsMain">
-                            <span class="m-label" id="qsMainLabel"></span>
-                            <span class="m-count" id="qsMainCount" hidden></span>
-                        </button>
-                        <button type="button" class="qs-alt" id="qsAlt" hidden></button>
-                        <div class="qs-err" id="qsNoCands" hidden>لم نعثر على نتائج — جرّب اسماً آخر أو مثالاً مثل «سوناتا 2008»</div>
-                    </div>
-                    <div class="qs-panel-sec" id="qsSecCombos" style="display:none">
-                        <div class="qs-panel-title" id="qsComboTitle">اختر النسخة</div>
-                        <div class="qs-combo-list" id="qsCombos"></div>
-                        <button type="button" class="qs-back-link" id="qsBackYears">→ تغيير البحث</button>
-                    </div>
-                    <div class="qs-panel-sec" id="qsSecYears" style="display:none">
-                        <div class="qs-panel-title" id="qsYearTitle">اختر السنة</div>
-                        <div class="qs-year-wrap" id="qsYears"></div>
-                        <button type="button" class="qs-back-link" id="qsBackCombos">→ اختر نسخة أخرى</button>
-                    </div>
-                </div>
-
                 <div class="tab-panel" id="tab-detail" role="tabpanel" aria-labelledby="tabBtnDetail">
                 <form hx-get="{% url 'index' %}"
                       hx-target="#cars-container"
@@ -3055,6 +3032,29 @@
                 </div>
                 <button type="button" class="pwa-modal-close" id="pwaModalClose">حسناً، فهمت</button>
             </div>
+        </div>
+    </div>
+
+    <!-- لوحة الاقتراحات: ابن مباشر للـ body، ورقة ثابتة أعلى لوحة المفاتيح -->
+    <div class="qs-panel qs-sheet" id="qsPanel" hidden>
+        <div class="qs-panel-sec" id="qsSecCands">
+            <div class="qs-panel-title" id="qsCandTitle">هل تقصد؟</div>
+            <button type="button" class="qs-main" id="qsMain">
+                <span class="m-label" id="qsMainLabel"></span>
+                <span class="m-count" id="qsMainCount" hidden></span>
+            </button>
+            <button type="button" class="qs-alt" id="qsAlt" hidden></button>
+            <div class="qs-err" id="qsNoCands" hidden>لم نعثر على نتائج — جرّب اسماً آخر أو مثالاً مثل «سوناتا 2008»</div>
+        </div>
+        <div class="qs-panel-sec" id="qsSecCombos" style="display:none">
+            <div class="qs-panel-title" id="qsComboTitle">اختر النسخة</div>
+            <div class="qs-combo-list" id="qsCombos"></div>
+            <button type="button" class="qs-back-link" id="qsBackYears">→ تغيير البحث</button>
+        </div>
+        <div class="qs-panel-sec" id="qsSecYears" style="display:none">
+            <div class="qs-panel-title" id="qsYearTitle">اختر السنة</div>
+            <div class="qs-year-wrap" id="qsYears"></div>
+            <button type="button" class="qs-back-link" id="qsBackCombos">→ اختر نسخة أخرى</button>
         </div>
     </div>
 
