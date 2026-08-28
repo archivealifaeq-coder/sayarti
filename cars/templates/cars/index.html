@@ -1329,7 +1329,7 @@
         .qs-empty { text-align: center; color: #64748b; padding: 18px 8px; font-size: 0.95rem; }
 
         /* ============================================ */
-        /*  QUICK SEARCH RIBBON (شريط الاقتراحات)       */
+        /*  QUICK SEARCH PANEL (لوحة الاقتراحات الهادئة) */
         /* ============================================ */
         .qs-step-label {
             display: block; text-align: center;
@@ -1339,122 +1339,109 @@
         .qs-step-label b { color: #fbbf24; }
         .qs-hint { text-align: center; color: #94a3b8; font-size: 0.82rem; margin-top: 10px; }
 
-        .qs-ribbon {
-            position: fixed;
-            left: 0; right: 0;
-            bottom: 0;
-            z-index: 5000;
-            transform: translateY(108%);
-            transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
-            pointer-events: none;
+        .qs-panel { margin-top: 16px; }
+        .qs-panel.fade { animation: qsPanelIn 0.28s ease both; }
+        @keyframes qsPanelIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: none; }
         }
-        .qs-ribbon.open { transform: translateY(0); pointer-events: auto; }
-        .qs-ribbon-inner {
-            background: linear-gradient(180deg, rgba(20, 27, 47, 0.97), rgba(10, 15, 26, 0.99));
-            border-top: 1px solid rgba(251, 191, 36, 0.3);
-            border-radius: 22px 22px 0 0;
-            padding: 16px 18px calc(16px + env(safe-area-inset-bottom));
-            box-shadow: 0 -18px 60px rgba(0, 0, 0, 0.55), 0 -2px 24px rgba(245, 158, 11, 0.12);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            max-height: 46vh;
-            overflow-y: auto;
-            overscroll-behavior: contain;
-        }
-        .qs-ribbon-sec { margin-bottom: 8px; }
-        .qs-ribbon-sec:last-child { margin-bottom: 0; }
-        .qs-ribbon-title {
+
+        .qs-panel-sec { margin-bottom: 10px; }
+        .qs-panel-sec:last-child { margin-bottom: 0; }
+        .qs-panel-title {
             display: flex; align-items: center; gap: 8px;
-            font-size: 0.74rem; font-weight: 800; color: #fbbf24;
-            margin: 0 4px 10px;
-            opacity: 0.92;
-            white-space: nowrap;
+            font-size: 0.78rem; font-weight: 800; color: #fbbf24;
+            margin: 0 4px 10px; opacity: 0.92; white-space: nowrap;
         }
-        .qs-ribbon-title::before {
+        .qs-panel-title::before {
             content: '';
             width: 18px; height: 2px;
             border-radius: 9999px;
             background: linear-gradient(90deg, #fbbf24, transparent);
             flex: 0 0 auto;
         }
-        .qs-ribbon-row {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px 12px;
-            padding: 2px;
-        }
-        .qs-ribbon-row::-webkit-scrollbar { display: none; }
-        @keyframes qsPop {
-            from { opacity: 0; transform: translateY(8px) scale(0.97); }
-            to { opacity: 1; transform: none; }
-        }
 
-        .qs-pill {
-            flex: 0 1 auto;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border-radius: 9999px;
-            padding: 11px 18px;
-            font-size: 0.96rem;
-            font-weight: 800;
+        /* الاقتراح الرئيسي: سؤال واحد كبير وهادئ */
+        .qs-main {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            width: 100%;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0a0f1a;
+            border: none;
+            border-radius: 18px;
+            padding: 16px 18px;
+            font-size: 1.15rem;
+            font-weight: 900;
             line-height: 1.4;
+            text-align: right;
             cursor: pointer;
-            border: 1px solid transparent;
-            white-space: normal;
-            text-align: center;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
-            animation: qsPop 0.22s ease both;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .qs-pill .cnt {
+        .qs-main:hover, .qs-main:focus-visible { transform: translateY(-2px); box-shadow: 0 14px 38px rgba(245, 158, 11, 0.45); }
+        .qs-main .m-count {
             background: rgba(0, 0, 0, 0.22);
             color: #fff;
             border-radius: 9999px;
-            padding: 2px 9px;
-            font-size: 0.72rem;
+            padding: 4px 12px;
+            font-size: 0.8rem;
             font-weight: 800;
+            white-space: nowrap;
+            flex: 0 0 auto;
         }
+        .qs-alt {
+            display: inline-flex; align-items: center; gap: 6px;
+            margin-top: 10px;
+            background: transparent; border: none;
+            color: #94a3b8; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; text-decoration: underline dotted;
+        }
+        .qs-alt:hover { color: #fbbf24; }
 
-        /* مرشّحات التصحيح الذهبية */
-        .qs-pill-gold {
+        /* قائمة النسخ العمودية الهادئة */
+        .qs-combo-list { display: flex; flex-direction: column; gap: 10px; }
+        .qs-combo-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            width: 100%;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(15, 23, 42, 0.6));
+            border: 1px solid rgba(251, 191, 36, 0.28);
+            border-radius: 16px;
+            padding: 13px 16px;
+            color: #e2e8f0;
+            text-align: right;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+        .qs-combo-row:hover, .qs-combo-row:focus-visible { border-color: #fbbf24; transform: translateY(-1px); }
+        .qs-combo-row .r-main { min-width: 0; }
+        .qs-combo-row .r-label { font-size: 1rem; font-weight: 800; line-height: 1.45; }
+        .qs-combo-row .r-meta { color: #94a3b8; font-size: 0.78rem; margin-top: 2px; }
+        .qs-combo-row .r-count {
             background: linear-gradient(135deg, #fbbf24, #f59e0b);
             color: #0a0f1a;
-            box-shadow: 0 6px 18px rgba(245, 158, 11, 0.32);
+            border-radius: 9999px;
+            padding: 4px 12px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            white-space: nowrap;
+            flex: 0 0 auto;
         }
-        .qs-pill-gold:hover, .qs-pill-gold:focus-visible {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 26px rgba(245, 158, 11, 0.5);
-        }
-
-        /* بطاقات النسخ الزجاجية */
-        .qs-pill-glass {
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(15, 23, 42, 0.78));
-            border: 1px solid rgba(251, 191, 36, 0.42);
-            color: #fde68a;
-        }
-        .qs-pill-glass:hover, .qs-pill-glass:focus-visible {
-            transform: translateY(-2px);
-            border-color: #fbbf24;
-            color: #fff;
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.28), rgba(15, 23, 42, 0.85));
-        }
-        .qs-pill-glass.selected {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #0a0f1a;
-            border-color: transparent;
-            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-        }
-        .qs-pill-glass.selected .cnt { background: rgba(0, 0, 0, 0.2); }
 
         /* أزرار السنوات */
+        .qs-year-wrap { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px; }
         .qs-pill-year {
+            flex: 0 0 auto;
+            display: inline-flex; align-items: center; justify-content: center;
             background: rgba(15, 23, 42, 0.85);
             border: 1px solid rgba(71, 85, 105, 0.8);
             color: #e2e8f0;
             min-width: 66px;
-            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 9999px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
         .qs-pill-year:hover, .qs-pill-year:focus-visible { border-color: #f59e0b; color: #fbbf24; }
         .qs-pill-year.selected {
@@ -1464,24 +1451,15 @@
             box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4);
         }
 
-        .qs-ribbon-back {
+        .qs-back-link {
             display: inline-flex; align-items: center; gap: 6px;
-            margin: 2px 4px 4px;
-            background: transparent;
-            border: none;
-            color: #fbbf24;
-            font-size: 0.8rem;
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: underline dotted;
+            margin: 8px 4px 2px;
+            background: transparent; border: none;
+            color: #fbbf24; font-size: 0.82rem; font-weight: 700;
+            cursor: pointer; text-decoration: underline dotted;
         }
-        .qs-ribbon-back:hover { color: #fff; }
-        .qs-ribbon-err {
-            color: #94a3b8;
-            font-size: 0.85rem;
-            text-align: center;
-            padding: 10px 6px 12px;
-        }
+        .qs-back-link:hover { color: #fff; }
+        .qs-err { color: #94a3b8; font-size: 0.9rem; text-align: center; padding: 10px 6px; }
 
         /* ============================================ */
         /*  RELAXED SEARCH NOTE                        */
@@ -1761,26 +1739,28 @@
                             <span class="qs-input-icon" aria-hidden="true">🚗</span>
                         </div>
                         <div class="qs-hint" id="qsFreeHint">💡 اكتب اسم السيارة كما تتذكره — سنعثر عليها حتى لو اختلفت كتابتها</div>
-                    </div>
-                </div>
 
-                <!-- شريط الاقتراحات: يلصق أعلى لوحة المفاتيح فلا يختفي خلفها -->
-                <div class="qs-ribbon" id="qsRibbon" aria-label="اقتراحات البحث السريع">
-                    <div class="qs-ribbon-inner">
-                        <div class="qs-ribbon-sec" id="qsSecCandidates">
-                            <div class="qs-ribbon-title" id="qsCandTitle">هل تقصد؟</div>
-                            <div class="qs-ribbon-row" id="qsCandidates"></div>
-                            <div class="qs-ribbon-err" id="qsNoCands" style="display:none">لم نعثر على نتائج — جرّب اسماً آخر أو مثالاً مثل «سوناتا 2008»</div>
-                        </div>
-                        <div class="qs-ribbon-sec" id="qsSecCombos" style="display:none">
-                            <div class="qs-ribbon-title" id="qsComboTitle">اختر النسخة</div>
-                            <div class="qs-ribbon-row" id="qsCombos"></div>
-                            <button type="button" class="qs-ribbon-back" id="qsBackYears">→ تغيير البحث</button>
-                        </div>
-                        <div class="qs-ribbon-sec" id="qsSecYears" style="display:none">
-                            <div class="qs-ribbon-title" id="qsYearTitle">اختر السنة</div>
-                            <div class="qs-ribbon-row" id="qsYears"></div>
-                            <button type="button" class="qs-ribbon-back" id="qsBackCombos">→ اختر نسخة أخرى</button>
+                        <!-- لوحة الاقتراحات: هادئة، داخل البطاقة، تظهر مباشرة أسفل الحقل -->
+                        <div class="qs-panel" id="qsPanel" hidden>
+                            <div class="qs-panel-sec" id="qsSecCands">
+                                <div class="qs-panel-title" id="qsCandTitle">هل تقصد؟</div>
+                                <button type="button" class="qs-main" id="qsMain">
+                                    <span class="m-label" id="qsMainLabel"></span>
+                                    <span class="m-count" id="qsMainCount" hidden></span>
+                                </button>
+                                <button type="button" class="qs-alt" id="qsAlt" hidden></button>
+                                <div class="qs-err" id="qsNoCands" hidden>لم نعثر على نتائج — جرّب اسماً آخر أو مثالاً مثل «سوناتا 2008»</div>
+                            </div>
+                            <div class="qs-panel-sec" id="qsSecCombos" style="display:none">
+                                <div class="qs-panel-title" id="qsComboTitle">اختر النسخة</div>
+                                <div class="qs-combo-list" id="qsCombos"></div>
+                                <button type="button" class="qs-back-link" id="qsBackYears">→ تغيير البحث</button>
+                            </div>
+                            <div class="qs-panel-sec" id="qsSecYears" style="display:none">
+                                <div class="qs-panel-title" id="qsYearTitle">اختر السنة</div>
+                                <div class="qs-year-wrap" id="qsYears"></div>
+                                <button type="button" class="qs-back-link" id="qsBackCombos">→ اختر نسخة أخرى</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2633,22 +2613,27 @@
             })();
 
             var qsFreeInput = document.getElementById('qsFreeInput');
-            var qsRibbon = document.getElementById('qsRibbon');
-            var qsSecCands = document.getElementById('qsSecCandidates');
+            var qsPanel = document.getElementById('qsPanel');
+            var qsSecCands = document.getElementById('qsSecCands');
             var qsSecCombos = document.getElementById('qsSecCombos');
             var qsSecYears = document.getElementById('qsSecYears');
             var qsCandTitle = document.getElementById('qsCandTitle');
             var qsComboTitle = document.getElementById('qsComboTitle');
             var qsYearTitle = document.getElementById('qsYearTitle');
-            var qsCandidates = document.getElementById('qsCandidates');
+            var qsMain = document.getElementById('qsMain');
+            var qsMainLabel = document.getElementById('qsMainLabel');
+            var qsMainCount = document.getElementById('qsMainCount');
+            var qsAlt = document.getElementById('qsAlt');
             var qsCombos = document.getElementById('qsCombos');
             var qsYears = document.getElementById('qsYears');
             var qsNoCands = document.getElementById('qsNoCands');
             var qsTimer3 = null;
             var qsSeq = 0;
             var qsLastCand = '';
-            var qsStage = 0;           // 0 = اقتراحات، 1 = نسخ، 2 = سنوات
+            var qsStage = 0;           // 0 = سؤال رئيسي، 1 = نسخ، 2 = سنوات
             var qsPicked = null;       // المرشَّح المختار: {brand_ar, model_ar}
+            var qsCandsList = [];
+            var qsAltObj = null;
             var qsCombosData = [];
             var qsPickedCombo = null;
             var qsTypedYear = null;
@@ -2668,60 +2653,81 @@
                 'اوروبي': 'european', 'أوروبي': 'european', 'اوروبى': 'european', 'europe': 'european'
             };
 
-            function qsOpen() { if (qsRibbon) qsRibbon.classList.add('open'); }
-            function qsClose() { if (qsRibbon) qsRibbon.classList.remove('open'); }
+            function qsShowPanel() {
+                if (!qsPanel) return;
+                var wasHidden = qsPanel.hidden;
+                qsPanel.hidden = false;
+                if (wasHidden) {
+                    qsPanel.classList.remove('fade');
+                    void qsPanel.offsetWidth;
+                    qsPanel.classList.add('fade');
+                }
+            }
+            function qsHidePanel() { if (qsPanel) qsPanel.hidden = true; }
 
             function qsReset() {
                 qsStage = 0;
                 qsPicked = null;
+                qsCandsList = [];
+                qsAltObj = null;
                 qsCombosData = [];
                 qsPickedCombo = null;
                 qsTypedYear = null;
-                if (qsCandidates) qsCandidates.innerHTML = '';
                 if (qsCombos) qsCombos.innerHTML = '';
                 if (qsYears) qsYears.innerHTML = '';
                 if (qsSecCands) qsSecCands.style.display = 'block';
                 if (qsSecCombos) qsSecCombos.style.display = 'none';
                 if (qsSecYears) qsSecYears.style.display = 'none';
-                if (qsNoCands) qsNoCands.style.display = 'none';
-                qsClose();
+                qsHidePanel();
             }
 
-            function qsMakePill(label, cls, count, onClick) {
+            function qsMakeYearPill(y) {
                 var b = document.createElement('button');
                 b.type = 'button';
-                b.className = 'qs-pill ' + cls;
-                var ls = document.createElement('span');
-                ls.textContent = label;
-                b.appendChild(ls);
-                if (count) {
-                    var c = document.createElement('span');
-                    c.className = 'cnt';
-                    c.textContent = count;
-                    b.appendChild(c);
-                }
+                b.className = 'qs-pill-year';
+                b.textContent = String(y);
                 b.addEventListener('click', function(ev) {
                     ev.preventDefault();
-                    onClick();
+                    qsYears.querySelectorAll('.qs-pill-year').forEach(function(x) { x.classList.remove('selected'); });
+                    b.classList.add('selected');
+                    qsRun(y);
                 });
                 return b;
             }
 
-            function qsRenderCandidateRows(data) {
-                if (!qsCandidates) return;
-                qsCandidates.innerHTML = '';
+            function qsRenderCandidates(data) {
                 var cands = (data && data.candidates) || [];
-                var hasCorr = cands.some(function(c) { return c.corrected; });
-                if (qsCandTitle) qsCandTitle.textContent = hasCorr ? 'هل تقصد؟' : 'اختر السيارة';
-                if (qsNoCands) qsNoCands.style.display = cands.length ? 'none' : 'block';
-                cands.slice(0, 5).forEach(function(c) {
-                    var lab = c.label || c.model_ar || c.brand_ar || '؟';
-                    qsCandidates.appendChild(qsMakePill(lab, 'qs-pill-gold', c.count > 0 ? c.count : null, function() {
-                        qsPickCandidate(c);
-                    }));
-                });
-                if (cands.length) qsOpen();
-                else if (qsStage === 0) qsClose();
+                qsCandsList = cands;
+                qsAltObj = null;
+                if (qsNoCands) qsNoCands.hidden = cands.length > 0;
+                if (!cands.length) {
+                    if (qsMainLabel) qsMainLabel.textContent = '';
+                    if (qsMainCount) qsMainCount.hidden = true;
+                    if (qsAlt) qsAlt.hidden = true;
+                    if (qsCandTitle) qsCandTitle.textContent = 'بحث';
+                    qsShowPanel();
+                    return;
+                }
+                var main = cands[0];
+                if (qsCandTitle) qsCandTitle.textContent = cands.some(function(c) { return c.corrected; }) ? 'هل تقصد؟' : 'أكّد اختيارك';
+                if (qsMainLabel) qsMainLabel.textContent = main.label || main.model_ar || main.brand_ar || '';
+                if (qsMainCount) {
+                    qsMainCount.textContent = (main.count > 0 ? main.count : '') + '';
+                    qsMainCount.hidden = !(main.count > 0);
+                }
+                if (qsMain) qsMain.onclick = function(ev) { ev.preventDefault(); qsPickCandidate(main); };
+                var alt = cands[1];
+                if (qsAlt) {
+                    qsAlt.hidden = !(alt && alt.label && alt.label !== (main.label || main.model_ar));
+                    if (qsAlt.hidden) {
+                        qsAlt.onclick = null;
+                    } else {
+                        qsAltObj = alt;
+                        qsAlt.textContent = 'إلا تريد ' + alt.label + '؟';
+                        qsAlt.onclick = function(ev) { ev.preventDefault(); qsPickCandidate(qsAltObj); };
+                    }
+                }
+                qsShowPanel();
             }
 
             function qsDetectFuelRegion(text, combos) {
@@ -2754,25 +2760,58 @@
                 if (qsComboTitle) qsComboTitle.textContent = 'اختر النسخة';
                 if (!c.model_ar) {
                     if (qsComboTitle) qsComboTitle.textContent = 'اختر النوع';
+                    var seqM = ++qsSeq;
                     fetch('{% url "get_suggestions" %}?brand=' + encodeURIComponent(c.brand_ar))
                         .then(function(r) { return r.json(); })
                         .then(function(data) {
+                            if (seqM !== qsSeq) return;
                             qsCombos.innerHTML = '';
                             (data.models || []).forEach(function(m) {
                                 if (!m.ar) return;
-                                qsCombos.appendChild(qsMakePill(m.ar, 'qs-pill-glass', null, function() {
-                                    qsPicked.model_ar = m.ar;
-                                    qsFreeInput.value = m.ar;
-                                    if (qsComboTitle) qsComboTitle.textContent = 'اختر النسخة';
-                                    qsLoadCombos();
-                                }));
+                                qsCombos.appendChild(qsMakeComboRow({ label: m.ar, count: 0, meta: '', modelPick: m.ar }));
                             });
-                            qsOpen();
                         })
-                        .catch(function() { qsOpen(); });
+                        .catch(function() {});
                     return;
                 }
                 qsLoadCombos();
+            }
+
+            function qsMakeComboRow(c) {
+                var row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'qs-combo-row';
+                var main = document.createElement('span');
+                main.className = 'r-main';
+                var lab = document.createElement('span');
+                lab.className = 'r-label';
+                lab.textContent = c.label;
+                main.appendChild(lab);
+                if (c.meta) {
+                    var meta = document.createElement('div');
+                    meta.className = 'r-meta';
+                    meta.textContent = c.meta;
+                    main.appendChild(meta);
+                }
+                row.appendChild(main);
+                if (c.count > 0) {
+                    var cnt = document.createElement('span');
+                    cnt.className = 'r-count';
+                    cnt.textContent = c.count + (c.count === 1 ? ' سيارة' : ' سيارات');
+                    row.appendChild(cnt);
+                }
+                row.addEventListener('click', function(ev) {
+                    ev.preventDefault();
+                    if (c.modelPick) {
+                        qsPicked.model_ar = c.modelPick;
+                        qsFreeInput.value = c.modelPick;
+                        if (qsComboTitle) qsComboTitle.textContent = 'اختر النسخة';
+                        qsLoadCombos();
+                        return;
+                    }
+                    qsPickCombo(c);
+                });
+                return row;
             }
 
             function qsLoadCombos() {
@@ -2790,50 +2829,58 @@
                         qsCombosData = list;
                         qsRenderCombos(list);
                         if (list.length === 1) qsPickCombo(list[0]);
-                        else qsOpen();
                     })
-                    .catch(function() { if (seq === qsSeq) qsOpen(); });
+                    .catch(function() {});
             }
 
             function qsRenderCombos(combos) {
-                if (!qsCombos) return;
                 qsCombos.innerHTML = '';
                 if (!combos.length) {
-                    var b = qsMakePill('لا تتوفر نسخ لهذه السيارة', 'qs-pill-year', null, function() {});
-                    b.disabled = true;
-                    qsCombos.appendChild(b);
+                    var empty = document.createElement('div');
+                    empty.className = 'qs-err';
+                    empty.textContent = 'لا تتوفر نسخ لهذه السيارة حالياً';
+                    qsCombos.appendChild(empty);
                     return;
                 }
                 combos.forEach(function(c) {
-                    qsCombos.appendChild(qsMakePill(c.label, 'qs-pill-glass', c.count, function() {
-                        qsPickCombo(c);
+                    var y = c.years || [];
+                    var meta = '';
+                    if (y.length) meta = 'متوفر ' + (y.length === 1 ? 'في ' + y[0] : 'من ' + y[0] + ' إلى ' + y[y.length - 1]);
+                    qsCombos.appendChild(qsMakeComboRow({
+                        label: c.label,
+                        count: c.count,
+                        meta: meta,
+                        combo: c
                     }));
                 });
             }
 
             function qsPickCombo(c) {
+                if (!c) return;
                 qsPickedCombo = c;
                 qsStage = 2;
                 if (qsSecCands) qsSecCands.style.display = 'none';
                 if (qsSecCombos) qsSecCombos.style.display = 'none';
                 if (qsSecYears) qsSecYears.style.display = 'block';
-                if (qsYears) qsYears.innerHTML = '';
+                qsYears.innerHTML = '';
                 if (qsYearTitle) qsYearTitle.textContent = 'اختر السنة — ' + c.label;
-                (c.years || []).forEach(function(y) {
-                    qsYears.appendChild(qsMakePill(String(y), 'qs-pill-year', null, function() {
-                        qsRun(y);
-                    }));
-                });
+                var years = c.years || [];
+                if (!years.length) {
+                    var empty = document.createElement('div');
+                    empty.className = 'qs-err';
+                    empty.textContent = 'لا توجد سنوات مسجلة لهذه النسخة';
+                    qsYears.appendChild(empty);
+                    return;
+                }
+                years.forEach(function(y) { qsYears.appendChild(qsMakeYearPill(y)); });
                 if (qsTypedYear) qsPickTypedYear(qsTypedYear);
-                qsOpen();
             }
 
             function qsPickTypedYear(year) {
-                if (!qsYears) return;
                 var chips = qsYears.querySelectorAll('.qs-pill-year');
                 for (var i = 0; i < chips.length; i++) {
-                    if (parseInt(chips[i].childNodes[0].textContent, 10) === year) {
-                        qsRun(year);
+                    if (parseInt(chips[i].textContent, 10) === year) {
+                        chips[i].click();
                         return;
                     }
                 }
@@ -2876,12 +2923,11 @@
                 if (v.length < 2) {
                     qsStage = 0;
                     qsLastCand = '';
-                    if (qsCandidates) qsCandidates.innerHTML = '';
-                    if (qsNoCands) qsNoCands.style.display = 'none';
+                    qsCandsList = [];
                     if (qsSecCands) qsSecCands.style.display = 'block';
                     if (qsSecCombos) qsSecCombos.style.display = 'none';
                     if (qsSecYears) qsSecYears.style.display = 'none';
-                    qsClose();
+                    qsHidePanel();
                     return;
                 }
                 qsStage = 0;
@@ -2897,13 +2943,13 @@
                             return (c.label || c.model_ar || c.brand_ar) + ':' + c.count;
                         }));
                         if (key === qsLastCand) {
-                            if (cands.length && qsStage === 0) qsOpen();
+                            if (cands.length && qsStage === 0) qsShowPanel();
                             return;
                         }
                         qsLastCand = key;
-                        qsRenderCandidateRows(data);
+                        qsRenderCandidates(data);
                     })
-                    .catch(function() { if (seq === qsSeq) qsClose(); });
+                    .catch(function() { if (seq === qsSeq) qsHidePanel(); });
             }
 
             var qsPlannedFilter = null;
@@ -2914,23 +2960,22 @@
                     qsTimer3 = setTimeout(qsLive, 350);
                 });
                 qsFreeInput.addEventListener('focus', function() {
-                    if (qsStage > 0) qsOpen();
+                    try { qsFreeInput.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
                 });
                 qsFreeInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         if (qsStage === 0) {
-                            var first = qsCandidates ? qsCandidates.querySelector('.qs-pill') : null;
-                            if (first) first.click();
+                            if (qsMain) qsMain.click();
                             return;
                         }
                         if (qsStage === 1) {
-                            var c2 = qsCombos ? qsCombos.querySelector('.qs-pill') : null;
-                            if (c2) c2.click();
+                            var r = qsCombos ? qsCombos.querySelector('.qs-combo-row') : null;
+                            if (r) r.click();
                             return;
                         }
                         if (qsStage === 2) {
-                            var y = qsYears ? qsYears.querySelector('.qs-pill') : null;
+                            var y = qsYears ? qsYears.querySelector('.qs-pill-year') : null;
                             if (y) y.click();
                         }
                     }
@@ -2951,31 +2996,6 @@
                 if (qsSecCands) qsSecCands.style.display = 'block';
                 qsFreeInput.focus();
             });
-
-            document.addEventListener('pointerdown', function(e) {
-                if (!qsRibbon || !qsFreeInput) return;
-                if (qsRibbon.classList.contains('open') &&
-                    !qsRibbon.contains(e.target) &&
-                    e.target !== qsFreeInput) {
-                    qsReset();
-                }
-            });
-
-            function qsPositionRibbon() {
-                if (!qsRibbon) return;
-                var vv = window.visualViewport;
-                if (vv && vv.height < window.innerHeight) {
-                    var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-                    qsRibbon.style.bottom = (kb + 8) + 'px';
-                } else {
-                    qsRibbon.style.bottom = '0px';
-                }
-            }
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', qsPositionRibbon);
-                window.visualViewport.addEventListener('scroll', qsPositionRibbon);
-            }
-            qsPositionRibbon();
 
         })();
     </script>
