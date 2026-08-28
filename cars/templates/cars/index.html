@@ -1247,271 +1247,30 @@
             box-shadow: 0 14px 40px rgba(245, 158, 11, 0.5);
         }
         
+
         /* ============================================ */
-        /*  QUICK SEARCH (البحث السريع)                */
+        /*  DETAILED SEARCH NOTE (البحث ببيانات جزئية)  */
         /* ============================================ */
-        /* ============================================ */
-        /*  SEARCH TABS (سريع / مفصّل)                  */
-        /* ============================================ */
-        .search-tabs {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .search-tab {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(71, 85, 105, 0.6);
+        .detail-search-note {
+            max-width: 720px;
+            margin: 0 auto 16px;
+            text-align: center;
             color: #94a3b8;
-            font-size: 0.95rem;
-            font-weight: 700;
-            padding: 10px 26px;
-            border-radius: 9999px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 0.85rem;
+            line-height: 1.65;
         }
-        .search-tab:hover { color: #e2e8f0; border-color: rgba(245, 158, 11, 0.45); }
-        .search-tab.active {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #0f172a;
-            border-color: transparent;
-            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
-        }
-        .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
-
-        .quick-tab-inner { max-width: 720px; margin: 0 auto; padding: 4px 0 6px; }
-        .qs-input-wrapper { position: relative; max-width: 720px; margin: 0 auto; }
-        .qs-input {
-            width: 100%;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 16px;
-            color: #e2e8f0;
-            font-size: 1.05rem;
-            padding: 14px 46px 14px 18px;
-            outline: none;
-            transition: border 0.25s ease;
-        }
-        .qs-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
-        .qs-input-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #fbbf24; font-size: 1.2rem; pointer-events: none; }
-        .qs-hint { text-align: center; color: #94a3b8; font-size: 0.82rem; margin-top: 10px; }
-        .qs-results { max-width: 720px; margin: 14px auto 0; display: none; }
-        .qs-results.show { display: block; }
-        .qs-result {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(51, 65, 85, 0.8);
-            border-radius: 14px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            color: #e2e8f0;
-            text-decoration: none;
-            transition: all 0.25s ease;
-        }
-        .qs-result:hover { border-color: #f59e0b; background: rgba(30, 41, 59, 0.95); transform: translateY(-1px); }
-        .qs-result .qs-q { color: #94a3b8; font-size: 0.82rem; }
-        .qs-result .qs-label { font-size: 1rem; font-weight: 800; color: #fff; }
-        .qs-result .qs-label .qs-corrected { color: #fbbf24; }
-        .qs-result .qs-count {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            font-size: 0.8rem;
-            font-weight: 700;
-            border-radius: 9999px;
-            padding: 5px 12px;
-            white-space: nowrap;
-        }
-        .qs-empty { text-align: center; color: #64748b; padding: 18px 8px; font-size: 0.95rem; }
-
-        /* ============================================ */
-        /*  QUICK SEARCH PANEL (لوحة الاقتراحات الهادئة) */
-        /* ============================================ */
-        .qs-step-label {
-            display: block; text-align: center;
-            color: #94a3b8; font-size: 0.9rem; font-weight: 800;
-            margin-bottom: 10px;
-        }
-        .qs-step-label b { color: #fbbf24; }
-        .qs-hint { text-align: center; color: #94a3b8; font-size: 0.82rem; margin-top: 10px; }
-
-        .qs-panel { margin-top: 16px; }
-        .qs-panel.fade { animation: qsPanelIn 0.28s ease both; }
-        @keyframes qsPanelIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: none; }
-        }
-
-/* نافذة البحث السريع: حوار مركزي فوق كل شيء */
-        .qs-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 6000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            background: rgba(5, 8, 16, 0.62);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            overflow-y: auto;
-        }
-        .qs-overlay[hidden] { display: none; }
-        .qs-modal-box {
-            width: min(560px, calc(100vw - 32px));
-            max-height: min(80vh, 640px);
-            overflow-y: auto;
-            overscroll-behavior: contain;
-            background: linear-gradient(180deg, rgba(20, 27, 47, 0.985), rgba(10, 15, 26, 0.995));
-            border: 1px solid rgba(251, 191, 36, 0.35);
-            border-radius: 24px;
-            padding: 18px 20px calc(20px + env(safe-area-inset-bottom));
-            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(245, 158, 11, 0.08), 0 0 80px rgba(245, 158, 11, 0.08);
-        }
-        .qs-overlay.show .qs-modal-box { animation: qsModalIn 0.26s cubic-bezier(0.22, 1, 0.36, 1) both; }
-        @keyframes qsModalIn {
-            from { opacity: 0; transform: translateY(18px) scale(0.97); }
-            to { opacity: 1; transform: none; }
-        }
-        .qs-modal-head {
-            display: flex; align-items: center; justify-content: space-between; gap: 10px;
-            margin-bottom: 14px;
-        }
-        .qs-modal-title {
-            font-size: 0.95rem; font-weight: 900; color: #fbbf24;
-            letter-spacing: 0.2px;
-        }
-        .qs-modal-close {
-            width: 34px; height: 34px;
-            flex: 0 0 auto;
-            display: inline-flex; align-items: center; justify-content: center;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.6);
-            border-radius: 50%;
-            color: #94a3b8;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .qs-modal-close:hover { border-color: #f59e0b; color: #fbbf24; }
-        .qs-panel-sec { margin-bottom: 10px; }
-        .qs-panel-sec:last-child { margin-bottom: 0; }
-        .qs-panel-title {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 0.78rem; font-weight: 800; color: #fbbf24;
-            margin: 0 4px 10px; opacity: 0.92; white-space: nowrap;
-        }
-        .qs-panel-title::before {
-            content: '';
-            width: 18px; height: 2px;
-            border-radius: 9999px;
-            background: linear-gradient(90deg, #fbbf24, transparent);
-            flex: 0 0 auto;
-        }
-
-        /* الاقتراح الرئيسي: سؤال واحد كبير وهادئ */
-        .qs-main {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            width: 100%;
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #0a0f1a;
-            border: none;
-            border-radius: 18px;
-            padding: 16px 18px;
-            font-size: 1.15rem;
-            font-weight: 900;
-            line-height: 1.4;
-            text-align: right;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .qs-main:hover, .qs-main:focus-visible { transform: translateY(-2px); box-shadow: 0 14px 38px rgba(245, 158, 11, 0.45); }
-        .qs-main .m-count {
-            background: rgba(0, 0, 0, 0.22);
-            color: #fff;
-            border-radius: 9999px;
-            padding: 4px 12px;
-            font-size: 0.8rem;
+        .detail-search-note strong { color: #fbbf24; }
+        .optional-tag {
+            display: inline-block;
+            font-size: 0.62rem;
             font-weight: 800;
-            white-space: nowrap;
-            flex: 0 0 auto;
-        }
-        .qs-alt {
-            display: inline-flex; align-items: center; gap: 6px;
-            margin-top: 10px;
-            background: transparent; border: none;
-            color: #94a3b8; font-size: 0.85rem; font-weight: 700;
-            cursor: pointer; text-decoration: underline dotted;
-        }
-        .qs-alt:hover { color: #fbbf24; }
-
-        /* قائمة النسخ العمودية الهادئة */
-        .qs-combo-list { display: flex; flex-direction: column; gap: 10px; }
-        .qs-combo-row {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            width: 100%;
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(15, 23, 42, 0.6));
-            border: 1px solid rgba(251, 191, 36, 0.28);
-            border-radius: 16px;
-            padding: 13px 16px;
-            color: #e2e8f0;
-            text-align: right;
-            cursor: pointer;
-            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-        }
-        .qs-combo-row:hover, .qs-combo-row:focus-visible { border-color: #fbbf24; transform: translateY(-1px); }
-        .qs-combo-row .r-main { min-width: 0; }
-        .qs-combo-row .r-label { font-size: 1rem; font-weight: 800; line-height: 1.45; }
-        .qs-combo-row .r-meta { color: #94a3b8; font-size: 0.78rem; margin-top: 2px; }
-        .qs-combo-row .r-count {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #0a0f1a;
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.5);
             border-radius: 9999px;
-            padding: 4px 12px;
-            font-size: 0.78rem;
-            font-weight: 800;
-            white-space: nowrap;
-            flex: 0 0 auto;
+            padding: 1px 8px;
+            margin-inline-start: 4px;
+            vertical-align: middle;
         }
-
-        /* أزرار السنوات */
-        .qs-year-wrap { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px; }
-        .qs-pill-year {
-            flex: 0 0 auto;
-            display: inline-flex; align-items: center; justify-content: center;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(71, 85, 105, 0.8);
-            color: #e2e8f0;
-            min-width: 66px;
-            padding: 10px 16px;
-            border-radius: 9999px;
-            font-weight: 800;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .qs-pill-year:hover, .qs-pill-year:focus-visible { border-color: #f59e0b; color: #fbbf24; }
-        .qs-pill-year.selected {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #0a0f1a;
-            border-color: transparent;
-            box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4);
-        }
-
-        .qs-back-link {
-            display: inline-flex; align-items: center; gap: 6px;
-            margin: 8px 4px 2px;
-            background: transparent; border: none;
-            color: #fbbf24; font-size: 0.82rem; font-weight: 700;
-            cursor: pointer; text-decoration: underline dotted;
-        }
-        .qs-back-link:hover { color: #fff; }
-        .qs-err { color: #94a3b8; font-size: 0.9rem; text-align: center; padding: 10px 6px; }
 
         /* ============================================ */
         /*  RELAXED SEARCH NOTE                        */
@@ -1776,25 +1535,9 @@
         <!-- ============================================ -->
         <div class="max-w-7xl mx-auto px-4 section-spacing" id="cars-section">
             <div class="glass-card" id="search-section">
-                <h3 class="text-xl md:text-2xl font-extrabold text-white mb-4 md:mb-6 text-center">🔍 ابحث عن سيارتك</h3>
+                <h3 class="text-xl md:text-2xl font-extrabold text-white mb-2 md:mb-3 text-center">🔍 ابحث عن سيارتك</h3>
+                <p class="detail-search-note">اكتب ما تعرفه فقط — ابحث بالماركة، أو أضف الموديل والسنة. كل ما تركته فارغاً يُتجاهل تلقائياً.</p>
 
-                <div class="search-tabs" role="tablist" aria-label="نوع البحث">
-                    <button type="button" class="search-tab active" id="tabBtnQuick" data-tab="quick" role="tab" aria-selected="true" aria-controls="tab-quick">🔍 بحث سريع</button>
-                    <button type="button" class="search-tab" id="tabBtnDetail" data-tab="detail" role="tab" aria-selected="false" aria-controls="tab-detail">🧭 بحث مفصّل</button>
-                </div>
-
-                <div class="tab-panel active" id="tab-quick" role="tabpanel" aria-labelledby="tabBtnQuick">
-                    <div class="quick-tab-inner">
-                        <label class="qs-step-label" for="qsFreeInput">اكتب اسم السيارة كما تتذكره واترك الباقي علينا</label>
-                        <div class="qs-input-wrapper">
-                            <input type="text" id="qsFreeInput" class="qs-input" placeholder="مثال: كورله، سوناتا 2008، كامري هايبرد صيني" autocomplete="off" maxlength="120" enterkeyhint="search">
-                            <span class="qs-input-icon" aria-hidden="true">🚗</span>
-                        </div>
-                        <div class="qs-hint" id="qsFreeHint">💡 اكتب اسم السيارة كما تتذكره ثم اضغط زر البحث ⏎ — سنصحح الاسم ونستكمل معك النسخة والسنة</div>
-                    </div>
-                </div>
-
-                <div class="tab-panel" id="tab-detail" role="tabpanel" aria-labelledby="tabBtnDetail">
                 <form hx-get="{% url 'index' %}"
                       hx-target="#cars-container"
                       hx-select="#cars-container"
@@ -1834,7 +1577,7 @@
                     </div>
                     
                     <div>
-                        <label for="engineTypeSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">نوع المحرك</label>
+                        <label for="engineTypeSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">نوع المحرك <span class="optional-tag">اختياري</span></label>
                         <select name="engine_type" id="engineTypeSelect" class="search-select">
                             <option value="">-- الكل --</option>
                             {% for value, label in engine_type_choices %}<option value="{{ value|escape }}" {% if engine_type == value %}selected{% endif %}>{{ label|escape }}</option>{% endfor %}
@@ -1842,7 +1585,7 @@
                     </div>
                     
                     <div>
-                        <label for="specRegionSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">مواصفات المنطقة</label>
+                        <label for="specRegionSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">مواصفات المنطقة <span class="optional-tag">اختياري</span></label>
                         <select name="spec_region" id="specRegionSelect" class="search-select">
                             <option value="">-- الكل --</option>
                             {% for sr in spec_region_choices %}<option value="{{ sr.value|escape }}" {% if spec_region == sr.value %}selected{% endif %}>{{ sr.label|escape }}</option>{% endfor %}
@@ -1850,7 +1593,7 @@
                     </div>
                     
                     <div>
-                        <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك</label>
+                        <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك <span class="optional-tag">اختياري</span></label>
                         <div class="input-group">
                             <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="اختر الماركة والموديل أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
                             <span class="search-icon" aria-hidden="true">⚙️</span>
@@ -1868,7 +1611,6 @@
                         <a href="{% url 'index' %}" class="btn-secondary px-6 md:px-8 py-3 md:py-4 text-base md:text-lg">إعادة تعيين</a>
                     </div>
                 </form>
-                </div>
             </div>
         </div>
         
@@ -2605,433 +2347,6 @@
                 document.getElementById('pwaModal').classList.remove('open');
             });
 
-            /* ============================================ //
-               SEARCH TABS + QUICK SEARCH RIBBON: التبويبات وشريط الاقتراحات //
-            // ============================================ */
-            function switchTab(tab) {
-                var quickBtn = document.getElementById('tabBtnQuick');
-                var detailBtn = document.getElementById('tabBtnDetail');
-                var quickPane = document.getElementById('tab-quick');
-                var detailPane = document.getElementById('tab-detail');
-                if (!quickBtn || !detailBtn) return;
-                var isQuick = (tab === 'quick');
-                quickBtn.classList.toggle('active', isQuick);
-                detailBtn.classList.toggle('active', !isQuick);
-                quickBtn.setAttribute('aria-selected', isQuick ? 'true' : 'false');
-                detailBtn.setAttribute('aria-selected', isQuick ? 'false' : 'true');
-                if (quickPane) quickPane.classList.toggle('active', isQuick);
-                if (detailPane) detailPane.classList.toggle('active', !isQuick);
-                try { localStorage.setItem('sayarti_tab', tab); } catch (e) {}
-                if (!isQuick) qsReset();
-            }
-
-            var tabQuickBtn = document.getElementById('tabBtnQuick');
-            var tabDetailBtn = document.getElementById('tabBtnDetail');
-            if (tabQuickBtn) tabQuickBtn.addEventListener('click', function() {
-                switchTab('quick');
-                var qi = document.getElementById('qsFreeInput');
-                if (qi) qi.focus();
-            });
-            if (tabDetailBtn) tabDetailBtn.addEventListener('click', function() { switchTab('detail'); });
-
-            (function() {
-                var saved = null;
-                try { saved = localStorage.getItem('sayarti_tab'); } catch (e) {}
-                if (saved !== 'quick' && saved !== 'detail') saved = 'quick';
-                switchTab(saved);
-            })();
-
-            var qsFreeInput = document.getElementById('qsFreeInput');
-            var qsPanel = document.getElementById('qsPanel');
-            var qsSecCands = document.getElementById('qsSecCands');
-            var qsSecCombos = document.getElementById('qsSecCombos');
-            var qsSecYears = document.getElementById('qsSecYears');
-            var qsCandTitle = document.getElementById('qsCandTitle');
-            var qsComboTitle = document.getElementById('qsComboTitle');
-            var qsYearTitle = document.getElementById('qsYearTitle');
-            var qsMain = document.getElementById('qsMain');
-            var qsMainLabel = document.getElementById('qsMainLabel');
-            var qsMainCount = document.getElementById('qsMainCount');
-            var qsAlt = document.getElementById('qsAlt');
-            var qsCombos = document.getElementById('qsCombos');
-            var qsYears = document.getElementById('qsYears');
-            var qsNoCands = document.getElementById('qsNoCands');
-            var qsSeq = 0;
-            var qsLastCand = '';
-            var qsStage = 0;           // 0 = سؤال رئيسي، 1 = نسخ، 2 = سنوات
-            var qsPicked = null;       // المرشَّح المختار: {brand_ar, model_ar}
-            var qsCandsList = [];
-            var qsAltObj = null;
-            var qsCombosData = [];
-            var qsPickedCombo = null;
-            var qsTypedYear = null;
-
-            var QS_FUEL_WORDS = {
-                'هايبرد': 'هايبرد', 'هجين': 'هايبرد', 'hybrid': 'هايبرد',
-                'بنزين': 'بنزين', 'بيزين': 'بنزين',
-                'ديزل': 'ديزل', 'سولار': 'ديزل', 'diesel': 'ديزل',
-                'كهرباء': 'كهرباء', 'كهربي': 'كهرباء', 'electric': 'كهرباء',
-                'غاز': 'غاز', 'gpl': 'غاز'
-            };
-            var QS_REGION_WORDS = {
-                'خليجي': 'gcc', 'خليجى': 'gcc', 'gcc': 'gcc',
-                'امريكي': 'american', 'أمريكي': 'american', 'امريكى': 'american', 'امريكا': 'american', 'usa': 'american',
-                'صيني': 'chinese', 'صينى': 'chinese', 'china': 'chinese',
-                'ياباني': 'japanese', 'يابانى': 'japanese', 'japan': 'japanese',
-                'اوروبي': 'european', 'أوروبي': 'european', 'اوروبى': 'european', 'europe': 'european'
-            };
-
-            function qsShowPanel() {
-                if (!qsPanel) return;
-                var o = document.getElementById('qsOverlay');
-                if (!o) return;
-                var wasHidden = o.hidden;
-                o.hidden = false;
-                o.classList.add('show');
-                document.body.style.overflow = 'hidden';
-                if (qsFreeInput && document.activeElement === qsFreeInput) {
-                    try { qsFreeInput.blur(); } catch (e) {}
-                }
-                if (wasHidden) {
-                    var box = qsPanel;
-                    box.classList.remove('qs-play');
-                    void box.offsetWidth;
-                    box.classList.add('qs-play');
-                }
-            }
-            function qsHidePanel() {
-                var o = document.getElementById('qsOverlay');
-                document.body.style.overflow = '';
-                if (o) {
-                    o.classList.remove('show');
-                    o.hidden = true;
-                }
-            }
-            var qsOverlayEl = document.getElementById('qsOverlay');
-            var qsCloseBtn = document.getElementById('qsClose');
-            if (qsCloseBtn) qsCloseBtn.addEventListener('click', qsCloseQuick);
-            if (qsOverlayEl) qsOverlayEl.addEventListener('pointerdown', function(e) {
-                if (e.target === qsOverlayEl) qsCloseQuick();
-            });
-            function qsCloseQuick() {
-                qsHidePanel();
-                qsStage = 0;
-                if (qsSecCands) qsSecCands.style.display = 'block';
-                if (qsSecCombos) qsSecCombos.style.display = 'none';
-                if (qsSecYears) qsSecYears.style.display = 'none';
-                if (qsFreeInput) qsFreeInput.focus();
-            }
-
-            function qsReset() {
-                qsStage = 0;
-                qsPicked = null;
-                qsCandsList = [];
-                qsAltObj = null;
-                qsCombosData = [];
-                qsPickedCombo = null;
-                qsTypedYear = null;
-                if (qsCombos) qsCombos.innerHTML = '';
-                if (qsYears) qsYears.innerHTML = '';
-                if (qsSecCands) qsSecCands.style.display = 'block';
-                if (qsSecCombos) qsSecCombos.style.display = 'none';
-                if (qsSecYears) qsSecYears.style.display = 'none';
-                qsHidePanel();
-            }
-
-            function qsMakeYearPill(y) {
-                var b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'qs-pill-year';
-                b.textContent = String(y);
-                b.addEventListener('click', function(ev) {
-                    ev.preventDefault();
-                    qsYears.querySelectorAll('.qs-pill-year').forEach(function(x) { x.classList.remove('selected'); });
-                    b.classList.add('selected');
-                    qsRun(y);
-                });
-                return b;
-            }
-
-            function qsRenderCandidates(data) {
-                var cands = (data && data.candidates) || [];
-                qsCandsList = cands;
-                qsAltObj = null;
-                if (qsNoCands) qsNoCands.hidden = cands.length > 0;
-                if (!cands.length) {
-                    if (qsMainLabel) qsMainLabel.textContent = '';
-                    if (qsMainCount) qsMainCount.hidden = true;
-                    if (qsAlt) qsAlt.hidden = true;
-                    if (qsCandTitle) qsCandTitle.textContent = 'بحث';
-                    return;
-                }
-                var main = cands[0];
-                if (qsCandTitle) qsCandTitle.textContent = cands.some(function(c) { return c.corrected; }) ? 'هل تقصد؟' : 'أكّد اختيارك';
-                if (qsMainLabel) qsMainLabel.textContent = main.label || main.model_ar || main.brand_ar || '';
-                if (qsMainCount) {
-                    qsMainCount.textContent = (main.count > 0 ? main.count : '') + '';
-                    qsMainCount.hidden = !(main.count > 0);
-                }
-                if (qsMain) qsMain.onclick = function(ev) { ev.preventDefault(); qsPickCandidate(main); };
-                var alt = cands[1];
-                if (qsAlt) {
-                    qsAlt.hidden = !(alt && alt.label && alt.label !== (main.label || main.model_ar));
-                    if (qsAlt.hidden) {
-                        qsAlt.onclick = null;
-                    } else {
-                        qsAltObj = alt;
-                        qsAlt.textContent = 'إلا تريد ' + alt.label + '؟';
-                        qsAlt.onclick = function(ev) { ev.preventDefault(); qsPickCandidate(qsAltObj); };
-                    }
-                }
-            }
-
-            function qsDetectFuelRegion(text, combos) {
-                var q = foldArJs(text);
-                var fuelKw = null, regionKw = null, yr = null;
-                Object.keys(QS_FUEL_WORDS).forEach(function(k) {
-                    if (q.indexOf(foldArJs(k)) !== -1) fuelKw = QS_FUEL_WORDS[k];
-                });
-                Object.keys(QS_REGION_WORDS).forEach(function(k) {
-                    if (q.indexOf(foldArJs(k)) !== -1) regionKw = QS_REGION_WORDS[k];
-                });
-                var m = String(text).match(/(19|20)\d{2}/);
-                if (m) yr = parseInt(m[0], 10);
-                var list = combos;
-                if (fuelKw) list = list.filter(function(x) { return x.fuel === fuelKw; });
-                if (regionKw) list = list.filter(function(x) { return x.spec_region === regionKw; });
-                return { list: list, fuel: fuelKw, region: regionKw, year: yr };
-            }
-
-            function qsPickCandidate(c) {
-                if (!c) return;
-                qsFreeInput.value = c.label || c.model_ar || c.brand_ar || '';
-                qsPicked = { brand_ar: c.brand_ar, model_ar: c.model_ar };
-                qsStage = 1;
-                if (qsSecCands) qsSecCands.style.display = 'none';
-                if (qsSecCombos) qsSecCombos.style.display = 'block';
-                if (qsSecYears) qsSecYears.style.display = 'none';
-                if (qsCombos) qsCombos.innerHTML = '';
-                if (qsYears) qsYears.innerHTML = '';
-                if (qsComboTitle) qsComboTitle.textContent = 'اختر النسخة';
-                if (!c.model_ar) {
-                    if (qsComboTitle) qsComboTitle.textContent = 'اختر النوع';
-                    var seqM = ++qsSeq;
-                    fetch('{% url "get_suggestions" %}?brand=' + encodeURIComponent(c.brand_ar))
-                        .then(function(r) { return r.json(); })
-                        .then(function(data) {
-                            if (seqM !== qsSeq) return;
-                            qsCombos.innerHTML = '';
-                            (data.models || []).forEach(function(m) {
-                                if (!m.ar) return;
-                                qsCombos.appendChild(qsMakeComboRow({ label: m.ar, count: 0, meta: '', modelPick: m.ar }));
-                            });
-                        })
-                        .catch(function() {});
-                    return;
-                }
-                qsLoadCombos();
-            }
-
-            function qsMakeComboRow(c) {
-                var row = document.createElement('button');
-                row.type = 'button';
-                row.className = 'qs-combo-row';
-                var main = document.createElement('span');
-                main.className = 'r-main';
-                var lab = document.createElement('span');
-                lab.className = 'r-label';
-                lab.textContent = c.label;
-                main.appendChild(lab);
-                if (c.meta) {
-                    var meta = document.createElement('div');
-                    meta.className = 'r-meta';
-                    meta.textContent = c.meta;
-                    main.appendChild(meta);
-                }
-                row.appendChild(main);
-                if (c.count > 0) {
-                    var cnt = document.createElement('span');
-                    cnt.className = 'r-count';
-                    cnt.textContent = c.count + (c.count === 1 ? ' سيارة' : ' سيارات');
-                    row.appendChild(cnt);
-                }
-                row.addEventListener('click', function(ev) {
-                    ev.preventDefault();
-                    if (c.modelPick) {
-                        qsPicked.model_ar = c.modelPick;
-                        qsFreeInput.value = c.modelPick;
-                        if (qsComboTitle) qsComboTitle.textContent = 'اختر النسخة';
-                        qsLoadCombos();
-                        return;
-                    }
-                    qsPickCombo(c);
-                });
-                return row;
-            }
-
-            function qsLoadCombos() {
-                if (!qsPicked || !qsPicked.model_ar) return;
-                var seq = ++qsSeq;
-                fetch('{% url "quick_variants" %}?brand=' + encodeURIComponent(qsPicked.brand_ar || '') + '&model=' + encodeURIComponent(qsPicked.model_ar))
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (seq !== qsSeq) return;
-                        var list = data.combos || [];
-                        var pf = qsPlannedFilter || { fuel: null, region: null, year: null };
-                        if (pf.fuel) list = list.filter(function(x) { return x.fuel === pf.fuel; });
-                        if (pf.region) list = list.filter(function(x) { return x.spec_region === pf.region; });
-                        qsTypedYear = pf.year;
-                        qsCombosData = list;
-                        qsRenderCombos(list);
-                        if (list.length === 1) qsPickCombo(list[0]);
-                    })
-                    .catch(function() {});
-            }
-
-            function qsRenderCombos(combos) {
-                qsCombos.innerHTML = '';
-                if (!combos.length) {
-                    var empty = document.createElement('div');
-                    empty.className = 'qs-err';
-                    empty.textContent = 'لا تتوفر نسخ لهذه السيارة حالياً';
-                    qsCombos.appendChild(empty);
-                    return;
-                }
-                combos.forEach(function(c) {
-                    var y = c.years || [];
-                    var meta = '';
-                    if (y.length) meta = 'متوفر ' + (y.length === 1 ? 'في ' + y[0] : 'من ' + y[0] + ' إلى ' + y[y.length - 1]);
-                    qsCombos.appendChild(qsMakeComboRow({
-                        label: c.label,
-                        count: c.count,
-                        meta: meta,
-                        combo: c
-                    }));
-                });
-            }
-
-            function qsPickCombo(c) {
-                if (!c) return;
-                qsPickedCombo = c;
-                qsStage = 2;
-                if (qsSecCands) qsSecCands.style.display = 'none';
-                if (qsSecCombos) qsSecCombos.style.display = 'none';
-                if (qsSecYears) qsSecYears.style.display = 'block';
-                qsYears.innerHTML = '';
-                if (qsYearTitle) qsYearTitle.textContent = 'اختر السنة — ' + c.label;
-                var years = c.years || [];
-                if (!years.length) {
-                    var empty = document.createElement('div');
-                    empty.className = 'qs-err';
-                    empty.textContent = 'لا توجد سنوات مسجلة لهذه النسخة';
-                    qsYears.appendChild(empty);
-                    return;
-                }
-                years.forEach(function(y) { qsYears.appendChild(qsMakeYearPill(y)); });
-                if (qsTypedYear) qsPickTypedYear(qsTypedYear);
-            }
-
-            function qsPickTypedYear(year) {
-                var chips = qsYears.querySelectorAll('.qs-pill-year');
-                for (var i = 0; i < chips.length; i++) {
-                    if (parseInt(chips[i].textContent, 10) === year) {
-                        chips[i].click();
-                        return;
-                    }
-                }
-            }
-
-            function qsRun(year) {
-                if (!qsPicked) return;
-                var combo = qsPickedCombo || {};
-                var brandEl = document.getElementById('brandInput');
-                var modelEl = document.getElementById('modelInput');
-                var yearEl = document.getElementById('yearInput');
-                var fuelEl = document.getElementById('fuelInput');
-                var ety = document.getElementById('engineTypeSelect');
-                var srg = document.getElementById('specRegionSelect');
-                var engEl = document.getElementById('engineInput');
-                if (brandEl) brandEl.value = qsPicked.brand_ar || '';
-                if (modelEl) {
-                    modelEl.disabled = false;
-                    modelEl.value = qsPicked.model_ar || '';
-                }
-                if (yearEl) yearEl.value = year || '';
-                if (fuelEl) fuelEl.value = combo.fuel || '';
-                if (ety) ety.value = combo.engine_type || '';
-                if (srg) srg.value = combo.spec_region || '';
-                if (engEl) {
-                    engEl.disabled = false;
-                    engEl.value = combo.engine || '';
-                }
-                if (brandEl) brandEl.dispatchEvent(new Event('input', { bubbles: true }));
-                if (modelEl) modelEl.dispatchEvent(new Event('input', { bubbles: true }));
-                switchTab('detail');
-                var form = document.getElementById('searchForm');
-                if (form) form.requestSubmit();
-            }
-
-            function qsLive() {
-                var v = qsFreeInput.value.trim();
-                qsTypedYear = null;
-                qsPlannedFilter = null;
-                if (v.length < 2) {
-                    qsStage = 0;
-                    qsLastCand = '';
-                    qsCandsList = [];
-                    if (qsSecCands) qsSecCands.style.display = 'block';
-                    if (qsSecCombos) qsSecCombos.style.display = 'none';
-                    if (qsSecYears) qsSecYears.style.display = 'none';
-                    qsHidePanel();
-                    return;
-                }
-                qsStage = 0;
-                qsPicked = null;
-                qsPlannedFilter = qsDetectFuelRegion(v, []);
-                var seq = ++qsSeq;
-                fetch('{% url "quick_search" %}?q=' + encodeURIComponent(v))
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (seq !== qsSeq) return;
-                        var cands = (data && data.candidates) || [];
-                        var key = JSON.stringify(cands.map(function(c) {
-                            return (c.label || c.model_ar || c.brand_ar) + ':' + c.count;
-                        }));
-                        if (key !== qsLastCand) {
-                            qsLastCand = key;
-                            qsRenderCandidates(data);
-                        }
-                        qsShowPanel();
-                    })
-                    .catch(function() { if (seq === qsSeq) qsShowPanel(); });
-            }
-
-            var qsPlannedFilter = null;
-
-            if (qsFreeInput) {
-                qsFreeInput.addEventListener('focus', function() {
-                    if (!document.getElementById('qsOverlay').hidden) return;
-                    qsReset();
-                });
-                qsFreeInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        qsLive();
-                    }
-                });
-            }
-
-            var qsBackYears = document.getElementById('qsBackYears');
-            var qsBackCombos = document.getElementById('qsBackCombos');
-            if (qsBackYears) qsBackYears.addEventListener('click', function() {
-                qsCloseQuick();
-            });
-            if (qsBackCombos) qsBackCombos.addEventListener('click', function() {
-                qsStage = 1;
-                if (qsSecYears) qsSecYears.style.display = 'none';
-                if (qsSecCombos) qsSecCombos.style.display = 'block';
-            });
-
         })();
     </script>
 
@@ -3050,35 +2365,6 @@
                 <button type="button" class="pwa-modal-close" id="pwaModalClose">حسناً، فهمت</button>
             </div>
         </div>
-    </div>
-
-    <!-- نافذة البحث السريع: حوار في مركز الشاشة، تُغلق لوحة المفاتيح عند فتحها فلا تُحجب -->
-    <div class="qs-overlay" id="qsOverlay" hidden>
-        <div class="qs-modal-box" id="qsPanel" role="dialog" aria-modal="true" aria-label="البحث السريع عن السيارة">
-        <div class="qs-modal-head">
-            <div class="qs-modal-title" id="qsModalTitle">🔍 بحث سريع</div>
-            <button type="button" class="qs-modal-close" id="qsClose" aria-label="إغلاق">✕</button>
-        </div>
-        <div class="qs-panel-sec" id="qsSecCands">
-            <div class="qs-panel-title" id="qsCandTitle">هل تقصد؟</div>
-            <button type="button" class="qs-main" id="qsMain">
-                <span class="m-label" id="qsMainLabel"></span>
-                <span class="m-count" id="qsMainCount" hidden></span>
-            </button>
-            <button type="button" class="qs-alt" id="qsAlt" hidden></button>
-            <div class="qs-err" id="qsNoCands" hidden>لم نعثر على نتائج — جرّب اسماً آخر أو مثالاً مثل «سوناتا 2008»</div>
-        </div>
-        <div class="qs-panel-sec" id="qsSecCombos" style="display:none">
-            <div class="qs-panel-title" id="qsComboTitle">اختر النسخة</div>
-            <div class="qs-combo-list" id="qsCombos"></div>
-            <button type="button" class="qs-back-link" id="qsBackYears">→ تغيير البحث</button>
-        </div>
-        <div class="qs-panel-sec" id="qsSecYears" style="display:none">
-            <div class="qs-panel-title" id="qsYearTitle">اختر السنة</div>
-            <div class="qs-year-wrap" id="qsYears"></div>
-            <button type="button" class="qs-back-link" id="qsBackCombos">→ اختر نسخة أخرى</button>
-        </div>
-    </div>
     </div>
 
 <script>

@@ -9,7 +9,6 @@ from django import forms
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
 from .services.excel_importer import import_cars_from_excel
 from .services.textnorm import fold_ar, fold_engine
-from .services.search_engine import find_interpretation, interpretation_url
 
 
 SW_FILE = Path(__file__).resolve().parent / 'static' / 'shared' / 'sw.js'
@@ -58,9 +57,6 @@ RELAX_LABELS = {
     'engine': 'سعة المحرك',
     'fuel': 'نوع الوقود',
 }
-
-FUEL_PRIORITY = ['بنزين', 'ديزل', 'هايبرد', 'كهرباء', 'غاز']
-REGION_PRIORITY = ['american', 'gcc', 'european', 'japanese', 'chinese', 'other']
 
 
 def _filters(request):
@@ -234,118 +230,6 @@ def get_suggestions(request):
         return JsonResponse({'models': models, 'engines': engines})
 
     return JsonResponse({'models': [], 'engines': []})
-
-
-def quick_search_view(request):
-    q = request.GET.get('q', '').strip()
-    if not q or len(q) < 2:
-        return JsonResponse({'q': q, 'candidates': []})
-    candidates = []
-    for item in find_interpretation(q):
-        candidates.append({
-            'brand_ar': item['brand_ar'],
-            'brand_en': item['brand_en'],
-            'model_ar': item['model_ar'],
-            'model_en': item['model_en'],
-            'year': item['year'],
-            'count': item['count'],
-            'corrected': item['corrected'],
-            'url': interpretation_url(item),
-            'label': _candidate_label(item),
-        })
-    return JsonResponse({'q': q, 'candidates': candidates})
-
-
-def _candidate_label(item):
-    """تسمية المرشّح في البحث السريع: النوع فقط (لا ماركة) لأن الأسماء لا تتكرر."""
-    parts = []
-    if item['model_ar']:
-        parts.append(item['model_ar'])
-    if item.get('year'):
-        parts.append(str(item['year']))
-    return ' '.join(parts) if parts else ''
-
-
-def quick_variants(request):
-    """نسخ السيارة المجمّعة للبحث السريع: كل بطاقة = نوع + وقود + مواصفة + سنواتها.
-
-    لا تلاعب بالنتائج إطلاقاً: البطاقة مجرد تجميع للبيانات الفعلية، واختيارها
-    يملأ نفس فلاتر البحث المفصّل ليعرض النتائج نفسها تماماً.
-    """
-    brand = request.GET.get('brand', '').strip()
-    model = request.GET.get('model', '').strip()
-    if not model and not brand:
-        return JsonResponse({'combos': [], 'models': [], 'model_label': ''})
-
-    region_label = dict(CarSpecification.SPEC_REGION_CHOICES)
-
-    # بحث سريع يهتم بالنوع وحده؛ الماركة لا تعرض أبداً ولا توسّع النتائج لأنواع أخرى
-    qs = CarSpecification.objects.all()
-    if model:
-        qs = qs.filter(Q(model_norm__icontains=fold_ar(model)) | Q(model_en__icontains=model))
-    elif brand:
-        qs = qs.filter(Q(brand_norm__icontains=fold_ar(brand)) | Q(brand_en__icontains=brand))
-
-    if not model and brand:
-        models = []
-        for m in (qs.values('model_ar', 'model_en').distinct().order_by('model_ar')):
-            models.append({'ar': m['model_ar'] or '', 'en': m['model_en'] or ''})
-        return JsonResponse({'combos': [], 'models': models, 'model_label': ''})
-
-    rows = list(qs.values('model_ar', 'year', 'fuel', 'spec_region', 'engine', 'engine_type'))
-
-    model_label = ''
-    by_spec = {}
-    for r in rows:
-        if not model_label and r['model_ar']:
-            model_label = r['model_ar']
-        year = r['year']
-        if not year:
-            continue
-        fuel = r['fuel'] or ''
-        region = r['spec_region'] or ''
-        engine = r['engine'] or ''
-        et = r['engine_type'] or ''
-        spec = by_spec.setdefault((fuel, region), {'count': 0, 'engines': {}})
-        spec['count'] += 1
-        eg = spec['engines'].setdefault((engine, et), {'count': 0, 'years': set()})
-        eg['count'] += 1
-        eg['years'].add(year)
-
-    def fuel_rank(f):
-        return FUEL_PRIORITY.index(f) if f in FUEL_PRIORITY else len(FUEL_PRIORITY) + 1
-
-    def region_rank(r):
-        return REGION_PRIORITY.index(r) if r in REGION_PRIORITY else len(REGION_PRIORITY) + 1
-
-    combos = []
-    for (fuel, region), spec in sorted(by_spec.items(), key=lambda kv: (fuel_rank(kv[0][0]), region_rank(kv[0][1]))):
-        engines = sorted(spec['engines'].items(), key=lambda s: s[1]['count'], reverse=True)
-        for (engine, et), eg in engines:
-            parts = [model_label, region_label.get(region, region)]
-            if fuel and fold_ar(fuel) not in fold_ar(model_label):
-                parts.insert(1, fuel)
-            if len(engines) > 1 and engine:
-                parts.append(engine)
-            label = ' '.join(p for p in parts if p)
-            combos.append({
-                'fuel': fuel,
-                'spec_region': region,
-                'spec_region_label': region_label.get(region, region),
-                'engine': engine,
-                'engine_type': et,
-                'count': eg['count'],
-                'years': sorted(eg['years'], reverse=True),
-                'label': label,
-            })
-
-    return JsonResponse({
-        'brand': brand,
-        'model': model,
-        'model_label': model_label,
-        'combos': combos,
-        'models': [],
-    })
 
 
 def is_staff_user(user):
