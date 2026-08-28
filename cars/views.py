@@ -257,9 +257,8 @@ def quick_search_view(request):
 
 
 def _candidate_label(item):
+    """تسمية المرشّح في البحث السريع: النوع فقط (لا ماركة) لأن الأسماء لا تتكرر."""
     parts = []
-    if item['brand_ar']:
-        parts.append(item['brand_ar'])
     if item['model_ar']:
         parts.append(item['model_ar'])
     if item.get('year'):
@@ -275,16 +274,24 @@ def quick_variants(request):
     """
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
-    if not brand:
-        return JsonResponse({'combos': [], 'model_label': ''})
-
-    qs = CarSpecification.objects.filter(
-        Q(brand_norm__icontains=fold_ar(brand)) | Q(brand_en__icontains=brand)
-    )
-    if model:
-        qs = qs.filter(Q(model_norm__icontains=fold_ar(model)) | Q(model_en__icontains=model))
+    if not model and not brand:
+        return JsonResponse({'combos': [], 'models': [], 'model_label': ''})
 
     region_label = dict(CarSpecification.SPEC_REGION_CHOICES)
+
+    # بحث سريع يهتم بالنوع وحده؛ الماركة لا تعرض أبداً ولا توسّع النتائج لأنواع أخرى
+    qs = CarSpecification.objects.all()
+    if model:
+        qs = qs.filter(Q(model_norm__icontains=fold_ar(model)) | Q(model_en__icontains=model))
+    elif brand:
+        qs = qs.filter(Q(brand_norm__icontains=fold_ar(brand)) | Q(brand_en__icontains=brand))
+
+    if not model and brand:
+        models = []
+        for m in (qs.values('model_ar', 'model_en').distinct().order_by('model_ar')):
+            models.append({'ar': m['model_ar'] or '', 'en': m['model_en'] or ''})
+        return JsonResponse({'combos': [], 'models': models, 'model_label': ''})
+
     rows = list(qs.values('model_ar', 'year', 'fuel', 'spec_region', 'engine', 'engine_type'))
 
     model_label = ''
@@ -337,6 +344,7 @@ def quick_variants(request):
         'model': model,
         'model_label': model_label,
         'combos': combos,
+        'models': [],
     })
 
 

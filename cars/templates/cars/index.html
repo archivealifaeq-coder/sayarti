@@ -2708,7 +2708,8 @@
                 if (qsCandTitle) qsCandTitle.textContent = hasCorr ? 'هل تقصد؟' : 'اختر السيارة';
                 if (qsNoCands) qsNoCands.style.display = cands.length ? 'none' : 'block';
                 cands.slice(0, 5).forEach(function(c) {
-                    qsCandidates.appendChild(qsMakePill(c.label, 'qs-pill-gold', c.count > 0 ? c.count : null, function() {
+                    var lab = c.label || c.model_ar || c.brand_ar || '؟';
+                    qsCandidates.appendChild(qsMakePill(lab, 'qs-pill-gold', c.count > 0 ? c.count : null, function() {
                         qsPickCandidate(c);
                     }));
                 });
@@ -2735,7 +2736,7 @@
 
             function qsPickCandidate(c) {
                 if (!c) return;
-                qsFreeInput.value = c.label || c.model_ar || '';
+                qsFreeInput.value = c.label || c.model_ar || c.brand_ar || '';
                 qsPicked = { brand_ar: c.brand_ar, model_ar: c.model_ar };
                 qsStage = 1;
                 if (qsSecCands) qsSecCands.style.display = 'none';
@@ -2744,7 +2745,32 @@
                 if (qsCombos) qsCombos.innerHTML = '';
                 if (qsYears) qsYears.innerHTML = '';
                 if (qsComboTitle) qsComboTitle.textContent = 'اختر النسخة';
-                fetch('{% url "quick_variants" %}?brand=' + encodeURIComponent(c.brand_ar) + '&model=' + encodeURIComponent(c.model_ar))
+                if (!c.model_ar) {
+                    if (qsComboTitle) qsComboTitle.textContent = 'اختر النوع';
+                    fetch('{% url "get_suggestions" %}?brand=' + encodeURIComponent(c.brand_ar))
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            qsCombos.innerHTML = '';
+                            (data.models || []).forEach(function(m) {
+                                if (!m.ar) return;
+                                qsCombos.appendChild(qsMakePill(m.ar, 'qs-pill-glass', null, function() {
+                                    qsPicked.model_ar = m.ar;
+                                    qsFreeInput.value = m.ar;
+                                    if (qsComboTitle) qsComboTitle.textContent = 'اختر النسخة';
+                                    qsLoadCombos();
+                                }));
+                            });
+                            qsOpen();
+                        })
+                        .catch(function() { qsOpen(); });
+                    return;
+                }
+                qsLoadCombos();
+            }
+
+            function qsLoadCombos() {
+                if (!qsPicked || !qsPicked.model_ar) return;
+                fetch('{% url "quick_variants" %}?brand=' + encodeURIComponent(qsPicked.brand_ar || '') + '&model=' + encodeURIComponent(qsPicked.model_ar))
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         var list = data.combos || [];
