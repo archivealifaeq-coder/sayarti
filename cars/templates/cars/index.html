@@ -1346,29 +1346,58 @@
             to { opacity: 1; transform: none; }
         }
 
-        /* ورقة الاقتراحات الثابتة: تلتصق أعلى لوحة المفاتيح فلا تختفي خلفها */
-        .qs-sheet {
+/* نافذة البحث السريع: حوار مركزي فوق كل شيء */
+        .qs-overlay {
             position: fixed;
-            left: 0; right: 0; bottom: 0;
-            z-index: 5000;
-            margin-top: 0;
-            padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
-            background: linear-gradient(180deg, rgba(20, 27, 47, 0.97), rgba(10, 15, 26, 0.99));
-            border-top: 1px solid rgba(251, 191, 36, 0.3);
-            border-radius: 22px 22px 0 0;
-            box-shadow: 0 -18px 60px rgba(0, 0, 0, 0.55), 0 -2px 24px rgba(245, 158, 11, 0.1);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            max-height: 52vh;
+            inset: 0;
+            z-index: 6000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(5, 8, 16, 0.62);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            overflow-y: auto;
+        }
+        .qs-overlay[hidden] { display: none; }
+        .qs-modal-box {
+            width: min(560px, calc(100vw - 32px));
+            max-height: min(80vh, 640px);
             overflow-y: auto;
             overscroll-behavior: contain;
+            background: linear-gradient(180deg, rgba(20, 27, 47, 0.985), rgba(10, 15, 26, 0.995));
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            border-radius: 24px;
+            padding: 18px 20px calc(20px + env(safe-area-inset-bottom));
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(245, 158, 11, 0.08), 0 0 80px rgba(245, 158, 11, 0.08);
         }
-        .qs-sheet.fade { animation: qsSheetIn 0.26s ease both; }
-        @keyframes qsSheetIn {
-            from { opacity: 0; transform: translateY(28px); }
+        .qs-overlay.show .qs-modal-box { animation: qsModalIn 0.26s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        @keyframes qsModalIn {
+            from { opacity: 0; transform: translateY(18px) scale(0.97); }
             to { opacity: 1; transform: none; }
         }
-
+        .qs-modal-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            margin-bottom: 14px;
+        }
+        .qs-modal-title {
+            font-size: 0.95rem; font-weight: 900; color: #fbbf24;
+            letter-spacing: 0.2px;
+        }
+        .qs-modal-close {
+            width: 34px; height: 34px;
+            flex: 0 0 auto;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.6);
+            border-radius: 50%;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .qs-modal-close:hover { border-color: #f59e0b; color: #fbbf24; }
         .qs-panel-sec { margin-bottom: 10px; }
         .qs-panel-sec:last-child { margin-bottom: 0; }
         .qs-panel-title {
@@ -2653,35 +2682,46 @@
                 'اوروبي': 'european', 'أوروبي': 'european', 'اوروبى': 'european', 'europe': 'european'
             };
 
-            function qsPositionSheet() {
-                if (!qsPanel) return;
-                var vv = window.visualViewport;
-                if (!vv) { qsPanel.style.bottom = '0px'; return; }
-                if (vv.height < window.innerHeight) {
-                    var kb = Math.max(0, Math.round(window.innerHeight - (vv.height + vv.offsetTop)));
-                    qsPanel.style.bottom = (kb + 6) + 'px';
-                } else {
-                    qsPanel.style.bottom = '0px';
-                }
-            }
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', qsPositionSheet);
-                window.visualViewport.addEventListener('scroll', qsPositionSheet);
-            }
-            window.addEventListener('resize', qsPositionSheet);
-
             function qsShowPanel() {
                 if (!qsPanel) return;
-                var wasHidden = qsPanel.hidden;
-                qsPanel.hidden = false;
-                qsPositionSheet();
+                var o = document.getElementById('qsOverlay');
+                if (!o) return;
+                var wasHidden = o.hidden;
+                o.hidden = false;
+                o.classList.add('show');
+                document.body.style.overflow = 'hidden';
+                if (qsFreeInput && document.activeElement === qsFreeInput) {
+                    try { qsFreeInput.blur(); } catch (e) {}
+                }
                 if (wasHidden) {
-                    qsPanel.classList.remove('fade');
-                    void qsPanel.offsetWidth;
-                    qsPanel.classList.add('fade');
+                    var box = qsPanel;
+                    box.classList.remove('qs-play');
+                    void box.offsetWidth;
+                    box.classList.add('qs-play');
                 }
             }
-            function qsHidePanel() { if (qsPanel) qsPanel.hidden = true; }
+            function qsHidePanel() {
+                var o = document.getElementById('qsOverlay');
+                document.body.style.overflow = '';
+                if (o) {
+                    o.classList.remove('show');
+                    o.hidden = true;
+                }
+            }
+            var qsOverlayEl = document.getElementById('qsOverlay');
+            var qsCloseBtn = document.getElementById('qsClose');
+            if (qsCloseBtn) qsCloseBtn.addEventListener('click', qsCloseQuick);
+            if (qsOverlayEl) qsOverlayEl.addEventListener('pointerdown', function(e) {
+                if (e.target === qsOverlayEl) qsCloseQuick();
+            });
+            function qsCloseQuick() {
+                qsHidePanel();
+                qsStage = 0;
+                if (qsSecCands) qsSecCands.style.display = 'block';
+                if (qsSecCombos) qsSecCombos.style.display = 'none';
+                if (qsSecYears) qsSecYears.style.display = 'none';
+                if (qsFreeInput) qsFreeInput.focus();
+            }
 
             function qsReset() {
                 qsStage = 0;
@@ -2723,7 +2763,6 @@
                     if (qsMainCount) qsMainCount.hidden = true;
                     if (qsAlt) qsAlt.hidden = true;
                     if (qsCandTitle) qsCandTitle.textContent = 'بحث';
-                    qsShowPanel();
                     return;
                 }
                 var main = cands[0];
@@ -2745,7 +2784,6 @@
                         qsAlt.onclick = function(ev) { ev.preventDefault(); qsPickCandidate(qsAltObj); };
                     }
                 }
-                qsShowPanel();
             }
 
             function qsDetectFuelRegion(text, combos) {
@@ -2934,7 +2972,7 @@
                 if (form) form.requestSubmit();
             }
 
-            function qsLive() {
+            function qsLive(forced) {
                 var v = qsFreeInput.value.trim();
                 qsTypedYear = null;
                 qsPlannedFilter = null;
@@ -2942,6 +2980,7 @@
                     qsStage = 0;
                     qsLastCand = '';
                     qsCandsList = [];
+                    clearTimeout(qsOpenTimer);
                     if (qsSecCands) qsSecCands.style.display = 'block';
                     if (qsSecCombos) qsSecCombos.style.display = 'none';
                     if (qsSecYears) qsSecYears.style.display = 'none';
@@ -2960,42 +2999,34 @@
                         var key = JSON.stringify(cands.map(function(c) {
                             return (c.label || c.model_ar || c.brand_ar) + ':' + c.count;
                         }));
-                        if (key === qsLastCand) {
-                            if (cands.length && qsStage === 0) qsShowPanel();
-                            return;
-                        }
+                        if (key === qsLastCand) return;
                         qsLastCand = key;
                         qsRenderCandidates(data);
+                        clearTimeout(qsOpenTimer);
+                        if (v.length >= 3 && qsStage === 0) {
+                            qsOpenTimer = setTimeout(function() { qsShowPanel(); }, forced ? 0 : 650);
+                        }
                     })
                     .catch(function() { if (seq === qsSeq) qsHidePanel(); });
             }
 
             var qsPlannedFilter = null;
+            var qsOpenTimer = null;
 
             if (qsFreeInput) {
                 qsFreeInput.addEventListener('input', function() {
                     clearTimeout(qsTimer3);
+                    clearTimeout(qsOpenTimer);
                     qsTimer3 = setTimeout(qsLive, 350);
                 });
                 qsFreeInput.addEventListener('focus', function() {
-                    setTimeout(function() { qsPositionSheet(); }, 0);
+                    if (!document.getElementById('qsOverlay').hidden) return;
+                    qsReset();
                 });
                 qsFreeInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        if (qsStage === 0) {
-                            if (qsMain) qsMain.click();
-                            return;
-                        }
-                        if (qsStage === 1) {
-                            var r = qsCombos ? qsCombos.querySelector('.qs-combo-row') : null;
-                            if (r) r.click();
-                            return;
-                        }
-                        if (qsStage === 2) {
-                            var y = qsYears ? qsYears.querySelector('.qs-pill-year') : null;
-                            if (y) y.click();
-                        }
+                        qsLive(true);
                     }
                 });
             }
@@ -3003,16 +3034,12 @@
             var qsBackYears = document.getElementById('qsBackYears');
             var qsBackCombos = document.getElementById('qsBackCombos');
             if (qsBackYears) qsBackYears.addEventListener('click', function() {
+                qsCloseQuick();
+            });
+            if (qsBackCombos) qsBackCombos.addEventListener('click', function() {
                 qsStage = 1;
                 if (qsSecYears) qsSecYears.style.display = 'none';
                 if (qsSecCombos) qsSecCombos.style.display = 'block';
-            });
-            if (qsBackCombos) qsBackCombos.addEventListener('click', function() {
-                qsStage = 0;
-                if (qsSecYears) qsSecYears.style.display = 'none';
-                if (qsSecCombos) qsSecCombos.style.display = 'none';
-                if (qsSecCands) qsSecCands.style.display = 'block';
-                qsFreeInput.focus();
             });
 
         })();
@@ -3035,8 +3062,13 @@
         </div>
     </div>
 
-    <!-- لوحة الاقتراحات: ابن مباشر للـ body، ورقة ثابتة أعلى لوحة المفاتيح -->
-    <div class="qs-panel qs-sheet" id="qsPanel" hidden>
+    <!-- نافذة البحث السريع: حوار في مركز الشاشة، تُغلق لوحة المفاتيح عند فتحها فلا تُحجب -->
+    <div class="qs-overlay" id="qsOverlay" hidden>
+        <div class="qs-modal-box" id="qsPanel" role="dialog" aria-modal="true" aria-label="البحث السريع عن السيارة">
+        <div class="qs-modal-head">
+            <div class="qs-modal-title" id="qsModalTitle">🔍 بحث سريع</div>
+            <button type="button" class="qs-modal-close" id="qsClose" aria-label="إغلاق">✕</button>
+        </div>
         <div class="qs-panel-sec" id="qsSecCands">
             <div class="qs-panel-title" id="qsCandTitle">هل تقصد؟</div>
             <button type="button" class="qs-main" id="qsMain">
@@ -3056,6 +3088,7 @@
             <div class="qs-year-wrap" id="qsYears"></div>
             <button type="button" class="qs-back-link" id="qsBackCombos">→ اختر نسخة أخرى</button>
         </div>
+    </div>
     </div>
 
 <script>
