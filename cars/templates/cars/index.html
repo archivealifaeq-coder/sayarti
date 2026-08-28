@@ -1247,6 +1247,112 @@
             box-shadow: 0 14px 40px rgba(245, 158, 11, 0.5);
         }
         
+        /* ============================================ */
+        /*  QUICK SEARCH (البحث السريع)                */
+        /* ============================================ */
+        .quick-search-btn {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            color: #fbbf24;
+            border-radius: 9999px;
+            padding: 8px 14px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .quick-search-btn:hover { background: rgba(245, 158, 11, 0.25); transform: translateY(-1px); }
+        .quick-search-panel {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 10001;
+            background: rgba(10, 15, 26, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            padding: 20px 24px 24px;
+            display: none;
+        }
+        .quick-search-panel.open { display: block; animation: qsIn 0.25s ease; }
+        @keyframes qsIn { from { transform: translateY(-14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .qs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+        .qs-title { color: #fbbf24; font-size: 1.05rem; font-weight: 800; }
+        .qs-close {
+            background: rgba(51, 65, 85, 0.6);
+            border: none; color: #cbd5e1;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+        }
+        .qs-close:hover { background: rgba(51, 65, 85, 1); color: #fff; }
+        .qs-input-wrapper { position: relative; max-width: 720px; margin: 0 auto; }
+        .qs-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+            color: #e2e8f0;
+            font-size: 1.05rem;
+            padding: 14px 48px 14px 18px;
+            outline: none;
+            transition: border 0.25s ease;
+        }
+        .qs-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
+        .qs-input-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #fbbf24; font-size: 1.2rem; pointer-events: none; }
+        .qs-hint { text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 10px; }
+        .qs-results { max-width: 720px; margin: 14px auto 0; display: none; }
+        .qs-results.show { display: block; }
+        .qs-result {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+        .qs-result:hover { border-color: #f59e0b; background: rgba(30, 41, 59, 0.95); transform: translateY(-1px); }
+        .qs-result .qs-q { color: #94a3b8; font-size: 0.82rem; }
+        .qs-result .qs-label { font-size: 1rem; font-weight: 800; color: #fff; }
+        .qs-result .qs-label .qs-corrected { color: #fbbf24; }
+        .qs-result .qs-count {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            padding: 5px 12px;
+            white-space: nowrap;
+        }
+        .qs-empty { text-align: center; color: #64748b; padding: 18px 8px; font-size: 0.95rem; }
+
+        /* ============================================ */
+        /*  RELAXED SEARCH NOTE                        */
+        /* ============================================ */
+        .relaxed-note {
+            max-width: 720px;
+            margin: 0 auto 18px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fde68a;
+            border-radius: 14px;
+            padding: 12px 18px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .relaxed-note strong { color: #fbbf24; }
+
         @media (prefers-reduced-motion: reduce) {
             .slider-main-container { animation: none; }
             .car-card::before { animation: none; }
@@ -1278,9 +1384,26 @@
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
             <button type="button" id="installBtn" class="pwa-install-btn md:flex hidden" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
+            <button type="button" id="quickSearchBtn" class="quick-search-btn" aria-label="بحث سريع">🔎 <span class="hidden md:inline">بحث سريع</span></button>
             <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
         </div>
     </nav>
+
+    <!-- ============================================ -->
+    <!--  QUICK SEARCH PANEL (شريط منبثق لا يزعج)      -->
+    <!-- ============================================ -->
+    <div class="quick-search-panel" id="quickSearchPanel" role="dialog" aria-modal="false" aria-label="البحث السريع">
+        <div class="qs-head">
+            <span class="qs-title">🔎 البحث السريع</span>
+            <button type="button" class="qs-close" id="quickSearchClose" aria-label="إغلاق">✕</button>
+        </div>
+        <div class="qs-input-wrapper">
+            <input type="text" id="quickSearchInput" class="qs-input" placeholder="اكتب ما تريد... مثال: سوناتا 2008" autocomplete="off" maxlength="120">
+            <span class="qs-input-icon" aria-hidden="true">🔍</span>
+        </div>
+        <p class="qs-hint">💡 جرّب: «هيونداي سوناتا 2008»، «سونت 2012»، «سونيته 2008»</p>
+        <div class="qs-results" id="quickSearchResults"></div>
+    </div>
     
     <!-- ============================================ -->
     <!--  TICKER                                     -->
@@ -1576,6 +1699,14 @@
                 <div class="loading-spinner" role="status" aria-label="جاري التحميل"></div>
             </div>
             
+            {% if relaxed %}
+                <div class="relaxed-note" role="status">
+                    <span aria-hidden="true">💡</span>
+                    لم نعثر على نتائج بهذه القيود كاملة، فأنزلنا بعضها لإظهار الموديل الموجود:
+                    <strong>{{ relaxed|join:"، " }}</strong>
+                </div>
+            {% endif %}
+
             {% if cars is None %}
                 <div class="text-center py-10 md:py-16 bg-slate-900/30 rounded-3xl border border-slate-800/50">
                     <div class="text-5xl md:text-6xl mb-3 md:mb-4" aria-hidden="true">🔍</div>
@@ -1890,9 +2021,18 @@
             var lastEngines = [];
             var inputTimer = null;
 
+            function foldArJs(t) {
+                if (!t) return '';
+                return t.toString().toLowerCase()
+                    .replace(/[أإآٱ]/g, 'ا')
+                    .replace(/ة/g, 'ه')
+                    .replace(/ى/g, 'ي')
+                    .replace(/[\u064b-\u065f\u0670\u0640]/g, '');
+            }
+
             function accepts(q, txt) {
                 if (!txt) return false;
-                return txt.toLowerCase().indexOf(q) !== -1;
+                return foldArJs(txt).indexOf(foldArJs(q)) !== -1;
             }
 
             function renderChips(container, items, selected, addSub) {
@@ -1931,9 +2071,9 @@
                         return accepts(brandQuery, b.ar) || accepts(brandQuery, b.en);
                     });
                 } else {
-                    list = popularBrands.length ? popularBrands : allBrands.slice(0, 12);
+                    list = popularBrands.length ? popularBrands : allBrands;
                 }
-                renderChips(brandChips, list.slice(0, 14), brandInput.value.trim(), true);
+                renderChips(brandChips, list, brandInput.value.trim(), true);
             }
 
             function renderModelChips() {
@@ -1945,7 +2085,7 @@
                 } else {
                     list = lastModels;
                 }
-                renderChips(modelChips, list.slice(0, 14), modelInput.value.trim(), true);
+                renderChips(modelChips, list, modelInput.value.trim(), true);
             }
 
             function renderEngineChips() {
@@ -1957,7 +2097,7 @@
                 } else {
                     list = lastEngines;
                 }
-                renderChips(engineChips, list.slice(0, 16), engineInput.value.trim(), false);
+                renderChips(engineChips, list, engineInput.value.trim(), false);
             }
 
             function onPicked(which, value) {
@@ -2017,6 +2157,12 @@
                     return;
                 }
                 var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand);
+                var year = yearInput.value.trim();
+                var engineType = engineTypeSelect.value;
+                var specRegion = specRegionSelect.value;
+                if (year) url += '&year=' + encodeURIComponent(year);
+                if (engineType) url += '&engine_type=' + encodeURIComponent(engineType);
+                if (specRegion) url += '&spec_region=' + encodeURIComponent(specRegion);
                 fetch(url).then(function(r) { return r.json(); }).then(function(data) {
                     lastModels = (data.models || []).map(function(m) { return { ar: m.ar, en: m.en }; });
                     isReadyModel(true);
@@ -2075,9 +2221,18 @@
                 }, 120);
             });
 
-            yearInput.addEventListener('change', function() { if (modelInput.value) loadEngines(); });
-            engineTypeSelect.addEventListener('change', function() { if (modelInput.value) loadEngines(); });
-            specRegionSelect.addEventListener('change', function() { if (modelInput.value) loadEngines(); });
+            yearInput.addEventListener('change', function() {
+                if (brandInput.value.trim()) loadModels();
+                if (modelInput.value) loadEngines();
+            });
+            engineTypeSelect.addEventListener('change', function() {
+                if (brandInput.value.trim()) loadModels();
+                if (modelInput.value) loadEngines();
+            });
+            specRegionSelect.addEventListener('change', function() {
+                if (brandInput.value.trim()) loadModels();
+                if (modelInput.value) loadEngines();
+            });
 
             (function initChips() {
                 var initialBrand = '{{ brand|escapejs }}';
@@ -2268,6 +2423,97 @@
             if (modalClose) modalClose.addEventListener('click', function() {
                 document.getElementById('pwaModal').classList.remove('open');
             });
+
+            /* ============================================ //
+               QUICK SEARCH - البحث السريع الذكي            //
+            // ============================================ */
+            var qsPanel = document.getElementById('quickSearchPanel');
+            var qsBtn = document.getElementById('quickSearchBtn');
+            var qsClose = document.getElementById('quickSearchClose');
+            var qsInput = document.getElementById('quickSearchInput');
+            var qsResults = document.getElementById('quickSearchResults');
+            var qsTimer = null;
+
+            function qsOpen() {
+                if (!qsPanel) return;
+                qsPanel.classList.add('open');
+                if (qsInput) { qsInput.focus(); }
+                if (qsResults) {
+                    qsResults.innerHTML = '';
+                    qsResults.classList.remove('show');
+                }
+            }
+            function qsClosePanel() {
+                if (qsPanel) qsPanel.classList.remove('open');
+            }
+            if (qsBtn) qsBtn.addEventListener('click', qsOpen);
+            if (qsClose) qsClose.addEventListener('click', qsClosePanel);
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') qsClosePanel();
+            });
+
+            function qsRender(data) {
+                if (!qsResults) return;
+                qsResults.innerHTML = '';
+                var cands = (data && data.candidates) || [];
+                if (!cands.length) {
+                    qsResults.innerHTML = '';
+                    var empty = document.createElement('div');
+                    empty.className = 'qs-empty';
+                    empty.textContent = 'لم نعثر على تفسير لمصطلحك... جرّب مثالاً مثل: «سوناتا 2008»';
+                    qsResults.appendChild(empty);
+                    qsResults.classList.add('show');
+                    return;
+                }
+                cands.forEach(function(c) {
+                    var a = document.createElement('a');
+                    a.className = 'qs-result';
+                    a.href = c.url;
+                    var label = document.createElement('span');
+                    label.className = 'qs-label';
+                    if (c.corrected) {
+                        label.innerHTML = 'هل تقصد: <span class="qs-corrected">' + escapeHtml(c.label) + '</span>؟';
+                    } else {
+                        label.textContent = c.label;
+                    }
+                    a.appendChild(label);
+                    var count = document.createElement('span');
+                    count.className = 'qs-count';
+                    count.textContent = c.count > 0 ? (c.count + ' نتيجة') : 'لا نتائج';
+                    a.appendChild(count);
+                    qsResults.appendChild(a);
+                });
+                qsResults.classList.add('show');
+            }
+
+            function escapeHtml(s) {
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            if (qsInput) {
+                qsInput.addEventListener('input', function() {
+                    clearTimeout(qsTimer);
+                    var v = qsInput.value.trim();
+                    if (v.length < 2) {
+                        qsResults.classList.remove('show');
+                        return;
+                    }
+                    qsTimer = setTimeout(function() {
+                        fetch('{% url "quick_search" %}?q=' + encodeURIComponent(v))
+                            .then(function(r) { return r.json(); })
+                            .then(qsRender)
+                            .catch(function() {
+                                qsResults.classList.remove('show');
+                            });
+                    }, 220);
+                });
+                qsInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        var first = qsResults.querySelector('a.qs-result');
+                        if (first) { e.preventDefault(); window.location.href = first.href; }
+                    }
+                });
+            }
 
         })();
     </script>

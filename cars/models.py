@@ -8,6 +8,9 @@ class CarSpecification(models.Model):
     brand_ar = models.CharField(max_length=100)
     model_en = models.CharField(max_length=100)
     model_ar = models.CharField(max_length=100)
+
+    brand_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
+    model_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
     
     year = models.IntegerField(
         validators=[
@@ -55,6 +58,7 @@ class CarSpecification(models.Model):
     )
 
     engine = models.CharField(max_length=100)
+    engine_norm = models.CharField(max_length=100, blank=True, default='')
     oil_visc = models.CharField(max_length=50)
     oil_visc_high_km = models.CharField(max_length=50, blank=True, null=True)
     fuel = models.CharField(max_length=50)

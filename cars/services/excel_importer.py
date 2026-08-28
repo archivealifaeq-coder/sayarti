@@ -1,6 +1,7 @@
 import pandas as pd
 from django.db import transaction
 from cars.models import CarSpecification
+from cars.services.textnorm import fold_ar, fold_engine
 
 
 def _cell(row, col, default=''):
@@ -134,14 +135,17 @@ def import_cars_from_excel(file):
                 defaults={
                     'brand_en': _cell(row, 'Brand_EN'),
                     'brand_ar': _cell(row, 'Brand_AR'),
+                    'brand_norm': fold_ar(_cell(row, 'Brand_AR')),
                     'model_en': _cell(row, 'Model_EN'),
                     'model_ar': _cell(row, 'Model_AR'),
+                    'model_norm': fold_ar(_cell(row, 'Model_AR')),
                     'year': _year_value(row),
                     'spec': _cell(row, 'Spec'),
                     'trim': _cell(row, 'Trim') or _cell(row, 'Class'),
                     'engine_type': engine_type_val,
                     'spec_region': spec_region_val,
                     'engine': _cell(row, 'Engine'),
+                    'engine_norm': fold_engine(_cell(row, 'Engine')),
                     'oil_visc': _cell(row, 'Oil Visc'),
                     'oil_visc_high_km': _cell(row, 'Oil Visc (>100k)'),
                     'fuel': _cell(row, 'Fuel'),

@@ -33,3 +33,6 @@ db.sqlite3-journal
 # OS
 .DS_Store
 Thumbs.db
+
+# التوثيق الخاص (يحوي أسرار .env - لا يُرفع أبداً)
+/documentation/

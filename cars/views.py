@@ -1,5 +1,4 @@
 ﻿import pandas as pd
-import re
 from pathlib import Path
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -9,6 +8,8 @@ from django.http import JsonResponse, HttpResponse
 from django import forms
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
 from .services.excel_importer import import_cars_from_excel
+from .services.textnorm import fold_ar, fold_engine
+from .services.search_engine import find_interpretation, interpretation_url
 
 
 SW_FILE = Path(__file__).resolve().parent / 'static' / 'shared' / 'sw.js'
@@ -50,23 +51,60 @@ class CsvImportForm(forms.Form):
     excel_file = forms.FileField(label="Ø§Ø®ØªØ± Ù…Ù„Ù Ø§Ù„Ø£ÙƒØ³Ù„")
 
 
-def normalize_engine(value):
-    """Normalize engine value so 2000 == 2.0 == 2L."""
-    if not value:
-        return value
-    
-    value = str(value).strip()
-    
-    numbers = re.findall(r'(\d+\.?\d*)', value)
-    if numbers:
-        num = float(numbers[0])
-        if num >= 1000:
-            num = num / 1000
-        if num == int(num):
-            return f"{int(num)}.0"
-        return f"{num}"
-    
-    return value
+RELAX_LABELS = {
+    'spec_region': 'مواصفات المنطقة',
+    'engine_type': 'نوع المحرك',
+    'year': 'سنة الصنع',
+    'engine': 'سعة المحرك',
+}
+
+
+def _filters(request):
+    """بناء فلاتر البحث من المعاملات مع التطبيع، ويعيد قائمة (مفتاح, Q).
+
+    المرشحات النصية (الماركة/الموديل/المحرك) تطابق على حقول *_norm
+    الموحّدة، وأي قيد إضافي (منطقة/نوع/سنة/محرك) قيد قابل للتفكيك حتى
+    نتمكن لاحقاً من "البحث المتساهل".
+    """
+    brand = request.GET.get('brand', '').strip()
+    model = request.GET.get('model', '').strip()
+    year = request.GET.get('year', '').strip()
+    engine = request.GET.get('engine', '').strip()
+    engine_type = request.GET.get('engine_type', '').strip()
+    spec_region = request.GET.get('spec_region', '').strip()
+
+    required = Q()
+    if brand:
+        b = fold_ar(brand)
+        required &= Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
+    if model:
+        m = fold_ar(model)
+        required &= Q(model_norm__icontains=m) | Q(model_en__icontains=model)
+
+    optional = []  # (key, Q) — قابلة للإسقاط في البحث المتساهل
+    if year:
+        try:
+            optional.append(('year', Q(year=int(year))))
+        except ValueError:
+            optional.append(('year', Q(year__icontains=year)))
+    if engine_type:
+        optional.append(('engine_type', Q(engine_type__icontains=engine_type)))
+    if spec_region:
+        optional.append(('spec_region', Q(spec_region__icontains=spec_region)))
+    if engine:
+        e = fold_engine(engine)
+        optional.append(('engine', Q(engine_norm__icontains=e)))
+
+    return required, optional
+
+
+def _apply(qs, required, keep_keys):
+    q = required
+    for key, cond in keep_keys:
+        q &= cond
+    if q == Q():
+        return qs.none()
+    return qs.filter(q)
 
 
 def index_view(request):
@@ -77,49 +115,27 @@ def index_view(request):
     engine_type = request.GET.get('engine_type', '').strip()
     spec_region = request.GET.get('spec_region', '').strip()
 
-    filters = Q()
-    
-    if brand:
-        filters &= Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
-    if model:
-        filters &= Q(model_ar__icontains=model) | Q(model_en__icontains=model)
-    if year:
-        try:
-            filters &= Q(year=int(year))
-        except ValueError:
-            filters &= Q(year__icontains=year)
-    if engine_type:
-        filters &= Q(engine_type__icontains=engine_type)
-    if spec_region:
-        filters &= Q(spec_region__icontains=spec_region)
-    
-    engine_q = Q()
-    if engine:
-        normalized_engine = normalize_engine(engine)
-        
-        engine_q |= Q(engine__icontains=engine)
-        engine_q |= Q(engine__icontains=normalized_engine)
-        engine_q |= Q(engine__icontains=engine.replace('.', ''))
-        engine_q |= Q(engine__icontains=engine.replace(',', ''))
-        
-        numbers = re.findall(r'(\d+\.?\d*)', engine)
-        if numbers:
-            num = float(numbers[0])
-            if num >= 1000:
-                engine_q |= Q(engine__icontains=str(int(num)))
-                engine_q |= Q(engine__icontains=f"{num/1000:.1f}")
-                engine_q |= Q(engine__icontains=f"{int(num/1000)}.0")
-                engine_q |= Q(engine__icontains=f"{int(num/1000)}L")
-            else:
-                engine_q |= Q(engine__icontains=str(int(num*1000)))
-                engine_q |= Q(engine__icontains=f"{num:.1f}")
-                engine_q |= Q(engine__icontains=f"{int(num)}.0")
-                engine_q |= Q(engine__icontains=f"{int(num)}L")
-        
-        filters &= engine_q
+    required, optional = _filters(request)
 
-    if filters:
-        cars = CarSpecification.objects.filter(filters)
+    cars = None
+    relaxed = []
+    if required != Q() or optional:
+        qs = CarSpecification.objects.all()
+        if optional:
+            cars = _apply(qs, required, optional)
+            if not cars.exists() and required != Q():
+                # البحث المتساهل: نسقط القيود الأقل أهمية حتى تظهر النتائج
+                keep = list(optional)
+                while keep and not cars.exists():
+                    dropped = keep.pop()
+                    relaxed.append(dropped[0])
+                    cars = _apply(qs, required, keep)
+            if not cars or not cars.exists():
+                cars = _apply(qs, required, [])
+        else:
+            cars = _apply(qs, required, [])
+        if cars is not None and not cars.exists():
+            cars = None
     else:
         cars = None
 
@@ -140,9 +156,9 @@ def index_view(request):
     brand_counts = Counter(CarSpecification.objects.values_list('brand_ar', flat=True))
     popular_brands = [
         {'ar': ar, 'en': en_by_ar.get(ar, '')}
-        for ar, _ in brand_counts.most_common(12)
+for ar, _ in brand_counts.most_common(12)
     ]
-    
+
     engine_type_choices = CarSpecification.ENGINE_TYPE_CHOICES
     spec_region_choices = CarSpecification.SPEC_REGION_CHOICES
     spec_region_display = [{'value': v, 'label': l} for v, l in spec_region_choices]
@@ -162,6 +178,7 @@ def index_view(request):
         'engine': engine,
         'engine_type': engine_type,
         'spec_region': spec_region,
+        'relaxed': [RELAX_LABELS.get(k, k) for k in relaxed],
     }
     return render(request, 'cars/index.html', context)
 
@@ -174,18 +191,15 @@ def get_suggestions(request):
     spec_region = request.GET.get('spec_region', '').strip()
     engine = request.GET.get('engine', '').strip()
 
-    if brand and not model:
-        models_list = list(CarSpecification.objects.filter(
-            Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
-        ).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:400])
-        models = [{'ar': m[0], 'en': m[1]} for m in models_list]
-        return JsonResponse({'models': models, 'engines': []})
-
-    if brand and model:
+    def base_qs():
         qs = CarSpecification.objects.filter(
-            Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand),
-            Q(model_ar__icontains=model) | Q(model_en__icontains=model)
+            Q(brand_norm__icontains=fold_ar(brand)) | Q(brand_en__icontains=brand),
         )
+        if model:
+            qs = qs.filter(Q(model_norm__icontains=fold_ar(model)) | Q(model_en__icontains=model))
+        return qs
+
+    def narrow(qs):
         if year:
             try:
                 qs = qs.filter(year=int(year))
@@ -196,17 +210,51 @@ def get_suggestions(request):
         if spec_region:
             qs = qs.filter(spec_region=spec_region)
         if engine:
-            qs = qs.filter(Q(engine__icontains=engine))
-        engines_raw = list(qs.values_list('engine', flat=True).distinct().order_by('engine')[:200])
-        models = []
-        if not engine:
-            models_list = list(CarSpecification.objects.filter(
-                Q(brand_ar__icontains=brand) | Q(brand_en__icontains=brand)
-            ).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:400])
-            models = [{'ar': m[0], 'en': m[1]} for m in models_list]
-        return JsonResponse({'models': models, 'engines': engines_raw})
+            qs = qs.filter(engine_norm__icontains=fold_engine(engine))
+        return qs
+
+    if brand:
+        models_list = list(narrow(base_qs()).values_list('model_ar', 'model_en').distinct().order_by('model_ar')[:400])
+        models = [{'ar': m[0], 'en': m[1]} for m in models_list]
+
+        engines = []
+        if model:
+            engines_raw = list(narrow(base_qs()).values_list('engine', flat=True).distinct().order_by('engine')[:200])
+            engines = engines_raw
+        return JsonResponse({'models': models, 'engines': engines})
 
     return JsonResponse({'models': [], 'engines': []})
+
+
+def quick_search_view(request):
+    q = request.GET.get('q', '').strip()
+    if not q or len(q) < 2:
+        return JsonResponse({'q': q, 'candidates': []})
+    candidates = []
+    for item in find_interpretation(q):
+        candidates.append({
+            'brand_ar': item['brand_ar'],
+            'brand_en': item['brand_en'],
+            'model_ar': item['model_ar'],
+            'model_en': item['model_en'],
+            'year': item['year'],
+            'count': item['count'],
+            'corrected': item['corrected'],
+            'url': interpretation_url(item),
+            'label': _candidate_label(item),
+        })
+    return JsonResponse({'q': q, 'candidates': candidates})
+
+
+def _candidate_label(item):
+    parts = []
+    if item['brand_ar']:
+        parts.append(item['brand_ar'])
+    if item['model_ar']:
+        parts.append(item['model_ar'])
+    if item.get('year'):
+        parts.append(str(item['year']))
+    return ' '.join(parts) if parts else ''
 
 
 def is_staff_user(user):
