@@ -56,6 +56,7 @@ RELAX_LABELS = {
     'year': 'سنة الصنع',
     'engine': 'سعة المحرك',
     'fuel': 'نوع الوقود',
+    'trim': 'الفئة',
 }
 
 
@@ -73,6 +74,7 @@ def _filters(request):
     engine_type = request.GET.get('engine_type', '').strip()
     spec_region = request.GET.get('spec_region', '').strip()
     fuel = request.GET.get('fuel', '').strip()
+    trim = request.GET.get('trim', '').strip()
 
     required = Q()
     if brand:
@@ -98,6 +100,8 @@ def _filters(request):
     if engine:
         e = fold_engine(engine)
         optional.append(('engine', Q(engine_norm__icontains=e)))
+    if trim:
+        optional.append(('trim', Q(trim__icontains=trim)))
 
     return required, optional
 
@@ -119,6 +123,7 @@ def index_view(request):
     engine_type = request.GET.get('engine_type', '').strip()
     spec_region = request.GET.get('spec_region', '').strip()
     fuel = request.GET.get('fuel', '').strip()
+    trim = request.GET.get('trim', '').strip()
 
     required, optional = _filters(request)
 
@@ -167,6 +172,14 @@ for ar, _ in brand_counts.most_common(12)
     engine_type_choices = CarSpecification.ENGINE_TYPE_CHOICES
     spec_region_choices = CarSpecification.SPEC_REGION_CHOICES
     spec_region_display = [{'value': v, 'label': l} for v, l in spec_region_choices]
+    trim_choices = list(
+        CarSpecification.objects
+        .exclude(trim__isnull=True)
+        .exclude(trim='')
+        .values_list('trim', flat=True)
+        .distinct()
+        .order_by('trim')[:300]
+    )
 
     context = {
         'cars': cars,
@@ -177,6 +190,7 @@ for ar, _ in brand_counts.most_common(12)
         'popular_brands': popular_brands,
         'engine_type_choices': engine_type_choices,
         'spec_region_choices': spec_region_display,
+        'trim_choices': trim_choices,
         'brand': brand,
         'model': model,
         'year': year,
@@ -184,6 +198,7 @@ for ar, _ in brand_counts.most_common(12)
         'engine_type': engine_type,
         'spec_region': spec_region,
         'fuel': fuel,
+        'trim': trim,
         'relaxed': [RELAX_LABELS.get(k, k) for k in relaxed],
     }
     return render(request, 'cars/index.html', context)
@@ -227,7 +242,16 @@ def get_suggestions(request):
         if model:
             engines_raw = list(narrow(base_qs()).values_list('engine', flat=True).distinct().order_by('engine')[:200])
             engines = engines_raw
-        return JsonResponse({'models': models, 'engines': engines})
+
+        trims = list(
+            narrow(base_qs())
+            .exclude(trim__isnull=True)
+            .exclude(trim='')
+            .values_list('trim', flat=True)
+            .distinct()
+            .order_by('trim')[:200]
+        )
+        return JsonResponse({'models': models, 'engines': engines, 'trims': trims})
 
     return JsonResponse({'models': [], 'engines': []})
 

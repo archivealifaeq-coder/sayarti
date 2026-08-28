@@ -1592,6 +1592,14 @@
                     </div>
                     
                     <div>
+                        <label for="trimSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الفئة <span class="optional-tag">اختياري</span></label>
+                        <select name="trim" id="trimSelect" class="search-select">
+                            <option value="">-- الكل --</option>
+                            {% for t in trim_choices %}<option value="{{ t|escape }}" {% if trim == t %}selected{% endif %}>{{ t|escape }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
                         <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك <span class="optional-tag">اختياري</span></label>
                         <div class="input-group">
                             <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="اختر الماركة والموديل أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
@@ -1928,7 +1936,13 @@
             var engineChipWrap = document.getElementById('engineChipWrap');
             var engineTypeSelect = document.getElementById('engineTypeSelect');
             var specRegionSelect = document.getElementById('specRegionSelect');
+            var trimSelect = document.getElementById('trimSelect');
             var yearInput = document.getElementById('yearInput');
+            var allTrims = [];
+            if (trimSelect) {
+                var trOpts = trimSelect.querySelectorAll('option');
+                for (var ti = 1; ti < trOpts.length; ti++) allTrims.push(trOpts[ti].value);
+            }
 
             var allBrands = [
                 {% for b in brand_suggestions_en %}{ ar: '{{ b.ar|escapejs }}', en: '{{ b.en|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}
@@ -2089,9 +2103,23 @@
                     lastModels = (data.models || []).map(function(m) { return { ar: m.ar, en: m.en }; });
                     isReadyModel(true);
                     renderModelChips();
+                    populateTrimSelect(data.trims || []);
                 }).catch(function() {
                     isReadyModel(false);
                 });
+            }
+
+            function populateTrimSelect(trims) {
+                if (!trimSelect) return;
+                var list = (trims && trims.length) ? trims : allTrims;
+                var current = trimSelect.value;
+                var html = '<option value="">-- الكل --</option>';
+                for (var i = 0; i < list.length; i++) {
+                    var t = list[i];
+                    html += '<option value="' + t.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"' +
+                        (t === current ? ' selected' : '') + '>' + t + '</option>';
+                }
+                trimSelect.innerHTML = html;
             }
 
             function loadEngines() {
@@ -2112,6 +2140,7 @@
                     lastEngines = (data.engines || []).map(function(e) { return { ar: e, en: '' }; });
                     isReadyEngine(true);
                     renderEngineChips();
+                    populateTrimSelect(data.trims || []);
                 }).catch(function() {
                     isReadyEngine(false);
                 });
