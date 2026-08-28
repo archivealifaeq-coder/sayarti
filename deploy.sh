@@ -10,7 +10,7 @@ source venv/bin/activate
 python manage.py migrate --noinput
 
 echo '== 3/4 إصلاح تسمية الوقود الهجين =='
-python -c "
+python manage.py shell -c "
 from cars.models import CarSpecification as C
 n = C.objects.filter(fuel='بنزين+كهرباء').count()
 if n:
@@ -25,7 +25,7 @@ systemctl status gunicorn --no-pager | head -n 4
 
 echo
 echo '=== نتيجة فحص كورولا (يجب أن تظهر بطاقات مثل بنزين خليجي / هايبرد صيني) ==='
-python -c "
+python manage.py shell -c "
 from django.db.models import Count
 from cars.models import CarSpecification as C
 qs = (C.objects.filter(model_ar__icontains='كورولا')
