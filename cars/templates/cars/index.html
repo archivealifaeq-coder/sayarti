@@ -893,18 +893,17 @@
         .car-card:hover::before { opacity: 1; }
         
         .car-card .badge-octane {
-            position: absolute;
-            top: 14px;
-            left: 14px;
+            display: inline-flex;
+            align-items: center;
             background: rgba(245, 158, 11, 0.12);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(245, 158, 11, 0.2);
             color: #fbbf24;
             font-weight: 800;
             font-size: 0.65rem;
+            margin: 0 0 10px 8px;
             padding: 5px 14px;
             border-radius: 30px;
-            z-index: 2;
         }
         .car-card .car-title { font-size: 1.3rem; font-weight: 800; color: #f1f5f9; transition: color 0.3s ease; margin-bottom: 2px; }
         .car-card:hover .car-title { color: #fbbf24; }
