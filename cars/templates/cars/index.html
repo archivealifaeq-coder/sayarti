@@ -1346,6 +1346,29 @@
             to { opacity: 1; transform: none; }
         }
 
+        /* ورقة الاقتراحات الثابتة: تلتصق أعلى لوحة المفاتيح فلا تختفي خلفها */
+        .qs-sheet {
+            position: fixed;
+            left: 0; right: 0; bottom: 0;
+            z-index: 5000;
+            margin-top: 0;
+            padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
+            background: linear-gradient(180deg, rgba(20, 27, 47, 0.97), rgba(10, 15, 26, 0.99));
+            border-top: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 22px 22px 0 0;
+            box-shadow: 0 -18px 60px rgba(0, 0, 0, 0.55), 0 -2px 24px rgba(245, 158, 11, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            max-height: 52vh;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+        .qs-sheet.fade { animation: qsSheetIn 0.26s ease both; }
+        @keyframes qsSheetIn {
+            from { opacity: 0; transform: translateY(28px); }
+            to { opacity: 1; transform: none; }
+        }
+
         .qs-panel-sec { margin-bottom: 10px; }
         .qs-panel-sec:last-child { margin-bottom: 0; }
         .qs-panel-title {
@@ -1739,29 +1762,29 @@
                             <span class="qs-input-icon" aria-hidden="true">🚗</span>
                         </div>
                         <div class="qs-hint" id="qsFreeHint">💡 اكتب اسم السيارة كما تتذكره — سنعثر عليها حتى لو اختلفت كتابتها</div>
+                    </div>
+                </div>
 
-                        <!-- لوحة الاقتراحات: هادئة، داخل البطاقة، تظهر مباشرة أسفل الحقل -->
-                        <div class="qs-panel" id="qsPanel" hidden>
-                            <div class="qs-panel-sec" id="qsSecCands">
-                                <div class="qs-panel-title" id="qsCandTitle">هل تقصد؟</div>
-                                <button type="button" class="qs-main" id="qsMain">
-                                    <span class="m-label" id="qsMainLabel"></span>
-                                    <span class="m-count" id="qsMainCount" hidden></span>
-                                </button>
-                                <button type="button" class="qs-alt" id="qsAlt" hidden></button>
-                                <div class="qs-err" id="qsNoCands" hidden>لم نعثر على نتائج — جرّب اسماً آخر أو مثالاً مثل «سوناتا 2008»</div>
-                            </div>
-                            <div class="qs-panel-sec" id="qsSecCombos" style="display:none">
-                                <div class="qs-panel-title" id="qsComboTitle">اختر النسخة</div>
-                                <div class="qs-combo-list" id="qsCombos"></div>
-                                <button type="button" class="qs-back-link" id="qsBackYears">→ تغيير البحث</button>
-                            </div>
-                            <div class="qs-panel-sec" id="qsSecYears" style="display:none">
-                                <div class="qs-panel-title" id="qsYearTitle">اختر السنة</div>
-                                <div class="qs-year-wrap" id="qsYears"></div>
-                                <button type="button" class="qs-back-link" id="qsBackCombos">→ اختر نسخة أخرى</button>
-                            </div>
-                        </div>
+                <!-- لوحة الاقتراحات: ورقة ثابتة تلتصق أعلى لوحة المفاتيح فلا تختفي خلفها -->
+                <div class="qs-panel qs-sheet" id="qsPanel" hidden>
+                    <div class="qs-panel-sec" id="qsSecCands">
+                        <div class="qs-panel-title" id="qsCandTitle">هل تقصد؟</div>
+                        <button type="button" class="qs-main" id="qsMain">
+                            <span class="m-label" id="qsMainLabel"></span>
+                            <span class="m-count" id="qsMainCount" hidden></span>
+                        </button>
+                        <button type="button" class="qs-alt" id="qsAlt" hidden></button>
+                        <div class="qs-err" id="qsNoCands" hidden>لم نعثر على نتائج — جرّب اسماً آخر أو مثالاً مثل «سوناتا 2008»</div>
+                    </div>
+                    <div class="qs-panel-sec" id="qsSecCombos" style="display:none">
+                        <div class="qs-panel-title" id="qsComboTitle">اختر النسخة</div>
+                        <div class="qs-combo-list" id="qsCombos"></div>
+                        <button type="button" class="qs-back-link" id="qsBackYears">→ تغيير البحث</button>
+                    </div>
+                    <div class="qs-panel-sec" id="qsSecYears" style="display:none">
+                        <div class="qs-panel-title" id="qsYearTitle">اختر السنة</div>
+                        <div class="qs-year-wrap" id="qsYears"></div>
+                        <button type="button" class="qs-back-link" id="qsBackCombos">→ اختر نسخة أخرى</button>
                     </div>
                 </div>
 
@@ -2653,10 +2676,28 @@
                 'اوروبي': 'european', 'أوروبي': 'european', 'اوروبى': 'european', 'europe': 'european'
             };
 
+            function qsPositionSheet() {
+                if (!qsPanel) return;
+                var vv = window.visualViewport;
+                if (!vv) { qsPanel.style.bottom = '0px'; return; }
+                if (vv.height < window.innerHeight) {
+                    var kb = Math.max(0, Math.round(window.innerHeight - (vv.height + vv.offsetTop)));
+                    qsPanel.style.bottom = (kb + 6) + 'px';
+                } else {
+                    qsPanel.style.bottom = '0px';
+                }
+            }
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', qsPositionSheet);
+                window.visualViewport.addEventListener('scroll', qsPositionSheet);
+            }
+            window.addEventListener('resize', qsPositionSheet);
+
             function qsShowPanel() {
                 if (!qsPanel) return;
                 var wasHidden = qsPanel.hidden;
                 qsPanel.hidden = false;
+                qsPositionSheet();
                 if (wasHidden) {
                     qsPanel.classList.remove('fade');
                     void qsPanel.offsetWidth;
@@ -2960,7 +3001,7 @@
                     qsTimer3 = setTimeout(qsLive, 350);
                 });
                 qsFreeInput.addEventListener('focus', function() {
-                    try { qsFreeInput.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+                    setTimeout(function() { qsPositionSheet(); }, 0);
                 });
                 qsFreeInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
