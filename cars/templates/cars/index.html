@@ -10,6 +10,33 @@
     <meta name="robots" content="index, follow"/>
     <meta name="language" content="Arabic"/>
     <title>سيارتي - دليل مواصفات السيارات الذكي</title>
+
+    {% with request.build_absolute_uri as abs_url %}{% with request.META.HTTP_HOST as site_host %}
+    {% if abs_url and site_host %}
+    <link rel="canonical" href="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="سيارتي" />
+    <meta property="og:title" content="سيارتي - دليل مواصفات السيارات الذكي" />
+    <meta property="og:description" content="ابحث عن مواصفات سيارتك من حيث الزيت، الإطارات، الأوكتان، والمزيد." />
+    <meta property="og:url" content="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/" />
+    <meta property="og:image" content="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/static/shared/icons/icon-512.png" />
+    <meta property="og:locale" content="ar_AR" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="سيارتي - دليل مواصفات السيارات الذكي" />
+    <meta name="twitter:description" content="ابحث عن مواصفات سيارتك من حيث الزيت، الإطارات، الأوكتان، والمزيد." />
+    {% endif %}
+    {% endwith %}{% endwith %}
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "سيارتي",
+        "description": "دليل مواصفات السيارات الذكي - الزيت، الإطارات، الأوكتان، والتوصيات.",
+        "url": "{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/",
+        "inLanguage": "ar"
+    }
+    </script>
     
     <link rel="preconnect" href="https://cdn.tailwindcss.com"/>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>

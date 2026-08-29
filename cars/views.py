@@ -364,3 +364,48 @@ def ads_txt_view(request):
     settings_obj = SiteSettings.load()
     content = settings_obj.ads_txt.strip() or "# ads.txt - populated after Google AdSense approval"
     return HttpResponse(content, content_type='text/plain; charset=utf-8')
+
+
+def robots_view(request):
+    base = request.build_absolute_uri('/').rstrip('/')
+    text = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "\n"
+        f"Sitemap: {base}/sitemap.xml\n"
+    )
+    return HttpResponse(text, content_type='text/plain; charset=utf-8')
+
+
+def sitemap_view(request):
+    from django.urls import reverse
+    from django.utils import timezone
+
+    host = request.build_absolute_uri('/').rstrip('/')
+    today = timezone.localdate().isoformat()
+
+    urls = [
+        {'loc': host, 'priority': '1.0', 'freq': 'daily'},
+        {'loc': host + reverse('mix_calculator'), 'priority': '0.8', 'freq': 'weekly'},
+        {'loc': host + reverse('about'), 'priority': '0.5', 'freq': 'monthly'},
+        {'loc': host + reverse('privacy'), 'priority': '0.3', 'freq': 'yearly'},
+    ]
+    for car_id in CarSpecification.objects.values_list('id', flat=True).iterator():
+        urls.append({
+            'loc': host + reverse('recommendations', args=[car_id]),
+            'priority': '0.7',
+            'freq': 'monthly',
+        })
+
+    chunk = '\n'.join(
+        f"   <url><loc>{u['loc']}</loc><lastmod>{today}</lastmod>"
+        f"<changefreq>{u['freq']}</changefreq><priority>{u['priority']}</priority></url>"
+        for u in urls
+    )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + chunk
+        + '\n</urlset>\n'
+    )
+    return HttpResponse(xml, content_type='application/xml; charset=utf-8')
