@@ -396,6 +396,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('ads_txt',),
             'classes': ('collapse',),
         }),
+        ('📊 إحصاءات الزوار Google Analytics', {
+            'fields': ('ga4_id',),
+            'description': '1) أنشئ خاصية (Property) في analytics.google.com 2) الصق معرّف القياس G-XXXXXXXX هنا وستبدأ الإحصائيات (الزوار، الصفحات، الدول، الأجهزة)'
+        }),
     )
 
     def has_add_permission(self, request):

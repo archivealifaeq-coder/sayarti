@@ -19,6 +19,17 @@
     {% if site_settings.adsense_client_id %}
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site_settings.adsense_client_id }}" crossorigin="anonymous"></script>
     {% endif %}
+
+    {% if site_settings.ga4_id %}
+    <!-- 📊 Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.ga4_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ site_settings.ga4_id }}');
+    </script>
+    {% endif %}
     <style>
         * { font-family: 'Cairo', sans-serif; }
         body { background: #0b1120; min-height: 100vh; padding: 20px; margin: 0; }

@@ -15,6 +15,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
     <meta name="apple-mobile-web-app-title" content="سيارتي"/>
+
+    {% if site_settings.ga4_id %}
+    <!-- 📊 Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.ga4_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ site_settings.ga4_id }}');
+    </script>
+    {% endif %}
     <style>
         * { font-family: 'Cairo', sans-serif; }
         body { background: #0a0f1a; min-height: 100vh; }
