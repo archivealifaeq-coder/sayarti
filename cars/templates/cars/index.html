@@ -1593,7 +1593,7 @@
                     
                     <div>
                         <label for="trimSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الفئة <span class="optional-tag">اختياري</span></label>
-                        <select name="trim" id="trimSelect" class="search-select">
+                        <select name="trim" id="trimSelect" class="search-select" {% if not model %}disabled{% endif %}>
                             <option value="">-- الكل --</option>
                             {% for t in trim_choices %}<option value="{{ t|escape }}" {% if trim == t %}selected{% endif %}>{{ t|escape }}</option>{% endfor %}
                         </select>
@@ -2046,6 +2046,7 @@
                     engineQuery = '';
                     isReadyModel(false);
                     isReadyEngine(false);
+                    resetTrim();
                     renderBrandChips();
                     loadModels();
                     loadEngines();
@@ -2055,6 +2056,7 @@
                     engineInput.value = '';
                     engineQuery = '';
                     isReadyEngine(false);
+                    resetTrim();
                     renderModelChips();
                     loadEngines();
                 } else if (which === 'engine') {
@@ -2086,10 +2088,22 @@
                 }
             }
 
+            function isReadyTrim(ready) {
+                if (trimSelect) trimSelect.disabled = !ready;
+            }
+
+            function resetTrim() {
+                if (trimSelect) {
+                    trimSelect.value = '';
+                    trimSelect.disabled = true;
+                }
+            }
+
             function loadModels() {
                 var brand = brandInput.value.trim();
                 if (!brand) {
                     isReadyModel(false);
+                    isReadyTrim(false);
                     return;
                 }
                 var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand);
@@ -2127,6 +2141,7 @@
                 var model = modelInput.value.trim();
                 if (!brand || !model) {
                     isReadyEngine(false);
+                    isReadyTrim(false);
                     return;
                 }
                 var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model);
@@ -2141,6 +2156,7 @@
                     isReadyEngine(true);
                     renderEngineChips();
                     populateTrimSelect(data.trims || []);
+                    isReadyTrim(true);
                 }).catch(function() {
                     isReadyEngine(false);
                 });
