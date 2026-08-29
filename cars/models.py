@@ -296,6 +296,17 @@ class SiteSettings(models.Model):
         verbose_name="معرف تحليلات Google (GA4)",
         help_text="من analytics.google.com — مثال: G-ABC123XYZ — يسجّل زوار الموقع والصفحات والدول"
     )
+    ga4_property_id = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name="معرف الخاصية (Property ID)",
+        help_text="من GA4 Admin → Property settings — مثال: 15522423744"
+    )
+    ga_service_account_json = models.TextField(
+        blank=True,
+        verbose_name="مفتاح الخدمة (Service Account JSON)",
+        help_text="الصق محتوى ملف JSON لخدمة الحساب بعد تفعيل Analytics Data API — يسمح بعرض عدد الزوار في لوحة الإدارة"
+    )
 
     def __str__(self):
         return "إعدادات الموقع"

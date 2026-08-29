@@ -397,8 +397,8 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
         ('📊 إحصاءات الزوار Google Analytics', {
-            'fields': ('ga4_id',),
-            'description': '1) أنشئ خاصية (Property) في analytics.google.com 2) الصق معرّف القياس G-XXXXXXXX هنا وستبدأ الإحصائيات (الزوار، الصفحات، الدول، الأجهزة)'
+            'fields': ('ga4_id', 'ga4_property_id', 'ga_service_account_json'),
+            'description': 'GA4 ID: من analytics.google.com (Data Streams). Property ID وفاتح الخدمة: فعّل Analytics Data API في Google Cloud واصنع Service Account بحق Viewer على الخاصية ثم الصق ملف JSON هنا — لعرض عدد الزوار في لوحة الإدارة'
         }),
     )
 
@@ -407,6 +407,11 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    def save_model(self, request, obj, form, change):
+        from django.core.cache import cache
+        cache.delete('ga_visitor_stats')
+        super().save_model(request, obj, form, change)
 
     def settings_summary(self, obj):
         if obj.show_ads and obj.adsense_client_id:
@@ -421,11 +426,13 @@ admin.site.index_template = 'admin/custom_index.html'
 
 
 def get_dashboard_stats():
+    from .services.ga_stats import get_visitor_stats
     return {
         'total_cars': CarSpecification.objects.count(),
         'total_brands': CarSpecification.objects.values('brand_ar').distinct().count(),
         'total_banners': AdBanner.objects.count(),
         'active_banners': AdBanner.objects.filter(is_active=True).count(),
+        'visitor_stats': get_visitor_stats(),
     }
 
 

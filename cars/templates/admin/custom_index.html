@@ -30,6 +30,45 @@
             <div style="color: #94a3b8; font-size: 0.9rem;">البنرات المفعلة</div>
         </div>
     </div>
+
+    <div style="background: linear-gradient(145deg, #1e293b, #0f172a); padding: 24px; border-radius: 16px; border: 1px solid #fbbf2430; box-shadow: 0 8px 30px rgba(0,0,0,0.3); margin-bottom: 30px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div style="font-size: 1.15rem; font-weight: 800; color: #f1f5f9;">👥 عدد الزوار — Google Analytics</div>
+            {% if visitor_stats.status == 'ok' %}<div style="color: #94a3b8; font-size: 0.78rem;">يُحدَّث كل 10 دقائق</div>{% endif %}
+        </div>
+
+        {% if visitor_stats.status == 'ok' %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+            <div style="background: rgba(15,23,42,.6); border: 1px solid #fbbf2422; border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #fbbf24;">{{ visitor_stats.today|default:"0" }}</div>
+                <div style="color: #94a3b8; font-size: 0.85rem;">اليوم</div>
+            </div>
+            <div style="background: rgba(15,23,42,.6); border: 1px solid #60a5fa22; border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #60a5fa;">{{ visitor_stats.week|default:"0" }}</div>
+                <div style="color: #94a3b8; font-size: 0.85rem;">آخر 7 أيام</div>
+            </div>
+            <div style="background: rgba(15,23,42,.6); border: 1px solid #34d39922; border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #34d399;">{{ visitor_stats.month|default:"0" }}</div>
+                <div style="color: #94a3b8; font-size: 0.85rem;">آخر 30 يوماً</div>
+            </div>
+            <div style="background: rgba(15,23,42,.6); border: 1px solid #f8717122; border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #f87171;">{{ visitor_stats.total|default:"0" }}</div>
+                <div style="color: #94a3b8; font-size: 0.85rem;">الكلي منذ البداية</div>
+            </div>
+        </div>
+        {% else %}
+        <div style="color: #fde68a; background: rgba(245,158,11,.08); border: 1px solid #f59e0b33; border-radius: 12px; padding: 14px; font-size: 0.9rem; line-height: 1.9;">
+            <b>لتفعيل بطاقة الزوار:</b> افتح «إعدادات الموقع» وأكمل حقلين — <b>معرف الخاصية (Property ID)</b> ومفتاح الخدمة <b>Service Account JSON</b>:
+            <ol style="margin: 6px 0 0 18px; padding: 0;">
+                <li>في Google Cloud Console فعّل API باسم <b>Google Analytics Data API</b>.</li>
+                <li>أنشئ <b>Service Account</b> وحمّل مفتاحه بصيغة <b>JSON</b>.</li>
+                <li>في GA4 ← Admin ← Property access management أضف بريد الخدمة بدور <b>Viewer</b>.</li>
+                <li>الصق المحتوى في الحقل واحفظ.</li>
+            </ol>
+            {% if visitor_stats.message %}<div style="color: #fca5a5; margin-top: 8px;">{{ visitor_stats.message }}</div>{% endif %}
+        </div>
+        {% endif %}
+    </div>
 </div>
 {{ block.super }}
 {% endblock %}

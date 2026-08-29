@@ -7,6 +7,7 @@ git pull
 
 echo '== 2/4 الترحيلات (إن وجدت) =='
 source venv/bin/activate
+pip install -r requirements.txt
 python manage.py migrate --noinput
 
 echo '== 3/4 إصلاح تسمية الوقود الهجين =='
