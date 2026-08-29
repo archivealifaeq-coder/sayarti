@@ -51,7 +51,7 @@ def get_visitor_stats(property_id=None, service_account_json=None, use_cache=Tru
         return result
 
     if property_id is None or service_account_json is None:
-        from .models import SiteSettings
+        from ..models import SiteSettings  # noqa: PLC0415
         settings = SiteSettings.load()
         property_id = property_id or settings.ga4_property_id
         service_account_json = service_account_json or settings.ga_service_account_json
