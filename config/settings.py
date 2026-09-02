@@ -183,6 +183,9 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@sayarti.org')
 
+# DeepSeek AI API key (fallback to SiteSettings in DB if not set here)
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', '')
+
 
 # Cache Configuration (for performance)
 CACHES = {
