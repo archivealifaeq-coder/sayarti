@@ -1354,6 +1354,24 @@
             .js .reveal { opacity: 1; transform: none; transition: none; }
             .back-top { transition: opacity 0.3s ease, visibility 0.3s ease; }
         }
+
+        /* بطاقات البوابة الثلاث */
+        #gateway-cards .glass-card {
+            background: rgba(30, 41, 59, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(245, 158, 11, 0.18);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+            cursor: pointer;
+            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+        }
+        #gateway-cards .glass-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(245, 158, 11, 0.45);
+            box-shadow: 0 18px 60px rgba(245, 158, 11, 0.18);
+        }
     </style>
 </head>
 <body>
@@ -1567,7 +1585,7 @@
         <!-- ============================================ -->
         <div class="max-w-7xl mx-auto px-4 pt-6 md:pt-10 pb-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6" id="gateway-cards">
-                <a href="{% url 'search' %}" class="glass rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
+                <a href="{% url 'search' %}" class="glass-card rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
                     <span class="absolute top-0 left-0 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></span>
                     <div class="text-5xl mb-4">🔍</div>
                     <h2 class="text-xl md:text-2xl font-black text-white mb-3">ابحث عن سيارتك</h2>
@@ -1575,7 +1593,7 @@
                     <span class="inline-block mt-5 text-amber-400 text-sm font-bold">ابدأ البحث  ←</span>
                 </a>
 
-                <a href="{% url 'mix_calculator' %}" class="glass rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
+                <a href="{% url 'mix_calculator' %}" class="glass-card rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
                     <span class="absolute top-0 left-0 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></span>
                     <div class="text-5xl mb-4">🧮</div>
                     <h2 class="text-xl md:text-2xl font-black text-white mb-3">حاسبة الوقود</h2>
@@ -1583,7 +1601,7 @@
                     <span class="inline-block mt-5 text-amber-400 text-sm font-bold">احسب الآن  ←</span>
                 </a>
 
-                <a href="{% url 'budget_finder' %}" class="glass rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
+                <a href="{% url 'budget_finder' %}" class="glass-card rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
                     <span class="absolute top-0 left-0 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></span>
                     <div class="text-5xl mb-4">💰</div>
                     <h2 class="text-xl md:text-2xl font-black text-white mb-3">شكد فلوسك</h2>
