@@ -1,0 +1,771 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>البحث عن سيارتك - سيارتي</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}"/>
+    <link rel="manifest" href="/manifest.json"/>
+    <meta name="theme-color" content="#0f172a"/>
+    <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/shared/icons/icon-192.png"/>
+
+    {% if site_settings.ga4_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.ga4_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ site_settings.ga4_id }}');
+    </script>
+    {% endif %}
+</head>
+<body>
+
+    <nav class="glass-nav" id="navbar" role="navigation" aria-label="القائمة الرئيسية">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="{% url 'index' %}" class="nav-logo flex items-center gap-2" aria-label="الرئيسية">
+                <span aria-hidden="true">🚗</span> سيارتي
+            </a>
+            <div class="hidden md:flex gap-6 lg:gap-8">
+                <a href="{% url 'index' %}" class="nav-link">الرئيسية</a>
+                <a href="{% url 'search' %}" class="nav-link active" aria-current="page">🔍 البحث</a>
+                <a href="{% url 'mix_calculator' %}" class="nav-link">🧮 حاسبة الخلط</a>
+                <a href="{% url 'budget_finder' %}" class="nav-link">💰 شكد فلوسك</a>
+                {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
+            </div>
+            <button type="button" id="installBtn" class="pwa-install-btn md:flex hidden" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
+            <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+
+        <!-- ============================================ -->
+        <!--  SEARCH HERO                                -->
+        <!-- ============================================ -->
+        <div class="text-center px-4 pt-6 pb-2 section-spacing">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-3">🔍 ابحث عن <span class="highlight">سيارتك</span></h1>
+            <p class="text-slate-400 text-sm md:text-base max-w-2xl mx-auto">اكتب ما تعرفه فقط — ابحث بالماركة، أو أضف الموديل والسنة. كل ما تركته فارغاً يُتجاهل تلقائياً.</p>
+        </div>
+
+        <!-- ============================================ -->
+        <!--  SEARCH FORM                                -->
+        <!-- ============================================ -->
+        <div class="max-w-7xl mx-auto px-4 section-spacing" id="cars-section">
+            <div class="glass-card" id="search-section">
+
+                <form hx-get="{% url 'search' %}"
+                      hx-target="#cars-container"
+                      hx-select="#cars-container"
+                      hx-push-url="true"
+                      hx-indicator="#loading-spinner"
+                      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                      id="searchForm"
+                      role="search"
+                      novalidate>
+
+                    <div>
+                        <label for="brandInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الماركة</label>
+                        <div class="input-group">
+                            <input type="text" name="brand" id="brandInput" value="{{ brand|escape }}" placeholder="اكتب الماركة... مثال: تويوتا" class="search-input" autocomplete="off" maxlength="100">
+                            <span class="search-icon" aria-hidden="true">🚗</span>
+                        </div>
+                        <div class="chip-wrap" id="brandChipWrap">
+                            <div class="chip-row" id="brandChips" role="list"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="modelInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الموديل</label>
+                        <div class="input-group">
+                            <input type="text" name="model" id="modelInput" value="{{ model|escape }}" placeholder="اختر الماركة أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
+                            <span class="search-icon" aria-hidden="true">📐</span>
+                        </div>
+                        <div class="chip-wrap" id="modelChipWrap">
+                            <div class="chip-row" id="modelChips" role="list"></div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="yearInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سنة الصنع</label>
+                        <input type="number" name="year" id="yearInput" value="{{ year|escape }}" placeholder="مثال: 2012" class="search-input" min="1900" max="2099" step="1">
+                        <span class="search-icon" aria-hidden="true">📅</span>
+                    </div>
+
+                    <div>
+                        <label for="engineTypeSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">نوع المحرك <span class="optional-tag">اختياري</span></label>
+                        <select name="engine_type" id="engineTypeSelect" class="search-select">
+                            <option value="">-- الكل --</option>
+                            {% for value, label in engine_type_choices %}<option value="{{ value|escape }}" {% if engine_type == value %}selected{% endif %}>{{ label|escape }}</option>{% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="specRegionSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">مواصفات المنطقة <span class="optional-tag">اختياري</span></label>
+                        <select name="spec_region" id="specRegionSelect" class="search-select">
+                            <option value="">-- الكل --</option>
+                            {% for sr in spec_region_choices %}<option value="{{ sr.value|escape }}" {% if spec_region == sr.value %}selected{% endif %}>{{ sr.label|escape }}</option>{% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="trimSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الفئة <span class="optional-tag">اختياري</span></label>
+                        <select name="trim" id="trimSelect" class="search-select" {% if not model %}disabled{% endif %}>
+                            <option value="">-- الكل --</option>
+                            {% for t in trim_choices %}<option value="{{ t|escape }}" {% if trim == t %}selected{% endif %}>{{ t|escape }}</option>{% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك <span class="optional-tag">اختياري</span></label>
+                        <div class="input-group">
+                            <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="اختر الماركة والموديل أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
+                            <span class="search-icon" aria-hidden="true">⚙️</span>
+                        </div>
+                        <div class="chip-wrap" id="engineChipWrap">
+                            <div class="chip-row" id="engineChips" role="list"></div>
+                        </div>
+                    </div>
+
+                    <div id="suggestions-container" class="hidden" aria-hidden="true"></div>
+                    <input type="hidden" name="fuel" id="fuelInput">
+
+                    <div class="lg:col-span-3 flex flex-wrap justify-center gap-3 md:gap-4 mt-3 md:mt-4">
+                        <button type="submit" class="btn-primary px-8 md:px-12 py-3 md:py-4 text-base md:text-lg" id="searchButton">🔍 بحث</button>
+                        <a href="{% url 'search' %}" class="btn-secondary px-6 md:px-8 py-3 md:py-4 text-base md:text-lg">إعادة تعيين</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!--  CARS RESULTS                              -->
+        <!-- ============================================ -->
+        <div id="cars-container" class="max-w-7xl mx-auto px-4 section-spacing">
+            <div id="loading-spinner" class="htmx-indicator flex justify-center py-16 md:py-20" aria-hidden="true">
+                <div class="loading-spinner" role="status" aria-label="جاري التحميل"></div>
+            </div>
+
+            {% if cars is None %}
+                <div class="text-center py-10 md:py-16 bg-slate-900/30 rounded-3xl border border-slate-800/50">
+                    <div class="text-5xl md:text-6xl mb-3 md:mb-4" aria-hidden="true">🔍</div>
+                    <h4 class="text-slate-300 text-lg md:text-xl font-bold">ابحث عن سيارتك</h4>
+                    <p class="text-slate-500 text-sm md:text-base mt-2 max-w-md mx-auto">استخدم نموذج البحث أعلاه للعثور على مواصفات سيارتك المفضلة</p>
+                </div>
+            {% elif cars|length == 0 %}
+                <div class="text-center py-10 md:py-16 bg-slate-900/50 rounded-3xl border border-slate-800">
+                    <div class="text-6xl mb-3 md:mb-4" aria-hidden="true">🔍</div>
+                    <p class="text-slate-400 text-lg">لم يتم العثور على سيارات تطابق بحثك.</p>
+                    <p class="text-slate-500 text-sm mt-2">حاول تعديل كلمات البحث أو استخدام مرشحات مختلفة</p>
+                    <a href="{% url 'search' %}" class="text-amber-400 hover:text-amber-300 font-semibold mt-4 inline-block transition-colors">✕ إعادة تعيين</a>
+                </div>
+            {% else %}
+                <div class="flex flex-wrap justify-between items-center mb-3 md:mb-4 gap-2 text-slate-400">
+                    <p class="text-sm font-semibold">🚗 نتائج البحث: <span class="text-amber-400 font-extrabold text-lg" id="resultsCount">{{ cars|length }}</span> سيارة</p>
+                    <a href="{% url 'search' %}" class="text-amber-400 hover:text-amber-300 transition text-sm font-semibold">✕ إعادة تعيين</a>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6" id="cars-grid">
+                    {% for car in cars %}
+                    <div class="car-card" data-car-id="{{ car.id }}">
+                        <div class="badge-octane">⛽ اوكتان {{ car.octane|escape }}</div>
+                        <div class="mb-2">
+                            <h3 class="car-title">{{ car.brand_ar|escape }} {{ car.model_ar|escape }}{% if car.trim %} <span class="text-pink-400 text-base">({{ car.trim|escape }})</span>{% endif %}</h3>
+                            <p class="car-subtitle">{{ car.brand_en|escape }} {{ car.model_en|escape }} <span class="highlight">| {{ car.year|escape }}</span>{% if car.engine_type %}<span class="highlight">| {{ car.get_engine_type_display|escape }}</span>{% endif %}{% if car.spec_region %}<span class="text-slate-500">| {{ car.get_spec_region_display|escape }}</span>{% endif %}</p>
+                        </div>
+                        <div class="engine-badge"><span>⚙️ المحرك</span><span class="value">{{ car.engine|escape }}</span></div>
+                        <div class="spec-grid">
+                            <div class="spec-item"><span class="label">🛢️ لزوجة الزيت</span><span class="value">{{ car.oil_visc|escape }}</span></div>
+                            <div class="spec-item"><span class="label">⚡ شمعات الاحتراق</span><span class="value">{{ car.spark|escape }}</span></div>
+                            <div class="spec-item"><span class="label">🛞 حجم الإطار</span><span class="value blue">{{ car.tire_size|default:"غير محدد"|escape }}</span></div>
+                            <div class="spec-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ car.oil_capacity|default:"غير محدد"|escape }}</span></div>
+                        </div>
+                        <div class="card-details-extra" id="details-{{ car.id }}" style="display:none;">
+                            <div class="spec-grid" style="margin-top:4px;">
+                                {% if car.fuel %}<div class="spec-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ car.fuel|escape }}</span></div>{% endif %}
+                                {% if car.spec_region %}<div class="spec-item"><span class="label">🌍 المنطقة</span><span class="value">{{ car.get_spec_region_display|escape }}</span></div>{% endif %}
+                                {% if car.engine_type %}<div class="spec-item"><span class="label">🔧 نوع المحرك</span><span class="value">{{ car.get_engine_type_display|escape }}</span></div>{% endif %}
+                                {% if car.trim %}<div class="spec-item"><span class="label">🏷️ الفئة</span><span class="value">{{ car.trim|escape }}</span></div>{% endif %}
+                            </div>
+                            <div class="card-links-row">
+                                <a href="{% url 'mix_calculator' %}" class="btn-card-link">🧮 حاسبة الخلط</a>
+                                <a href="{% url 'recommendations' car.id %}" class="btn-card-link btn-card-link-primary">🔍 التوصيات والتفاصيل</a>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-card-toggle" onclick="toggleCardDetails({{ car.id }}, this)">
+                            <span class="toggle-text">عرض المزيد من التفاصيل</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_results %}
+            {% endif %}
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 section-spacing">
+            <a href="{% url 'index' %}" class="block text-center text-amber-400 hover:text-amber-300 transition text-sm font-semibold py-4">⬅ العودة إلى الرئيسية</a>
+        </div>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!--  FOOTER                                    -->
+    <!-- ============================================ -->
+    <footer class="footer-glass" role="contentinfo">
+        <div class="footer-inner">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="{% url 'index' %}" class="footer-logo">🚗 سيارتي</a>
+                    <p>دليل مواصفات الصيانة للسيارات مع حاسبة خلط الوقود الذكية. نوفر لك معلومات دقيقة وموثوقة لسيارتك.</p>
+                </div>
+                <div class="footer-links">
+                    <h6>روابط سريعة</h6>
+                    <ul>
+                        <li><a href="{% url 'index' %}">🏠 الرئيسية</a></li>
+                        <li><a href="{% url 'search' %}">🔍 البحث</a></li>
+                        <li><a href="{% url 'mix_calculator' %}">🧮 حاسبة الخلط</a></li>
+                        <li><a href="{% url 'budget_finder' %}">💰 شكد فلوسك؟</a></li>
+                        <li><a href="{% url 'about' %}">ℹ️ من نحن</a></li>
+                        <li><a href="{% url 'privacy' %}">🔒 سياسة الخصوصية</a></li>
+                        {% if user.is_staff %}<li><a href="/admin/" rel="nofollow">🔐 لوحة التحكم</a></li>{% endif %}
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h6>تواصل معنا</h6>
+                    <div class="contact-item">
+                        <span class="icon">📧</span>
+                        <a href="mailto:archivealifaeq@gmail.com?subject=استفسار%20عن%20سيارتي&body=السلام%20عليكم،%0A%0Aأكتب%20رسالتك%20هنا...">archivealifaeq@gmail.com</a>
+                    </div>
+                    <div class="contact-item">
+                        <span class="icon">🌐</span>
+                        <span>www.sayarti.org</span>
+                    </div>
+                    <div class="social-links">
+                        <a href="#" aria-label="تويتر" title="تويتر">🐦</a>
+                        <a href="#" aria-label="انستغرام" title="انستغرام">📸</a>
+                        <a href="#" aria-label="يوتيوب" title="يوتيوب">▶️</a>
+                        <a href="#" aria-label="لينكد إن" title="لينكد إن">💼</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>
+                    <span style="color: #64748b;">© 2026 سيارتي.</span>
+                    <span class="separator">|</span>
+                    <span style="color: #64748b;">تطوير</span>
+                    <span class="developer">Ali Al Naimy</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <button class="back-top" id="backTopBtn" aria-label="العودة إلى الأعلى">↑</button>
+
+    <script>
+        (function() {
+            'use strict';
+
+            var navbar = document.getElementById('navbar');
+            var scrollTimeout;
+            window.addEventListener('scroll', function() {
+                if (scrollTimeout) window.cancelAnimationFrame(scrollTimeout);
+                scrollTimeout = window.requestAnimationFrame(function() {
+                    navbar.classList.toggle('scrolled', window.scrollY > 50);
+                });
+            }, { passive: true });
+
+            var menuToggle = document.getElementById('menuToggle');
+            if (menuToggle) {
+                var navMenu = document.querySelector('.hidden.md\\:flex');
+                var isMenuOpen = false;
+                menuToggle.addEventListener('click', function() {
+                    isMenuOpen = !isMenuOpen;
+                    if (isMenuOpen) {
+                        navMenu.classList.remove('hidden');
+                        navMenu.classList.add('flex', 'flex-col', 'absolute', 'top-full', 'left-0', 'right-0', 'bg-slate-900/95', 'p-6', 'backdrop-blur', 'rounded-b-2xl', 'border-t', 'border-amber-500/10', 'gap-4');
+                        menuToggle.setAttribute('aria-expanded', 'true');
+                        menuToggle.textContent = '✕';
+                    } else {
+                        navMenu.classList.add('hidden');
+                        navMenu.classList.remove('flex', 'flex-col', 'absolute', 'top-full', 'left-0', 'right-0', 'bg-slate-900/95', 'p-6', 'backdrop-blur', 'rounded-b-2xl', 'border-t', 'border-amber-500/10', 'gap-4');
+                        menuToggle.setAttribute('aria-expanded', 'false');
+                        menuToggle.textContent = '☰';
+                    }
+                });
+            }
+
+            var brandInput = document.getElementById('brandInput');
+            var modelInput = document.getElementById('modelInput');
+            var engineInput = document.getElementById('engineInput');
+            var brandChips = document.getElementById('brandChips');
+            var modelChips = document.getElementById('modelChips');
+            var engineChips = document.getElementById('engineChips');
+            var brandChipWrap = document.getElementById('brandChipWrap');
+            var modelChipWrap = document.getElementById('modelChipWrap');
+            var engineChipWrap = document.getElementById('engineChipWrap');
+            var engineTypeSelect = document.getElementById('engineTypeSelect');
+            var specRegionSelect = document.getElementById('specRegionSelect');
+            var trimSelect = document.getElementById('trimSelect');
+            var yearInput = document.getElementById('yearInput');
+            var allTrims = [];
+            if (trimSelect) {
+                var trOpts = trimSelect.querySelectorAll('option');
+                for (var ti = 1; ti < trOpts.length; ti++) allTrims.push(trOpts[ti].value);
+            }
+
+            var allBrands = [
+                {% for b in brand_suggestions_en %}{ ar: '{{ b.ar|escapejs }}', en: '{{ b.en|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            var popularBrands = [
+                {% for b in popular_brands %}{ ar: '{{ b.ar|escapejs }}', en: '{{ b.en|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            var brandQuery = '';
+            var modelQuery = '';
+            var engineQuery = '';
+            var lastModels = [];
+            var lastEngines = [];
+            var inputTimer = null;
+
+            function foldArJs(t) {
+                if (!t) return '';
+                return t.toString().toLowerCase()
+                    .replace(/[أإآٱ]/g, 'ا')
+                    .replace(/ة/g, 'ه')
+                    .replace(/ى/g, 'ي')
+                    .replace(/[\u064b-\u065f\u0670\u0640]/g, '');
+            }
+
+            function accepts(q, txt) {
+                if (!txt) return false;
+                return foldArJs(txt).indexOf(foldArJs(q)) !== -1;
+            }
+
+            function renderChips(container, items, selected, addSub) {
+                container.innerHTML = '';
+                items.forEach(function(item) {
+                    var chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'chip' + (selected && item.ar === selected ? ' selected' : '');
+                    chip.appendChild(document.createTextNode(item.ar));
+                    if (addSub && item.en && item.en !== item.ar) {
+                        var sub = document.createElement('span');
+                        sub.className = 'chip-sub';
+                        sub.textContent = ' ' + item.en;
+                        chip.appendChild(sub);
+                    }
+                    chip.setAttribute('aria-pressed', selected && item.ar === selected ? 'true' : 'false');
+                    chip.addEventListener('click', function() {
+                        var which = container === brandChips ? 'brand' : (container === modelChips ? 'model' : 'engine');
+                        onPicked(which, item.ar);
+                    });
+                    container.appendChild(chip);
+                });
+                if (items.length === 0) {
+                    var empty = document.createElement('div');
+                    empty.className = 'chip-empty';
+                    empty.textContent = 'لا توجد نتائج مطابقة';
+                    container.appendChild(empty);
+                }
+            }
+
+            function renderBrandChips() {
+                var list;
+                if (brandQuery.length >= 1) {
+                    list = allBrands.filter(function(b) {
+                        return accepts(brandQuery, b.ar) || accepts(brandQuery, b.en);
+                    });
+                } else {
+                    list = popularBrands.length ? popularBrands : allBrands;
+                }
+                renderChips(brandChips, list, brandInput.value.trim(), true);
+            }
+
+            function renderModelChips() {
+                var list;
+                if (modelQuery.length >= 1) {
+                    list = lastModels.filter(function(m) {
+                        return accepts(modelQuery, m.ar) || accepts(modelQuery, m.en);
+                    });
+                } else {
+                    list = lastModels;
+                }
+                renderChips(modelChips, list, modelInput.value.trim(), true);
+            }
+
+            function renderEngineChips() {
+                var list;
+                if (engineQuery.length >= 1) {
+                    list = lastEngines.filter(function(e) {
+                        return accepts(engineQuery, e);
+                    });
+                } else {
+                    list = lastEngines;
+                }
+                renderChips(engineChips, list, engineInput.value.trim(), false);
+            }
+
+            function onPicked(which, value) {
+                if (which === 'brand') {
+                    brandInput.value = value;
+                    brandQuery = '';
+                    modelInput.value = '';
+                    engineInput.value = '';
+                    modelQuery = '';
+                    engineQuery = '';
+                    isReadyModel(false);
+                    isReadyEngine(false);
+                    resetTrim();
+                    renderBrandChips();
+                    loadModels();
+                    loadEngines();
+                } else if (which === 'model') {
+                    modelInput.value = value;
+                    modelQuery = '';
+                    engineInput.value = '';
+                    engineQuery = '';
+                    isReadyEngine(false);
+                    resetTrim();
+                    renderModelChips();
+                    loadEngines();
+                } else if (which === 'engine') {
+                    engineInput.value = value;
+                    engineQuery = '';
+                    renderEngineChips();
+                }
+            }
+
+            function isReadyModel(ready) {
+                modelInput.disabled = !ready;
+                if (!ready) {
+                    modelInput.placeholder = 'اختر الماركة أولاً...';
+                    lastModels = [];
+                    renderModelChips();
+                } else {
+                    modelInput.placeholder = 'اكتب الموديل... أو اختر من الشرائح';
+                }
+            }
+
+            function isReadyEngine(ready) {
+                engineInput.disabled = !ready;
+                if (!ready) {
+                    engineInput.placeholder = 'اختر الماركة والموديل أولاً...';
+                    lastEngines = [];
+                    renderEngineChips();
+                } else {
+                    engineInput.placeholder = 'اكتب سعة المحرك... أو اختر من الشرائح';
+                }
+            }
+
+            function isReadyTrim(ready) {
+                if (trimSelect) trimSelect.disabled = !ready;
+            }
+
+            function resetTrim() {
+                if (trimSelect) {
+                    trimSelect.value = '';
+                    trimSelect.disabled = true;
+                }
+            }
+
+            function loadModels() {
+                var brand = brandInput.value.trim();
+                if (!brand) {
+                    isReadyModel(false);
+                    isReadyTrim(false);
+                    return;
+                }
+                var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand);
+                var year = yearInput.value.trim();
+                var engineType = engineTypeSelect.value;
+                var specRegion = specRegionSelect.value;
+                if (year) url += '&year=' + encodeURIComponent(year);
+                if (engineType) url += '&engine_type=' + encodeURIComponent(engineType);
+                if (specRegion) url += '&spec_region=' + encodeURIComponent(specRegion);
+                fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+                    lastModels = (data.models || []).map(function(m) { return { ar: m.ar, en: m.en }; });
+                    isReadyModel(true);
+                    renderModelChips();
+                    populateTrimSelect(data.trims || []);
+                }).catch(function() {
+                    isReadyModel(false);
+                });
+            }
+
+            function populateTrimSelect(trims) {
+                if (!trimSelect) return;
+                var list = (trims && trims.length) ? trims : allTrims;
+                var current = trimSelect.value;
+                var html = '<option value="">-- الكل --</option>';
+                for (var i = 0; i < list.length; i++) {
+                    var t = list[i];
+                    html += '<option value="' + t.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"' +
+                        (t === current ? ' selected' : '') + '>' + t + '</option>';
+                }
+                trimSelect.innerHTML = html;
+            }
+
+            function loadEngines() {
+                var brand = brandInput.value.trim();
+                var model = modelInput.value.trim();
+                if (!brand || !model) {
+                    isReadyEngine(false);
+                    isReadyTrim(false);
+                    return;
+                }
+                var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model);
+                var year = yearInput.value.trim();
+                var engineType = engineTypeSelect.value;
+                var specRegion = specRegionSelect.value;
+                if (year) url += '&year=' + encodeURIComponent(year);
+                if (engineType) url += '&engine_type=' + encodeURIComponent(engineType);
+                if (specRegion) url += '&spec_region=' + encodeURIComponent(specRegion);
+                fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+                    lastEngines = (data.engines || []).map(function(e) { return { ar: e, en: '' }; });
+                    isReadyEngine(true);
+                    renderEngineChips();
+                    populateTrimSelect(data.trims || []);
+                    isReadyTrim(true);
+                }).catch(function() {
+                    isReadyEngine(false);
+                });
+            }
+
+            brandInput.addEventListener('input', function() {
+                clearTimeout(inputTimer);
+                inputTimer = setTimeout(function() {
+                    brandQuery = brandInput.value.trim().toLowerCase();
+                    renderBrandChips();
+                    loadModels();
+                }, 120);
+            });
+
+            modelInput.addEventListener('input', function() {
+                clearTimeout(inputTimer);
+                inputTimer = setTimeout(function() {
+                    modelQuery = modelInput.value.trim().toLowerCase();
+                    renderModelChips();
+                    loadEngines();
+                }, 120);
+            });
+
+            engineInput.addEventListener('input', function() {
+                clearTimeout(inputTimer);
+                inputTimer = setTimeout(function() {
+                    engineQuery = engineInput.value.trim().toLowerCase();
+                    renderEngineChips();
+                }, 120);
+            });
+
+            yearInput.addEventListener('change', function() {
+                if (brandInput.value.trim()) loadModels();
+                if (modelInput.value) loadEngines();
+            });
+            engineTypeSelect.addEventListener('change', function() {
+                if (brandInput.value.trim()) loadModels();
+                if (modelInput.value) loadEngines();
+            });
+            specRegionSelect.addEventListener('change', function() {
+                if (brandInput.value.trim()) loadModels();
+                if (modelInput.value) loadEngines();
+            });
+
+            (function initChips() {
+                var initialBrand = '{{ brand|escapejs }}';
+                var initialModel = '{{ model|escapejs }}';
+                var initialEngine = '{{ engine|escapejs }}';
+                brandInput.value = initialBrand;
+                renderBrandChips();
+                if (initialBrand) {
+                    loadModels();
+                    isReadyModel(true);
+                    if (initialModel) {
+                        modelInput.value = initialModel;
+                        loadEngines();
+                        isReadyEngine(true);
+                        if (initialEngine) engineInput.value = initialEngine;
+                    }
+                } else {
+                    isReadyModel(false);
+                    isReadyEngine(false);
+                }
+                renderBrandChips();
+            })();
+
+            var carsContainer = document.getElementById('cars-container');
+            var searchButton = document.getElementById('searchButton');
+            var searchForm = document.getElementById('searchForm');
+            var isSearching = false;
+
+            var searchInputs = document.querySelectorAll('.search-input');
+            searchInputs.forEach(function(input) {
+                input.addEventListener('focus', function(e) { e.stopPropagation(); });
+                input.addEventListener('click', function(e) { e.stopPropagation(); });
+            });
+
+            if (searchButton) {
+                searchButton.addEventListener('click', function(e) {
+                    isSearching = true;
+                    setTimeout(function() {
+                        if (carsContainer) carsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 200);
+                });
+            }
+
+            if (searchForm) {
+                searchForm.addEventListener('submit', function(e) {
+                    isSearching = true;
+                    setTimeout(function() {
+                        if (carsContainer) carsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 250);
+                });
+            }
+
+            document.addEventListener('htmx:afterRequest', function(evt) {
+                if (evt.target && evt.target.closest('form') && isSearching) {
+                    setTimeout(function() {
+                        if (carsContainer) {
+                            var hasResults = carsContainer.querySelector('.car-card') !== null;
+                            var hasNoResults = carsContainer.querySelector('.text-center.py-10') !== null;
+                            if (hasResults || hasNoResults) {
+                                carsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        }
+                        isSearching = false;
+                    }, 400);
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    var searchInput = document.querySelector('.search-input');
+                    if (searchInput) searchInput.focus();
+                }
+                if (e.key === 'Escape') {
+                    var activeElement = document.activeElement;
+                    if (activeElement && activeElement.classList.contains('search-input')) activeElement.blur();
+                }
+            });
+
+            document.documentElement.classList.add('js');
+            var rvObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('rv-in');
+                        rvObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+            function initReveal() {
+                var selectors = ['.glass-card', '.feature-card', '.cta-section', '.car-card'];
+                selectors.forEach(function(sel) {
+                    document.querySelectorAll(sel + ':not([data-rv])').forEach(function(el) {
+                        el.setAttribute('data-rv', '1');
+                        el.classList.add('reveal');
+                        rvObserver.observe(el);
+                    });
+                });
+            }
+            initReveal();
+
+            document.addEventListener('htmx:afterSwap', function(evt) {
+                if (evt.target && evt.target.id === 'cars-container') {
+                    setTimeout(initReveal, 60);
+                }
+            });
+
+            var backTopBtn = document.getElementById('backTopBtn');
+            if (backTopBtn) {
+                window.addEventListener('scroll', function() {
+                    backTopBtn.classList.toggle('show', (window.scrollY || window.pageYOffset || 0) > 600);
+                }, { passive: true });
+                backTopBtn.addEventListener('click', function() {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+
+            var deferredPrompt = null;
+            var installBtn = document.getElementById('installBtn');
+            function openPwaModal() {
+                var modal = document.getElementById('pwaModal');
+                if (modal) modal.classList.add('open');
+            }
+            function doInstall() {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function(choiceResult) {
+                        if (choiceResult.outcome === 'dismissed') openPwaModal();
+                        deferredPrompt = null;
+                        if (installBtn) installBtn.style.display = 'none';
+                    });
+                } else {
+                    openPwaModal();
+                }
+            }
+            if (installBtn) installBtn.addEventListener('click', doInstall);
+            window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (installBtn) {
+                    installBtn.style.display = 'inline-flex';
+                    installBtn.classList.remove('hidden');
+                    installBtn.classList.add('md:flex');
+                }
+            });
+            window.addEventListener('appinstalled', function() {
+                deferredPrompt = null;
+                if (installBtn) installBtn.style.display = 'none';
+            });
+            var modalClose = document.getElementById('pwaModalClose');
+            if (modalClose) modalClose.addEventListener('click', function() {
+                document.getElementById('pwaModal').classList.remove('open');
+            });
+
+        })();
+    </script>
+
+    <div id="pwaModal">
+        <div class="pwa-modal-overlay" onclick="if(event.target===this)this.parentElement.classList.remove('open')">
+            <div class="pwa-modal-box" role="dialog" aria-modal="true" aria-label="طريقة تثبيت التطبيق">
+                <h3>📲 تثبيت تطبيق سيارتي</h3>
+                <p>أضف سيارتي إلى شاشتك الرئيسية لتستخدمه كتطبيق كامل أونلاين وأوفلاين:</p>
+                <div class="pwa-modal-steps">
+                    <div>1️⃣ اضغط زر المشاركة <b>⬆️</b> في المتصفح</div>
+                    <div>2️⃣ اختر <b>"إضافة إلى الشاشة الرئيسية"</b></div>
+                    <div>3️⃣ اضغط <b>"إضافة"</b> — وسيظهر تطبيق 🚗</div>
+                </div>
+                <button type="button" class="pwa-modal-close" id="pwaModalClose">حسناً، فهمت</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleCardDetails(carId, btn) {
+            var el = document.getElementById('details-' + carId);
+            if (!el) return;
+            var isOpen = el.style.display !== 'none';
+            el.style.display = isOpen ? 'none' : 'block';
+            btn.classList.toggle('active', !isOpen);
+            var textEl = btn.querySelector('.toggle-text');
+            if (textEl) textEl.textContent = isOpen ? 'عرض المزيد من التفاصيل' : 'إخفاء التفاصيل';
+        }
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.warn('فشل تسجيل Service Worker:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

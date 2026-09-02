@@ -150,7 +150,8 @@ def _cached_lookup_data():
     return data
 
 
-def index_view(request):
+def _search_context(request):
+    """معالجة فلترة البحث وإرجاع الـ context المشترك بين صفحة البحث والقسم المضمّن."""
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
     year = request.GET.get('year', '').strip()
@@ -172,16 +173,10 @@ def index_view(request):
         if cars is not None and not cars.exists():
             cars = None
 
-    banners = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
-
-    feature_cards = FeatureCard.objects.filter(is_active=True).order_by('order', 'created_at')
-
     lookup = _cached_lookup_data()
 
-    context = {
+    return {
         'cars': cars,
-        'banners': banners,
-        'feature_cards': feature_cards,
         'brand_suggestions': lookup['brand_suggestions'],
         'brand_suggestions_en': lookup['brand_suggestions_en'],
         'popular_brands': lookup['popular_brands'],
@@ -197,7 +192,22 @@ def index_view(request):
         'fuel': fuel,
         'trim': trim,
     }
+
+
+def index_view(request):
+    banners = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
+    feature_cards = FeatureCard.objects.filter(is_active=True).order_by('order', 'created_at')
+    context = {
+        'banners': banners,
+        'feature_cards': feature_cards,
+    }
     return render(request, 'cars/index.html', context)
+
+
+def search_view(request):
+    context = _search_context(request)
+    context['banners'] = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
+    return render(request, 'cars/search.html', context)
 
 
 def get_suggestions(request):
@@ -377,7 +387,9 @@ def sitemap_view(request):
 
     urls = [
         {'loc': host, 'priority': '1.0', 'freq': 'daily'},
+        {'loc': host + reverse('search'), 'priority': '0.9', 'freq': 'daily'},
         {'loc': host + reverse('mix_calculator'), 'priority': '0.8', 'freq': 'weekly'},
+        {'loc': host + reverse('budget_finder'), 'priority': '0.7', 'freq': 'weekly'},
         {'loc': host + reverse('about'), 'priority': '0.5', 'freq': 'monthly'},
         {'loc': host + reverse('privacy'), 'priority': '0.3', 'freq': 'yearly'},
     ]
