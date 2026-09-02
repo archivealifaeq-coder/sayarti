@@ -400,9 +400,9 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('ga4_id', 'ga4_property_id', 'ga_service_account_json'),
             'description': 'GA4 ID: من analytics.google.com (Data Streams). Property ID وفاتح الخدمة: فعّل Analytics Data API في Google Cloud واصنع Service Account بحق Viewer على الخاصية ثم الصق ملف JSON هنا — لعرض عدد الزوار في لوحة الإدارة'
         }),
-        ('🤖 الذكاء الاصطناعي (DeepSeek)', {
-            'fields': ('deepseek_api_key',),
-            'description': 'مفتاح API من platform.deepseek.com — يشغّل ميزة "شكد فلوسك؟" التي تقترح سيارات حسب الميزانية. بدون مفتاح تظهر رسالة "غير مفعلة".'
+        ('🤖 الذكاء الاصطناعي (شكد فلوسك)', {
+            'fields': ('groq_api_key', 'gemini_api_key', 'deepseek_api_key'),
+            'description': '<b>Groq (الأساسي)</b>: مجاني بدون بطاقة من console.groq.com — <b>Gemini (الاحتياطي)</b>: من aistudio.google.com — <b>DeepSeek</b>: احتياطي اختياري من platform.deepseek.com. بدون مفتاح Groq تظهر رسالة "غير مفعلة".'
         }),
     )
 

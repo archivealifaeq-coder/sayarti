@@ -307,11 +307,23 @@ class SiteSettings(models.Model):
         verbose_name="مفتاح الخدمة (Service Account JSON)",
         help_text="الصق محتوى ملف JSON لخدمة الحساب بعد تفعيل Analytics Data API — يسمح بعرض عدد الزوار في لوحة الإدارة"
     )
+    groq_api_key = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="مفتاح Groq (الأساسي)",
+        help_text="من console.groq.com — الأساسي لميزة شكد فلوسك (مجاني بدون بطاقة)"
+    )
+    gemini_api_key = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="مفتاح Gemini (الاحتياطي)",
+        help_text="من aistudio.google.com — احتياطي تلقائي إذا تعطل Groq"
+    )
     deepseek_api_key = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="مفتاح DeepSeek API",
-        help_text="مفتاح API من platform.deepseek.com — للميزات الذكية (شكد فلوسك، مقارنة، أسعار)"
+        help_text="مفتاح API من platform.deepseek.com — احتياطي اختياري"
     )
 
     def __str__(self):

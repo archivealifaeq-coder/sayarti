@@ -186,6 +186,12 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@sayarti.org')
 # DeepSeek AI API key (fallback to SiteSettings in DB if not set here)
 DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', '')
 
+# Groq AI - primary provider (free, no card)
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+
+# Gemini AI - fallback provider
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
 
 # Cache Configuration (for performance)
 CACHES = {

@@ -247,7 +247,7 @@
 
                 <div class="mt-6 p-4 rounded-xl text-center" style="background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.1);">
                     <p class="text-slate-400 text-xs">⚠️ الأسعار تقريبية وتختلف حسب الحالة والكيلومتر والمدينة</p>
-                    <p class="text-slate-500 text-xs mt-1">🤖 بيانات من الذكاء الاصطناعي بناءً على أسعار السوق العراقي</p>
+                    <p class="text-slate-500 text-xs mt-1">🤖 بيانات من الذكاء الاصطناعي بناءً على أسعار السوق العراقي{% if result.provider %} — عبر {{ result.provider }}{% endif %}</p>
                 </div>
 
                 {% else %}

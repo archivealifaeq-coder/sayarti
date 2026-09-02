@@ -6,21 +6,14 @@ from ..models import SiteSettings
 
 logger = logging.getLogger('cars')
 
-DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
-MODEL = 'deepseek-chat'
-TIMEOUT = 30
+GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+GROQ_MODEL = 'qwen/qwen3.8-27b'
+TIMEOUT = 35
 
+GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
-def get_api_key():
-    try:
-        key = SiteSettings.load().deepseek_api_key
-        if key:
-            return key
-    except Exception:
-        pass
-    return getattr(settings, 'DEEPSEEK_API_KEY', '')
-
-BUDGET_PROMPT = """أنت خبير سوق السيارات العراقية. أعطني اقتراحات سيارات مناسبة للميزانية المحددة.
+BUDGET_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.
+تحدث باللغة العربية الفصحى الواضحة واللطيفة (تجنب اللهجة العامية).
 
 الميزانية: {budget} {currency_name}
 نوع السيارة: {car_type}
@@ -36,24 +29,40 @@ BUDGET_PROMPT = """أنت خبير سوق السيارات العراقية. أ�
     "engine": "1.6L",
     "fuel_economy": "ممتاز/جيد/مقبول",
     "maintenance": "رخيصة/متوسطة/غالية",
-    "pros": "مميزات مختصرة"
+    "pros": "مميزات مختصرة بلغة عربية فصحى"
   }}
 ]
 
 قواعد:
-1. الأسعار بالدينار العراقي والدولار
+1. الأسعار بالدينار العراقي والدولار، واقعية ومطابقة للأسعار الفعلية في السوق العراقي
 2. فقط سيارات متوفرة فعلياً بالعراق
-3. اذكرอมوشام العل-brand المتوفرة: تويوتا، هيونداي، كيا، نيسان، مازدا، شيري، MG، جيلي
+3. اذكر ماركات متوفرة: تويوتا، هيونداي، كيا، نيسان، مازدا، شيري، MG، جيلي، وغيرها
 4. لا تتجاوز الميزانية
-5. أضف ملاحظة: "الأسعار تقريبية وتختلف حسب الحالة والكيلومتر"
+5. أضف في "pros" فصحى لطيفة ومهذبة
 6. JSON فقط بدون أي نص قبل أو بعد"""
 
 
-def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'):
-    api_key = get_api_key()
-    if not api_key:
-        return {'success': False, 'error': 'خدمة الذكاء الاصطناعي غير مفعلة حالياً'}
+def _get_key(settings_field, env_field):
+    try:
+        val = getattr(SiteSettings.load(), settings_field)
+        if val:
+            return val
+    except Exception:
+        pass
+    return getattr(settings, env_field, '')
 
+
+def _clean_json(content):
+    content = content.strip()
+    if content.startswith('```'):
+        content = content.split('\n', 1)[1]
+    if content.endswith('```'):
+        content = content.rsplit('```', 1)[0]
+    content = content.strip()
+    return content
+
+
+def _build_prompt(budget, currency, car_type, condition):
     currency_names = {
         'iqd': 'دينار عراقي',
         'usd': 'دولار أمريكي',
@@ -70,49 +79,85 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
         'used': 'مستعمل',
         'new': 'جديد',
     }
-
-    prompt = BUDGET_PROMPT.format(
+    return BUDGET_PROMPT.format(
         budget=f'{budget:,}',
         currency_name=currency_names.get(currency, 'دينار عراقي'),
         car_type=car_type_names.get(car_type, 'أي نوع'),
         condition=condition_names.get(condition, 'مستعمل'),
     )
 
-    try:
-        resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'model': MODEL,
-                'messages': [{'role': 'user', 'content': prompt}],
-                'temperature': 0.7,
-                'max_tokens': 2000,
-            },
-            timeout=TIMEOUT,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        content = data['choices'][0]['message']['content']
 
-        content = content.strip()
-        if content.startswith('```'):
-            content = content.split('\n', 1)[1]
-        if content.endswith('```'):
-            content = content.rsplit('```', 1)[0]
-        content = content.strip()
+def _call_groq(prompt):
+    api_key = _get_key('groq_api_key', 'GROQ_API_KEY')
+    if not api_key:
+        raise RuntimeError('GROQ_API_KEY not configured')
 
-        cars = json.loads(content)
-        return {'success': True, 'cars': cars}
+    resp = requests.post(
+        GROQ_API_URL,
+        headers={
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+        },
+        json={
+            'model': GROQ_MODEL,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'temperature': 0.7,
+            'max_tokens': 2500,
+        },
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    return _clean_json(data['choices'][0]['message']['content'])
 
-    except requests.exceptions.Timeout:
-        logger.warning('DeepSeek API timeout')
-        return {'success': False, 'error': 'الخادم يستغرق وقتاً أطول من المعتاد. حاول مرة أخرى.'}
-    except requests.exceptions.RequestException as e:
-        logger.error(f'DeepSeek API error: {e}')
-        return {'success': False, 'error': 'حدث خطأ في الاتصال. حاول مرة أخرى.'}
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
-        logger.error(f'DeepSeek parse error: {e}')
-        return {'success': False, 'error': 'لم نتمكن من تحليل النتيجة. حاول مرة أخرى.'}
+
+def _call_gemini(prompt):
+    api_key = _get_key('gemini_api_key', 'GEMINI_API_KEY')
+    if not api_key:
+        raise RuntimeError('GEMINI_API_KEY not configured')
+
+    url = f'{GEMINI_API_URL}?key={api_key}'
+    resp = requests.post(
+        url,
+        headers={'Content-Type': 'application/json'},
+        json={
+            'contents': [{'parts': [{'text': prompt}]}],
+            'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 2500},
+        },
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    text = data['candidates'][0]['content']['parts'][0]['text']
+    return _clean_json(text)
+
+
+def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'):
+    prompt = _build_prompt(budget, currency, car_type, condition)
+
+    providers = [
+        ('Groq', _call_groq),
+        ('Gemini', _call_gemini),
+    ]
+
+    errors = []
+    for name, call in providers:
+        try:
+            content = call(prompt)
+            cars = json.loads(content)
+            if isinstance(cars, list) and cars:
+                return {'success': True, 'cars': cars, 'provider': name}
+            errors.append(f'{name}: نتيجة فارغة')
+        except requests.exceptions.Timeout:
+            errors.append(f'{name}: انتهت المهلة')
+            logger.warning(f'{name} API timeout')
+        except requests.exceptions.RequestException as e:
+            errors.append(f'{name}: خطأ اتصال ({e})')
+            logger.error(f'{name} API error: {e}')
+        except (json.JSONDecodeError, KeyError, IndexError) as e:
+            errors.append(f'{name}: تعذر تحليل النتيجة')
+            logger.error(f'{name} parse error: {e}')
+        except RuntimeError as e:
+            logger.warning(str(e))
+
+    return {'success': False, 'error': 'تعذر الحصول على نتيجة. حاول مرة أخرى.'}
