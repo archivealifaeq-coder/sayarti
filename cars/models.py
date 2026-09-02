@@ -307,6 +307,12 @@ class SiteSettings(models.Model):
         verbose_name="مفتاح الخدمة (Service Account JSON)",
         help_text="الصق محتوى ملف JSON لخدمة الحساب بعد تفعيل Analytics Data API — يسمح بعرض عدد الزوار في لوحة الإدارة"
     )
+    deepseek_api_key = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="مفتاح DeepSeek API",
+        help_text="مفتاح API من platform.deepseek.com — للميزات الذكية (شكد فلوسك، مقارنة، أسعار)"
+    )
 
     def __str__(self):
         return "إعدادات الموقع"

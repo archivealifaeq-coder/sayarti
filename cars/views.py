@@ -387,3 +387,36 @@ def sitemap_view(request):
         + '\n</urlset>\n'
     )
     return HttpResponse(xml, content_type='application/xml; charset=utf-8')
+
+
+def budget_finder_view(request):
+    from .services.deepseek_service import find_cars_by_budget
+
+    if request.method == 'POST':
+        budget_raw = request.POST.get('budget', '').strip().replace(',', '').replace(' ', '')
+        currency = request.POST.get('currency', 'iqd')
+        car_type = request.POST.get('car_type', 'all')
+        condition = request.POST.get('condition', 'used')
+
+        try:
+            budget = int(float(budget_raw))
+        except (ValueError, TypeError):
+            messages.error(request, "\u26a0\ufe0f \u0623\u062f\u062e\u0644 \u0645\u0628\u0644\u063a \u0635\u062d\u064a\u062d")
+            return render(request, 'cars/budget_finder.html', {'show_form': True})
+
+        if budget <= 0:
+            messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0645\u0628\u0644\u063a \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631")
+            return render(request, 'cars/budget_finder.html', {'show_form': True})
+
+        result = find_cars_by_budget(budget, currency, car_type, condition)
+
+        return render(request, 'cars/budget_finder.html', {
+            'result': result,
+            'budget': budget,
+            'currency': currency,
+            'car_type': car_type,
+            'condition': condition,
+            'show_form': False,
+        })
+
+    return render(request, 'cars/budget_finder.html', {'show_form': True})

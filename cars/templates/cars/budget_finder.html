@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شكد فلوسك؟ - سيارتي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json"/>
+    <meta name="theme-color" content="#0f172a"/>
+    <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
+
+    {% if site_settings.ga4_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.ga4_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ site_settings.ga4_id }}');
+    </script>
+    {% endif %}
+
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        body { background: #0a0f1a; min-height: 100vh; }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            border-radius: 28px;
+            padding: 30px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .glass-card:hover { border-color: rgba(245, 158, 11, 0.3); }
+
+        .input-custom {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1.5px solid #334155;
+            color: #f1f5f9;
+            padding: 14px 18px;
+            border-radius: 14px;
+            width: 100%;
+            outline: none;
+            transition: all 0.4s ease;
+            font-size: 1rem;
+        }
+        .input-custom:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+            transform: translateY(-2px);
+        }
+        .input-custom::placeholder { color: #64748b; }
+
+        .select-custom {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1.5px solid #334155;
+            color: #f1f5f9;
+            padding: 14px 18px;
+            border-radius: 14px;
+            width: 100%;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            font-size: 1rem;
+        }
+        .select-custom:focus { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15); }
+        .select-custom option { background: #1e293b; }
+
+        .btn-search {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0a0f1a;
+            font-weight: 800;
+            padding: 16px 48px;
+            border-radius: 60px;
+            border: none;
+            font-size: 1.1rem;
+            transition: all 0.4s ease;
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.3);
+            cursor: pointer;
+        }
+        .btn-search:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 40px rgba(245, 158, 11, 0.5); }
+
+        .car-result {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .car-result:hover { border-color: rgba(245, 158, 11, 0.3); transform: translateY(-2px); }
+
+        .price-badge {
+            display: inline-block;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .tag-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        .tag-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .tag-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .tag-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+
+        .loading-dots { display: inline-flex; gap: 6px; }
+        .loading-dots span {
+            width: 10px; height: 10px;
+            background: #fbbf24;
+            border-radius: 50%;
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dotPulse { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+
+        .message-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 14px 20px;
+            border-radius: 14px;
+            margin-bottom: 16px;
+        }
+
+        .nav-link { color: #94a3b8; transition: 0.3s; text-decoration: none; font-weight: 600; }
+        .nav-link:hover { color: #fbbf24; }
+
+        @media (max-width: 640px) {
+            .glass-card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="fixed w-full top-0 z-50 px-6 py-3" style="background: rgba(10,15,26,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(245,158,11,0.12);">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="{% url 'index' %}" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
+                🚗 سيارتي
+            </a>
+            <div class="flex gap-6 text-sm">
+                <a href="{% url 'index' %}" class="nav-link">الرئيسية</a>
+                <a href="{% url 'budget_finder' %}" class="nav-link" style="color:#fbbf24;">شكد فلوسك</a>
+            </div>
+        </div>
+    </nav>
+    <div class="h-20"></div>
+
+    <div class="max-w-4xl mx-auto px-4 py-6">
+        <div class="glass-card">
+
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2">💰 شكد فلوسك؟</h1>
+                <p class="text-slate-400 text-sm">أدخل ميزانيتك ونعطيك خيارات مناسبة من السوق العراقي</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message-error">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            {% if show_form %}
+            <form method="POST" class="space-y-5">
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">💰 الميزانية</label>
+                        <input type="number" name="budget" class="input-custom" placeholder="مثال: 25000000" required min="1">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">💱 العملة</label>
+                        <select name="currency" class="select-custom">
+                            <option value="iqd">دينار عراقي (د.ع)</option>
+                            <option value="usd">دولار أمريكي ($)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">🚗 نوع السيارة</label>
+                        <select name="car_type" class="select-custom">
+                            <option value="all">الكل</option>
+                            <option value="japanese">ياباني (تويوتا، نيسان، مازدا)</option>
+                            <option value="korean">كوري (هيونداي، كيا)</option>
+                            <option value="chinese">صيني (شيري، MG، جيلي)</option>
+                            <option value="american">أمريكي (شفروليت، فورد)</option>
+                            <option value="european">أوروبي (فولكس، أوبل)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">📦 الحالة</label>
+                        <select name="condition" class="select-custom">
+                            <option value="used">مستعمل</option>
+                            <option value="new">جديد</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mt-6">
+                    <button type="submit" class="btn-search w-full md:w-auto">🚗 اعطني خيارات على كد فلوسي</button>
+                </div>
+            </form>
+
+            {% elif result %}
+                {% if result.success %}
+                <div class="mb-4 flex flex-wrap justify-between items-center">
+                    <a href="{% url 'budget_finder' %}" class="text-amber-400 hover:text-amber-300 transition text-sm font-semibold">🔄 بحث جديد</a>
+                    <p class="text-slate-400 text-sm">
+                        💰 الميزانية: <span class="text-amber-400 font-bold">{{ budget|floatformat:0 }}</span>
+                        {% if currency == 'iqd' %} د.ع{% else %} ${% endif %}
+                        {% if car_type != 'all' %} | 🚗 {{ car_type }}{% endif %}
+                    </p>
+                </div>
+
+                <h2 class="text-xl font-bold text-white mb-4">🚗 خياراتك المتاحة:</h2>
+
+                <div class="space-y-4">
+                    {% for car in result.cars %}
+                    <div class="car-result">
+                        <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
+                            <h3 class="text-lg font-bold text-white">{{ forloop.counter }}. {{ car.name }}</h3>
+                            <span class="price-badge">{{ car.price_iq }}</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-3">{{ car.price_usd }} دولار</p>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="tag-badge tag-blue">⚙️ {{ car.engine }}</span>
+                            <span class="tag-badge tag-green">⛽ {{ car.fuel_economy }}</span>
+                            <span class="tag-badge tag-amber">🔧 {{ car.maintenance }}</span>
+                            <span class="tag-badge tag-blue">📅 {{ car.year }}</span>
+                        </div>
+                        <p class="text-slate-300 text-sm">{{ car.pros }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-6 p-4 rounded-xl text-center" style="background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.1);">
+                    <p class="text-slate-400 text-xs">⚠️ الأسعار تقريبية وتختلف حسب الحالة والكيلومتر والمدينة</p>
+                    <p class="text-slate-500 text-xs mt-1">🤖 بيانات من الذكاء الاصطناعي بناءً على أسعار السوق العراقي</p>
+                </div>
+
+                {% else %}
+                <div class="text-center py-8">
+                    <div class="text-4xl mb-3">😔</div>
+                    <p class="text-slate-300 text-lg">{{ result.error }}</p>
+                    <a href="{% url 'budget_finder' %}" class="text-amber-400 hover:text-amber-300 font-semibold mt-4 inline-block transition">🔄 حاول مرة أخرى</a>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="text-center mt-6">
+            <a href="{% url 'index' %}" class="text-amber-400 hover:text-amber-300 transition text-sm font-semibold">⬅ العودة إلى الرئيسية</a>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.warn('فشل تسجيل Service Worker:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

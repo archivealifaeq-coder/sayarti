@@ -75,31 +75,6 @@
             white-space: nowrap;
         }
         .pwa-install-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 30px rgba(245, 158, 11, 0.45); }
-        .pwa-install-fab {
-            position: fixed;
-            bottom: 84px;
-            left: 22px;
-            z-index: 9991;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #0a0f1a;
-            font-weight: 800;
-            font-size: 0.85rem;
-            padding: 12px 22px;
-            border-radius: 60px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-            box-shadow: 0 10px 35px rgba(245, 158, 11, 0.4);
-            animation: installPulse 2.6s ease-in-out infinite;
-        }
-        @keyframes installPulse {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
-        }
-        .pwa-install-fab:hover { transform: translateY(-3px) scale(1.05); }
         #pwaModal { display: none; }
         #pwaModal.open { display: flex; }
         .pwa-modal-overlay {
@@ -1674,6 +1649,27 @@
         </div>
         
         <!-- ============================================ -->
+        <!--  BUDGET FINDER                             -->
+        <!-- ============================================ -->
+        <div class="max-w-7xl mx-auto px-4">
+            <a href="{% url 'budget_finder' %}" class="block group" style="text-decoration:none;">
+                <div style="background: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(251,191,36,0.02)); border: 1px solid rgba(245,158,11,0.12); border-radius: 20px; padding: 24px 32px; transition: all 0.4s ease; position: relative; overflow: hidden;" onmouseover="this.style.borderColor='rgba(245,158,11,0.35)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(245,158,11,0.12)';this.style.transform='none'">
+                    <div style="position:absolute;top:-40%;right:-10%;width:200px;height:200px;background:radial-gradient(circle,rgba(245,158,11,0.04),transparent 70%);pointer-events:none;"></div>
+                    <div class="flex flex-wrap items-center justify-between gap-4" style="position:relative;z-index:1;">
+                        <div class="flex items-center gap-4">
+                            <span style="font-size:2rem;">💰</span>
+                            <div>
+                                <h3 class="text-lg md:text-xl font-extrabold text-white group-hover:text-amber-400 transition">شكد فلوسك؟</h3>
+                                <p class="text-slate-400 text-sm">أدخل ميزانيتك ونعطيك خيارات مناسبة من السوق العراقي</p>
+                            </div>
+                        </div>
+                        <span style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0a0f1a; font-weight: 800; padding: 10px 28px; border-radius: 60px; font-size: 0.85rem; white-space: nowrap;">🚗 اعطني خيارات</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- ============================================ -->
         <!--  CARS RESULTS                              -->
         <!-- ============================================ -->
         <div id="cars-container" class="max-w-7xl mx-auto px-4 section-spacing">
@@ -1766,6 +1762,7 @@
                     <h6>روابط سريعة</h6>
                     <ul>
                         <li><a href="{% url 'index' %}">🏠 الرئيسية</a></li>
+                        <li><a href="{% url 'budget_finder' %}">💰 شكد فلوسك؟</a></li>
                         <li><a href="{% url 'mix_calculator' %}">🧮 حاسبة الخلط</a></li>
                         <li><a href="#cars-section">🚗 السيارات</a></li>
                         <li><a href="{% url 'about' %}">ℹ️ من نحن</a></li>
@@ -2415,8 +2412,6 @@
                         }
                         deferredPrompt = null;
                         if (installBtn) installBtn.style.display = 'none';
-                        var fab = document.getElementById('pwaInstallFab');
-                        if (fab) fab.style.display = 'none';
                     });
                 } else {
                     openPwaModal();
@@ -2438,8 +2433,6 @@
             window.addEventListener('appinstalled', function() {
                 deferredPrompt = null;
                 if (installBtn) installBtn.style.display = 'none';
-                var fab = document.getElementById('pwaInstallFab');
-                if (fab) fab.style.display = 'none';
             });
 
             var modalClose = document.getElementById('pwaModalClose');
@@ -2449,8 +2442,6 @@
 
         })();
     </script>
-
-    <button type="button" id="pwaInstallFab" class="pwa-install-fab md:hidden" aria-label="تثبيت التطبيق">📲 ثبّت التطبيق</button>
 
     <div id="pwaModal">
         <div class="pwa-modal-overlay" onclick="if(event.target===this)this.parentElement.classList.remove('open')">

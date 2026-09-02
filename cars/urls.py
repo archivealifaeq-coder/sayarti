@@ -10,4 +10,5 @@ urlpatterns = [
     path('privacy/', views.privacy_view, name='privacy'),
     path('about/', views.about_view, name='about'),
     path('ads.txt', views.ads_txt_view, name='ads_txt'),
+    path('budget/', views.budget_finder_view, name='budget_finder'),
 ]
