@@ -195,41 +195,8 @@
         }
         .gateway-card:hover .gw-sec-cta { box-shadow: 0 8px 26px rgba(245, 158, 11, 0.2); }
 
-        .welcome-hero { position: relative; overflow: hidden; }
-        .welcome-hero::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(circle at 20% 20%, rgba(245, 158, 11, 0.10), transparent 45%),
-                radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.07), transparent 45%);
-            pointer-events: none;
-        }
-        .steps-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .step-item {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(51, 65, 85, 0.3);
-            border-radius: 16px;
-            padding: 14px 16px;
-            text-align: center;
-        }
-        .step-item .num {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            font-weight: 900;
-            font-size: 0.8rem;
-            margin-bottom: 8px;
-        }
-        .step-item .t { color: #f1f5f9; font-weight: 700; font-size: 0.85rem; }
-        .step-item .d { color: #94a3b8; font-size: 0.7rem; margin-top: 2px; }
         @media (max-width: 640px) {
             .gateway-card { min-height: 260px; padding: 28px 22px; }
-            .steps-strip { grid-template-columns: 1fr; }
         }
     </style>
 
@@ -274,34 +241,9 @@
         <!-- ============================================ -->
         <!--  WELCOME HERO                              -->
         <!-- ============================================ -->
-        <section class="welcome-hero text-center px-4 pt-10 pb-4 section-spacing" style="position:relative;z-index:1;">
-            <span class="inline-block text-xs font-bold tracking-widest text-amber-400 mb-4" style="padding:6px 16px;border-radius:30px;border:1px solid rgba(245,158,11,0.25);background:rgba(245,158,11,0.06);">مرحباً بك في سيارتي</span>
-            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight">دليل <span class="highlight">سياراتك</span> الذكي<br>في مكان واحد</h1>
-            <p class="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mb-8">اختر ما تحتاجه — ابحث عن مواصفات سيارتك، احسب خلط الوقود، أو اكتشف سيارة تناسب ميزانيتك.</p>
-
-            <div class="steps-strip max-w-3xl mx-auto mb-2">
-                <div class="step-item">
-                    <div class="num">1</div>
-                    <div class="t">ابحث عن سيارتك</div>
-                    <div class="d">أدخل الماركة والموديل والسنة</div>
-                </div>
-                <div class="step-item">
-                    <div class="num">2</div>
-                    <div class="t">احسب الوقود</div>
-                    <div class="d">مرن نسب خلط الأوكتان المثالية</div>
-                </div>
-                <div class="step-item">
-                    <div class="num">3</div>
-                    <div class="t">اعرف على كد فلوسك</div>
-                    <div class="d">اخترات ذكية حسب ميزانيتك</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============================================ -->
         <!--  GATEWAY CARDS                             -->
         <!-- ============================================ -->
-        <section class="max-w-7xl mx-auto px-4 py-8 section-spacing">
+        <section class="max-w-7xl mx-auto px-4 py-10 section-spacing">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-7">
 
                 <!-- 🚗 بطاقة البحث -->
