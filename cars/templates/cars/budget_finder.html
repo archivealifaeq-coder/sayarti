@@ -323,6 +323,23 @@
     </div>
 
     <script>
+        document.addEventListener('submit', function(e) {
+            var form = e.target;
+            if (form && form.id === 'budget-frame') {
+                return;
+            }
+            if (form && form.matches && form.matches('form[method="POST"]')) {
+                setTimeout(function() {
+                    var frame = document.getElementById('budget-frame');
+                    if (frame) {
+                        frame.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }
+                }, 60);
+            }
+        });
+    </script>
+
+    <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js').catch(function(err) {
