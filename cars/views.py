@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q, Count
 from django.http import JsonResponse, HttpResponse
 from django import forms
+from django.core.cache import cache
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
 from .services.excel_importer import import_cars_from_excel
 from .services.textnorm import fold_ar, fold_engine
@@ -109,6 +110,46 @@ def _apply(qs, required, keep_keys):
     return qs.filter(q)
 
 
+def _cached_lookup_data():
+    """بيانات القوائم الثابتة (البراندات/الفئات/...)— محسوبة مرة وتُخزَّن بالذاكرة لحين تحديث قاعدة البيانات."""
+    data = cache.get('lookup_data')
+    if data:
+        return data
+
+    brand_pairs = list(CarSpecification.objects.values('brand_ar', 'brand_en').distinct())
+    en_by_ar = {}
+    for p in brand_pairs:
+        en_by_ar.setdefault(p['brand_ar'], p['brand_en'])
+    brand_suggestions = sorted(en_by_ar.keys())
+    brand_suggestions_en = [
+        {'ar': ar, 'en': en_by_ar.get(ar, '')}
+        for ar in brand_suggestions
+    ]
+    from collections import Counter
+    brand_counts = Counter(CarSpecification.objects.values_list('brand_ar', flat=True))
+    popular_brands = [
+        {'ar': ar, 'en': en_by_ar.get(ar, '')}
+        for ar, _ in brand_counts.most_common(12)
+    ]
+    trim_choices = list(
+        CarSpecification.objects
+        .exclude(trim__isnull=True)
+        .exclude(trim='')
+        .values_list('trim', flat=True)
+        .distinct()
+        .order_by('trim')[:300]
+    )
+
+    data = {
+        'brand_suggestions': brand_suggestions,
+        'brand_suggestions_en': brand_suggestions_en,
+        'popular_brands': popular_brands,
+        'trim_choices': trim_choices,
+    }
+    cache.set('lookup_data', data, 3600)
+    return data
+
+
 def index_view(request):
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
@@ -130,51 +171,23 @@ def index_view(request):
             cars = _apply(qs, required, [])
         if cars is not None and not cars.exists():
             cars = None
-    else:
-        cars = None
 
     banners = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
 
     feature_cards = FeatureCard.objects.filter(is_active=True).order_by('order', 'created_at')
 
-    brand_pairs = list(CarSpecification.objects.values('brand_ar', 'brand_en').distinct())
-    en_by_ar = {}
-    for p in brand_pairs:
-        en_by_ar.setdefault(p['brand_ar'], p['brand_en'])
-    brand_suggestions = sorted(en_by_ar.keys())
-    brand_suggestions_en = [
-        {'ar': ar, 'en': en_by_ar.get(ar, '')}
-        for ar in brand_suggestions
-    ]
-    from collections import Counter
-    brand_counts = Counter(CarSpecification.objects.values_list('brand_ar', flat=True))
-    popular_brands = [
-        {'ar': ar, 'en': en_by_ar.get(ar, '')}
-        for ar, _ in brand_counts.most_common(12)
-    ]
-
-    engine_type_choices = CarSpecification.ENGINE_TYPE_CHOICES
-    spec_region_choices = CarSpecification.SPEC_REGION_CHOICES
-    spec_region_display = [{'value': v, 'label': l} for v, l in spec_region_choices]
-    trim_choices = list(
-        CarSpecification.objects
-        .exclude(trim__isnull=True)
-        .exclude(trim='')
-        .values_list('trim', flat=True)
-        .distinct()
-        .order_by('trim')[:300]
-    )
+    lookup = _cached_lookup_data()
 
     context = {
         'cars': cars,
         'banners': banners,
         'feature_cards': feature_cards,
-        'brand_suggestions': brand_suggestions,
-        'brand_suggestions_en': brand_suggestions_en,
-        'popular_brands': popular_brands,
-        'engine_type_choices': engine_type_choices,
-        'spec_region_choices': spec_region_display,
-        'trim_choices': trim_choices,
+        'brand_suggestions': lookup['brand_suggestions'],
+        'brand_suggestions_en': lookup['brand_suggestions_en'],
+        'popular_brands': lookup['popular_brands'],
+        'engine_type_choices': CarSpecification.ENGINE_TYPE_CHOICES,
+        'spec_region_choices': [{'value': v, 'label': l} for v, l in CarSpecification.SPEC_REGION_CHOICES],
+        'trim_choices': lookup['trim_choices'],
         'brand': brand,
         'model': model,
         'year': year,

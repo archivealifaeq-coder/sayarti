@@ -165,6 +165,8 @@ class CarSpecificationAdmin(admin.ModelAdmin):
             if excel_file:
                 try:
                     result = import_cars_from_excel(excel_file)
+                    from django.core.cache import cache
+                    cache.delete('lookup_data')
                     
                     if result['success']:
                         success_msg = f"✅ تم الاستيراد بنجاح! إضافة {result['created']} وتحديث {result['updated']}."
@@ -204,6 +206,21 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         t = Template(html_template)
         c = RequestContext(request, {"form": form, "opts": self.model._meta})
         return HttpResponse(t.render(c))
+
+    def save_model(self, request, obj, form, change):
+        from django.core.cache import cache
+        cache.delete('lookup_data')
+        super().save_model(request, obj, form, change)
+
+    def delete_model(self, request, obj):
+        from django.core.cache import cache
+        cache.delete('lookup_data')
+        super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        from django.core.cache import cache
+        cache.delete('lookup_data')
+        super().delete_queryset(request, queryset)
 
 
 class AdBannerForm(forms.ModelForm):
@@ -414,7 +431,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         from django.core.cache import cache
-        cache.delete('ga_visitor_stats')
+        cache.delete_many(['ga_visitor_stats', 'lookup_data'])
         super().save_model(request, obj, form, change)
 
     def settings_summary(self, obj):
