@@ -16,9 +16,9 @@ SW_FILE = Path(__file__).resolve().parent / 'static' / 'shared' / 'sw.js'
 
 def manifest_view(request):
     manifest = {
-        "name": "سيارتي - دليل مواصفات السيارات الذكي",
-        "short_name": "سيارتي",
-        "description": "دليل مواصفات السيارات - مواصفات، زيوت، إطارات، وتوصيات لكل سيارة.",
+        "name": "\u0633\u064a\u0627\u0631\u062a\u064a - \u062f\u0644\u064a\u0644 \u0645\u0648\u0635\u0641\u0627\u062a \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a \u0627\u0644\u0630\u0643\u064a",
+        "short_name": "\u0633\u064a\u0627\u0631\u062a\u064a",
+        "description": "\u062f\u0644\u064a\u0644 \u0645\u0648\u0635\u0641\u0627\u062a \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a - \u0645\u0648\u0635\u0641\u0627\u062a\u060c \u0632\u064a\u0648\u062a\u060c \u0625\u0637\u0627\u0631\u0627\u062a\u060c \u0648\u062a\u0648\u0635\u064a\u0627\u062a \u0644\u0643\u0644 \u0633\u064a\u0627\u0631\u0629.",
         "start_url": "/",
         "scope": "/",
         "display": "standalone",
@@ -47,26 +47,20 @@ def sw_view(request):
 
 
 class CsvImportForm(forms.Form):
-    excel_file = forms.FileField(label="Ø§Ø®ØªØ± Ù…Ù„Ù Ø§Ù„Ø£ÙƒØ³Ù„")
+    excel_file = forms.FileField(label="\u0627\u062e\u062a\u0631 \u0645\u0644\u0641 \u0627\u0644\u0623\u0643\u0633\u0644")
 
 
 RELAX_LABELS = {
-    'spec_region': 'مواصفات المنطقة',
-    'engine_type': 'نوع المحرك',
-    'year': 'سنة الصنع',
-    'engine': 'سعة المحرك',
-    'fuel': 'نوع الوقود',
-    'trim': 'الفئة',
+    'spec_region': '\u0645\u0648\u0627\u0635\u0641\u0627\u062a \u0627\u0644\u0645\u0646\u0637\u0642\u0629',
+    'engine_type': '\u0646\u0648\u0639 \u0627\u0644\u0645\u062d\u0631\u0643',
+    'year': '\u0633\u0646\u0629 \u0627\u0644\u0635\u0646\u0639',
+    'engine': '\u0633\u0639\u0629 \u0627\u0644\u0645\u062d\u0631\u0643',
+    'fuel': '\u0646\u0648\u0639 \u0627\u0644\u0648\u0642\u0648\u062f',
+    'trim': '\u0627\u0644\u0641\u0626\u0629',
 }
 
 
 def _filters(request):
-    """بناء فلاتر البحث من المعاملات مع التطبيع، ويعيد قائمة (مفتاح, Q).
-
-    المرشحات النصية (الماركة/الموديل/المحرك) تطابق على حقول *_norm
-    الموحّدة، وأي قيد إضافي (منطقة/نوع/سنة/محرك) قيد قابل للتفكيك حتى
-    نتمكن لاحقاً من "البحث المتساهل".
-    """
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
     year = request.GET.get('year', '').strip()
@@ -83,13 +77,13 @@ def _filters(request):
     if model:
         m = fold_ar(model)
         required &= Q(model_norm__icontains=m) | Q(model_en__icontains=model)
-
-    optional = []  # (key, Q) — قابلة للإسقاط في البحث المتساهل
     if year:
         try:
-            optional.append(('year', Q(year=int(year))))
+            required &= Q(year=int(year))
         except ValueError:
-            optional.append(('year', Q(year__icontains=year)))
+            required &= Q(year__icontains=year)
+
+    optional = []
     if engine_type:
         optional.append(('engine_type', Q(engine_type__icontains=engine_type)))
     if spec_region:
@@ -128,20 +122,10 @@ def index_view(request):
     required, optional = _filters(request)
 
     cars = None
-    relaxed = []
     if required != Q() or optional:
         qs = CarSpecification.objects.all()
         if optional:
             cars = _apply(qs, required, optional)
-            if not cars.exists() and required != Q():
-                # البحث المتساهل: نسقط القيود الأقل أهمية حتى تظهر النتائج
-                keep = list(optional)
-                while keep and not cars.exists():
-                    dropped = keep.pop()
-                    relaxed.append(dropped[0])
-                    cars = _apply(qs, required, keep)
-            if not cars or not cars.exists():
-                cars = _apply(qs, required, [])
         else:
             cars = _apply(qs, required, [])
         if cars is not None and not cars.exists():
@@ -166,7 +150,7 @@ def index_view(request):
     brand_counts = Counter(CarSpecification.objects.values_list('brand_ar', flat=True))
     popular_brands = [
         {'ar': ar, 'en': en_by_ar.get(ar, '')}
-for ar, _ in brand_counts.most_common(12)
+        for ar, _ in brand_counts.most_common(12)
     ]
 
     engine_type_choices = CarSpecification.ENGINE_TYPE_CHOICES
@@ -199,7 +183,6 @@ for ar, _ in brand_counts.most_common(12)
         'spec_region': spec_region,
         'fuel': fuel,
         'trim': trim,
-        'relaxed': [RELAX_LABELS.get(k, k) for k in relaxed],
     }
     return render(request, 'cars/index.html', context)
 
@@ -257,16 +240,12 @@ def get_suggestions(request):
 
 
 def is_staff_user(user):
-    """Allow only authenticated staff users."""
     return user.is_authenticated and user.is_staff
 
 
 @login_required
 @user_passes_test(is_staff_user)
 def import_excel_view(request):
-    """
-    Excel import endpoint - staff only (validation happens inside the importer).
-    """
     form = CsvImportForm()
 
     if request.method == 'POST' and request.FILES.get('excel_file'):
@@ -276,20 +255,20 @@ def import_excel_view(request):
             result = import_cars_from_excel(excel_file)
             
             if result['success']:
-                success_msg = f"âœ… ØªÙ… Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø¨Ù†Ø¬Ø§Ø­! Ø¥Ø¶Ø§ÙØ© {result['created']} ÙˆØªØ­Ø¯ÙŠØ« {result['updated']}."
+                success_msg = f"\u2705 \u062a\u0645 \u0627\u0644\u0627\u0633\u062a\u064a\u0631\u0627\u062f \u0628\u0646\u062c\u0627\u062d! \u0625\u0636\u0627\u0641\u0629 {result['created']} \u0648\u062a\u062d\u062f\u064a\u062b {result['updated']}."
                 if result['failed'] > 0:
-                    success_msg += f" âŒ ÙØ´Ù„ {result['failed']} ØµÙ."
+                    success_msg += f" \u274c \u0641\u0634\u0644 {result['failed']} \u0635\u0641."
                     for failed_row in result['failed_rows'][:5]:
-                        messages.warning(request, f"Ø§Ù„ØµÙ {failed_row['row_number']}: {failed_row['error']}")
+                        messages.warning(request, f"\u0627\u0644\u0635\u0641 {failed_row['row_number']}: {failed_row['error']}")
                 messages.success(request, success_msg)
             else:
                 for error in result['errors']:
-                    messages.error(request, f"âŒ {error}")
+                    messages.error(request, f"\u274c {error}")
                     
         except Exception:
             import logging
             logging.getLogger('cars').exception('Excel import failed')
-            messages.error(request, "âš ï¸ Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„Ù…Ù„Ù. ØªØ£ÙƒØ¯ Ù…Ù† Ø§Ù„ØµÙŠØºØ© ÙˆØ­Ø§ÙˆÙ„ Ù…Ø¬Ø¯Ø¯Ø§Ù‹.")
+            messages.error(request, "\u26a0\ufe0f \u062d\u062f\u062b \u062e\u0637\u0623 \u0623\u062b\u0646\u0627\u0621 \u0645\u0639\u0627\u0644\u062c\u0629 \u0627\u0644\u0645\u0644\u0641. \u062a\u0623\u0643\u062f \u0645\u0646 \u0627\u0644\u0635\u064a\u063a\u0629 \u0648\u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629.")
         
         return redirect('import_excel')
 
@@ -307,15 +286,15 @@ def mix_calculator_view(request):
             tank = float(request.POST.get('tank_capacity'))
             
             if tank <= 0:
-                messages.error(request, "âš ï¸ Ø³Ø¹Ø© Ø§Ù„Ø®Ø²Ø§Ù† ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† Ø£ÙƒØ¨Ø± Ù…Ù† ØµÙØ±")
+                messages.error(request, "\u26a0\ufe0f \u0633\u0639\u0629 \u0627\u0644\u062e\u0632\u0627\u0646 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631")
                 return render(request, 'cars/mix_calculator.html', {'cars': CarSpecification.objects.all().order_by('brand_ar', 'model_ar'), 'result': result})
             
             if o1 < 80 or o1 > 120 or o2 < 80 or o2 > 120:
-                messages.error(request, "âš ï¸ Ø±Ù‚Ù… Ø§Ù„Ø£ÙˆÙƒØªØ§Ù† ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨ÙŠÙ† 80 Ùˆ 120")
+                messages.error(request, "\u26a0\ufe0f \u0631\u0642\u0645 \u0627\u0644\u0623\u0648\u0643\u062a\u0627\u0646 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0628\u064a\u0646 80 \u0648 120")
                 return render(request, 'cars/mix_calculator.html', {'cars': CarSpecification.objects.all().order_by('brand_ar', 'model_ar'), 'result': result})
             
             if not (min(o1, o2) <= target <= max(o1, o2)):
-                messages.error(request, "âš ï¸ Ø§Ù„Ø£ÙˆÙƒØªØ§Ù† Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨ÙŠÙ† Ø§Ù„Ù†ÙˆØ¹ÙŠÙ†")
+                messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0623\u0648\u0643\u062a\u0627\u0646 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0628\u064a\u0646 \u0627\u0644\u0646\u0648\u0639\u064a\u0646")
             else:
                 if o1 != o2:
                     r1 = (target - o2) / (o1 - o2)
@@ -332,11 +311,11 @@ def mix_calculator_view(request):
                     'target': target,
                     'tank': tank,
                 }
-                messages.success(request, "âœ… ØªÙ… Ø­Ø³Ø§Ø¨ Ø§Ù„Ø®Ù„Ø·Ø© Ø¨Ù†Ø¬Ø§Ø­!")
+                messages.success(request, "\u2705 \u062a\u0645 \u062d\u0633\u0627\u0628 \u0627\u0644\u062e\u0644\u0637\u0629 \u0628\u0646\u062c\u0627\u062d!")
         except ValueError:
-            messages.error(request, "âš ï¸ ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø£Ø±Ù‚Ø§Ù… ØµØ­ÙŠØ­Ø©.")
+            messages.error(request, "\u26a0\ufe0f \u064a\u0631\u062c\u0649 \u0625\u062f\u062e\u0627\u0644 \u0623\u0631\u0642\u0627\u0645 \u0635\u062d\u064a\u062d\u0629.")
         except ZeroDivisionError:
-            messages.error(request, "âš ï¸ Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­Ø³Ø§Ø¨. ØªØ£ÙƒØ¯ Ù…Ù† Ø§Ù„Ù‚ÙŠÙ… Ø§Ù„Ù…Ø¯Ø®Ù„Ø©.")
+            messages.error(request, "\u26a0\ufe0f \u062d\u062f\u062b \u062e\u0637\u0623 \u0641\u064a \u0627\u0644\u062d\u0633\u0627\u0628. \u062a\u0623\u0643\u062f \u0645\u0646 \u0627\u0644\u0642\u064a\u0645 \u0627\u0644\u0645\u062f\u062e\u0644\u0629.")
     
     cars = CarSpecification.objects.all().only('id', 'brand_ar', 'model_ar', 'year', 'octane', 'oil_capacity').order_by('brand_ar', 'model_ar')
     return render(request, 'cars/mix_calculator.html', {'cars': cars, 'result': result})
@@ -346,7 +325,7 @@ def recommendations_view(request, car_id):
     try:
         car = CarSpecification.objects.get(id=car_id)
     except CarSpecification.DoesNotExist:
-        messages.error(request, "âš ï¸ Ø§Ù„Ø³ÙŠØ§Ø±Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©")
+        messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0633\u064a\u0627\u0631\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629")
         return redirect('index')
     return render(request, 'cars/recommendations.html', {'car': car})
 
@@ -360,7 +339,6 @@ def about_view(request):
 
 
 def ads_txt_view(request):
-    from django.http import HttpResponse
     settings_obj = SiteSettings.load()
     content = settings_obj.ads_txt.strip() or "# ads.txt - populated after Google AdSense approval"
     return HttpResponse(content, content_type='text/plain; charset=utf-8')

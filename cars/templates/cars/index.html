@@ -984,6 +984,20 @@
         .btn-sm-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(245, 158, 11, 0.35); }
         .btn-sm-secondary { background: rgba(51, 65, 85, 0.5); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.05); }
         .btn-sm-secondary:hover { background: rgba(51, 65, 85, 0.8); color: #f1f5f9; transform: translateY(-2px); }
+
+        .card-details-extra { border-top: 1px solid rgba(245, 158, 11, 0.1); padding-top: 10px; margin-top: 10px; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 500px; } }
+        .card-links-row { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-card-link { flex: 1; padding: 10px 12px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; text-align: center; text-decoration: none; transition: all 0.3s ease; background: rgba(51, 65, 85, 0.5); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .btn-card-link:hover { background: rgba(51, 65, 85, 0.8); color: #f1f5f9; transform: translateY(-2px); }
+        .btn-card-link-primary { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0a0f1a; border: none; }
+        .btn-card-link-primary:hover { box-shadow: 0 6px 25px rgba(245, 158, 11, 0.35); }
+
+        .btn-card-toggle { width: 100%; padding: 8px; margin-top: 10px; background: rgba(15, 23, 42, 0.5); border: 1px dashed rgba(245, 158, 11, 0.2); border-radius: 12px; color: #94a3b8; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
+        .btn-card-toggle:hover { background: rgba(245, 158, 11, 0.08); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+        .btn-card-toggle.active { border-style: solid; color: #fbbf24; }
+        .btn-card-toggle .toggle-icon { transition: transform 0.3s ease; font-size: 0.6rem; }
+        .btn-card-toggle.active .toggle-icon { transform: rotate(180deg); }
         
         .cta-section {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.04), rgba(251, 191, 36, 0.01));
@@ -1667,14 +1681,6 @@
                 <div class="loading-spinner" role="status" aria-label="جاري التحميل"></div>
             </div>
             
-            {% if relaxed %}
-                <div class="relaxed-note" role="status">
-                    <span aria-hidden="true">💡</span>
-                    لم نعثر على نتائج بهذه القيود كاملة، فأنزلنا بعضها لإظهار الموديل الموجود:
-                    <strong>{{ relaxed|join:"، " }}</strong>
-                </div>
-            {% endif %}
-
             {% if cars is None %}
                 <div class="text-center py-10 md:py-16 bg-slate-900/30 rounded-3xl border border-slate-800/50">
                     <div class="text-5xl md:text-6xl mb-3 md:mb-4" aria-hidden="true">🔍</div>
@@ -1708,10 +1714,22 @@
                             <div class="spec-item"><span class="label">🛞 حجم الإطار</span><span class="value blue">{{ car.tire_size|default:"غير محدد"|escape }}</span></div>
                             <div class="spec-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ car.oil_capacity|default:"غير محدد"|escape }}</span></div>
                         </div>
-                        <div class="card-actions">
-                            <a href="{% url 'mix_calculator' %}" class="btn-sm btn-sm-primary">🧮 حساب الخلطة</a>
-                            <a href="{% url 'recommendations' car.id %}" class="btn-sm btn-sm-secondary">🔍 التفاصيل والتوصيات</a>
+                        <div class="card-details-extra" id="details-{{ car.id }}" style="display:none;">
+                            <div class="spec-grid" style="margin-top:4px;">
+                                {% if car.fuel %}<div class="spec-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ car.fuel|escape }}</span></div>{% endif %}
+                                {% if car.spec_region %}<div class="spec-item"><span class="label">🌍 المنطقة</span><span class="value">{{ car.get_spec_region_display|escape }}</span></div>{% endif %}
+                                {% if car.engine_type %}<div class="spec-item"><span class="label">🔧 نوع المحرك</span><span class="value">{{ car.get_engine_type_display|escape }}</span></div>{% endif %}
+                                {% if car.trim %}<div class="spec-item"><span class="label">🏷️ الفئة</span><span class="value">{{ car.trim|escape }}</span></div>{% endif %}
+                            </div>
+                            <div class="card-links-row">
+                                <a href="{% url 'mix_calculator' %}" class="btn-card-link">🧮 حاسبة الخلط</a>
+                                <a href="{% url 'recommendations' car.id %}" class="btn-card-link btn-card-link-primary">🔍 التوصيات والتفاصيل</a>
+                            </div>
                         </div>
+                        <button type="button" class="btn-card-toggle" onclick="toggleCardDetails({{ car.id }}, this)">
+                            <span class="toggle-text">عرض المزيد من التفاصيل</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
                     </div>
                     {% endfor %}
                 </div>
@@ -2448,6 +2466,18 @@
             </div>
         </div>
     </div>
+
+<script>
+    function toggleCardDetails(carId, btn) {
+        var el = document.getElementById('details-' + carId);
+        if (!el) return;
+        var isOpen = el.style.display !== 'none';
+        el.style.display = isOpen ? 'none' : 'block';
+        btn.classList.toggle('active', !isOpen);
+        var textEl = btn.querySelector('.toggle-text');
+        if (textEl) textEl.textContent = isOpen ? 'عرض المزيد من التفاصيل' : 'إخفاء التفاصيل';
+    }
+</script>
 
 <script>
         if ('serviceWorker' in navigator) {

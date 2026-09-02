@@ -24,10 +24,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-for-dev-only')
-
-# SECURITY WARNING: don't run with debug turned on in production!
+# في الإنتاج (DEBUG=False) يجب ضبط SECRET_KEY فعلياً في .env وإلا يُرفض الإقلاع
+_ENV_SECRET_KEY = os.getenv('SECRET_KEY', '')
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+if _ENV_SECRET_KEY:
+    SECRET_KEY = _ENV_SECRET_KEY
+elif DEBUG:
+    # مفتاح تطوير فقط: واضح أنه غير صالح للإنتاج
+    SECRET_KEY = 'django-insecure-dev-key-4271f8e1e6f7'
+else:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'SECRET_KEY must be set in the environment during production.'
+    )
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
@@ -203,19 +213,25 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
 
 # ============================================================
-# Full HTTPS hardening - enabled in production via PROD_SECURE=True
+# Full HTTPS hardening - مفعّل تلقائياً عند DEBUG=False
+# ويمكن فرضه يدوياً عبر PROD_SECURE=True حتى أثناء التطوير
 # ============================================================
-PROD_SECURE = os.getenv('PROD_SECURE', 'False').lower() == 'true'
+_PROD_SECURE_OVERRIDE = os.getenv('PROD_SECURE', '').lower() in ('1', 'true', 'yes', 'on')
+_IS_PROD = (not DEBUG) or _PROD_SECURE_OVERRIDE
 
-if PROD_SECURE:
+if _IS_PROD:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 
     _csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
-    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',') if o.strip()]
+    _origins = [o.strip() for o in _csrf_origins.split(',') if o.strip()]
+    if not _origins:
+        # نطاق افتراضي آمن؛ غيّره من .env إن كان النطاق مختلفاً
+        _origins = ['https://sayarti.org', 'https://www.sayarti.org']
+    CSRF_TRUSTED_ORIGINS = _origins
