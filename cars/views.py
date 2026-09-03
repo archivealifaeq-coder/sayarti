@@ -499,16 +499,27 @@ def _find_similar_in_db(brand, model, year, engine):
     for car in candidates[:8]:
         results.append({
             'name': f"{car.brand_ar} {car.model_ar}",
+            'brand_ar': car.brand_ar,
+            'model_ar': car.model_ar,
+            'brand_en': car.brand_en,
+            'model_en': car.model_en,
             'year': car.year,
             'engine': car.engine,
             'fuel': car.fuel,
             'oil_visc': car.oil_visc,
+            'oil_visc_high_km': car.oil_visc_high_km or '',
             'spark': car.spark,
             'octane': car.octane,
             'trim': car.trim or '',
             'engine_type': car.get_engine_type_display() if car.engine_type else '',
             'spec_region': car.get_spec_region_display() if car.spec_region else '',
             'oil_capacity': car.oil_capacity or '',
+            'oil_brands': car.oil_brands or '',
+            'tire_size': car.tire_size or '',
+            'battery': car.battery or '',
+            'transmission_type': car.transmission_type or '',
+            'transmission_oil_spec': car.transmission_oil_spec or '',
+            'recommendations': car.recommendations or '',
             'source': 'قاعدة البيانات',
         })
     return results

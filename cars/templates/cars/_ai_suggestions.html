@@ -14,15 +14,24 @@
                 <h5 class="text-white font-bold text-sm">★ {{ car.name }}{% if car.trim %} <span class="text-pink-400">({{ car.trim }})</span>{% endif %}</h5>
                 <span class="ai-octane">⛽ أوكتان {{ car.octane }}</span>
             </div>
-            <div class="ai-suggest-tags">
-                {% if car.year %}<span class="ai-tag">📅 {{ car.year }}</span>{% endif %}
-                {% if car.engine %}<span class="ai-tag">⚙️ {{ car.engine }}</span>{% endif %}
-                {% if car.fuel %}<span class="ai-tag">🛢️ وقود: {{ car.fuel }}</span>{% endif %}
-                {% if car.engine_type %}<span class="ai-tag">🔋 {{ car.engine_type }}</span>{% endif %}
-                {% if car.oil_visc %}<span class="ai-tag">🧴 زيت: {{ car.oil_visc }}</span>{% endif %}
-                {% if car.spark %}<span class="ai-tag">⚡ شمعات: {{ car.spark }}</span>{% endif %}
-                {% if car.oil_capacity %}<span class="ai-tag">⛽ سعة الزيت: {{ car.oil_capacity }}</span>{% endif %}
+            <div class="ai-suggest-meta">
+                {% if car.engine_type %}<span class="ai-dot">{{ car.engine_type }}</span>{% endif %}
+                {% if car.spec_region %}<span class="ai-dot">{{ car.spec_region }}</span>{% endif %}
+                {% if car.transmission_type %}<span class="ai-dot">{{ car.transmission_type }}</span>{% endif %}
             </div>
+            <table class="ai-spec-table">
+                <tr><td class="ai-spec-key">📅 السنة</td><td>{{ car.year }}</td></tr>
+                <tr><td class="ai-spec-key">⚙️ المحرك</td><td>{{ car.engine }}{% if car.engine_type %} ({{ car.engine_type }}){% endif %}</td></tr>
+                <tr><td class="ai-spec-key">🛢️ الوقود</td><td>{{ car.fuel|default:"غير محدد" }}</td></tr>
+                <tr><td class="ai-spec-key">🧴 لزوجة الزيت</td><td>{{ car.oil_visc }}{% if car.oil_visc_high_km %} / عالي الكيلومتر: {{ car.oil_visc_high_km }}{% endif %}</td></tr>
+                <tr><td class="ai-spec-key">⭕ سعة الزيت</td><td>{{ car.oil_capacity|default:"غير محدد" }}</td></tr>
+                <tr><td class="ai-spec-key">🏷️ ماركات الزيت</td><td>{{ car.oil_brands|default:"غير محدد" }}</td></tr>
+                <tr><td class="ai-spec-key">⚡ شمعات الاحتراق</td><td>{{ car.spark|default:"غير محدد" }}</td></tr>
+                <tr><td class="ai-spec-key">🛞 حجم الإطار</td><td>{{ car.tire_size|default:"غير محدد" }}</td></tr>
+                <tr><td class="ai-spec-key">🔋 البطارية</td><td>{{ car.battery|default:"غير محدد" }}</td></tr>
+                <tr><td class="ai-spec-key">⚙️ زيت الناقل</td><td>{{ car.transmission_oil_spec|default:"غير محدد" }}</td></tr>
+            </table>
+            {% if car.recommendations %}<p class="ai-recommend">{{ car.recommendations }}</p>{% endif %}
         </div>
         {% endfor %}
     </div>
@@ -45,14 +54,18 @@
                 <h5 class="text-white font-bold text-sm">{{ forloop.counter }}. {{ car.name }}</h5>
                 <span class="ai-octane">⛽ {{ car.octane|default:"-" }}</span>
             </div>
-            <div class="ai-suggest-tags">
-                {% if car.year %}<span class="ai-tag">📅 {{ car.year }}</span>{% endif %}
-                {% if car.engine %}<span class="ai-tag">⚙️ {{ car.engine }}</span>{% endif %}
-                {% if car.fuel %}<span class="ai-tag">🛢️ وقود: {{ car.fuel }}</span>{% endif %}
-                {% if car.oil_visc %}<span class="ai-tag">🧴 زيت: {{ car.oil_visc }}</span>{% endif %}
-                {% if car.spark %}<span class="ai-tag">⚡ شمعات: {{ car.spark }}</span>{% endif %}
-            </div>
-            {% if car.specs %}<p class="text-slate-400 text-xs mt-2 leading-relaxed">{{ car.specs }}</p>{% endif %}
+            <table class="ai-spec-table">
+                {% if car.year %}<tr><td class="ai-spec-key">📅 السنة</td><td>{{ car.year }}</td></tr>{% endif %}
+                {% if car.engine %}<tr><td class="ai-spec-key">⚙️ المحرك</td><td>{{ car.engine }}</td></tr>{% endif %}
+                {% if car.fuel %}<tr><td class="ai-spec-key">🛢️ الوقود</td><td>{{ car.fuel }}</td></tr>{% endif %}
+                {% if car.transmission %}<tr><td class="ai-spec-key">⚙️ ناقل الحركة</td><td>{{ car.transmission }}</td></tr>{% endif %}
+                {% if car.oil_visc %}<tr><td class="ai-spec-key">🧴 لزوجة الزيت</td><td>{{ car.oil_visc }}</td></tr>{% endif %}
+                {% if car.oil_capacity %}<tr><td class="ai-spec-key">⭕ سعة الزيت</td><td>{{ car.oil_capacity }}</td></tr>{% endif %}
+                {% if car.spark %}<tr><td class="ai-spec-key">⚡ شمعات الاحتراق</td><td>{{ car.spark }}</td></tr>{% endif %}
+                {% if car.tire_size %}<tr><td class="ai-spec-key">🛞 حجم الإطار</td><td>{{ car.tire_size }}</td></tr>{% endif %}
+                {% if car.battery %}<tr><td class="ai-spec-key">🔋 البطارية</td><td>{{ car.battery }}</td></tr>{% endif %}
+            </table>
+            {% if car.specs %}<p class="ai-recommend">{{ car.specs }}</p>{% endif %}
         </div>
         {% endfor %}
     </div>
