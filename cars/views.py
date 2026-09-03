@@ -445,3 +445,15 @@ def budget_finder_view(request):
         })
 
     return render(request, 'cars/budget_finder.html', {'show_form': True})
+
+
+def search_ai_suggest(request):
+    from .services.deepseek_service import suggest_cars_ai
+    brand = request.GET.get('brand', '').strip()
+    model = request.GET.get('model', '').strip()
+    year = request.GET.get('year', '').strip()
+    engine = request.GET.get('engine', '').strip()
+    if not (brand or model or year or engine):
+        return render(request, 'cars/_ai_suggestions.html', {'ai_result': {'success': False}})
+    result = suggest_cars_ai(brand=brand, model=model, year=year, engine=engine)
+    return render(request, 'cars/_ai_suggestions.html', {'ai_result': result})

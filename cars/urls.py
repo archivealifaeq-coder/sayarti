@@ -12,4 +12,5 @@ urlpatterns = [
     path('about/', views.about_view, name='about'),
     path('ads.txt', views.ads_txt_view, name='ads_txt'),
     path('budget/', views.budget_finder_view, name='budget_finder'),
+    path('search/ai-suggest/', views.search_ai_suggest, name='search_ai_suggest'),
 ]

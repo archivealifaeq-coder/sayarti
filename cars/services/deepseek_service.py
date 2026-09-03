@@ -161,3 +161,67 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
             logger.warning(str(e))
 
     return {'success': False, 'error': 'تعذر الحصول على نتيجة. حاول مرة أخرى.'}
+
+
+SEARCH_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.
+تحدث باللغة العربية الفصحى الواضحة (تجنب اللهجة العامية).
+
+المستخدم يبحث عن سيارة بالمعلومات التالية:
+{search_info}
+
+لم نجد هذه السيارة في قاعدة البيانات. أعطني 3-5 اقتراحات مشابهة بالسوق العراقي بالتنسيق التالي (JSON فقط، بدون نص إضافي):
+[
+  {{
+    "name": "اسم السيارة والموديل",
+    "year": 2020,
+    "engine": "2.0L",
+    "oil_visc": "لزوجة الزيت",
+    "spark": "شمعات الاحتراق",
+    "octane": 91,
+    "specs": "مواصفات مختصرة"
+  }}
+]
+
+قواعد:
+1. اقتراحات مشابهة فعلياً متوفرة في السوق العراقي
+2. اذكر تفاصيل تقنية قدر الإمكان (لزوجة الزيت، شمعات، أوكتان)
+3. JSON فقط بدون أي نص قبل أو بعد"""
+
+
+def _build_search_prompt(brand, model, year, engine):
+    parts = []
+    if brand:
+        parts.append(f'الماركة: {brand}')
+    if model:
+        parts.append(f'الموديل: {model}')
+    if year:
+        parts.append(f'السنة: {year}')
+    if engine:
+        parts.append(f'سعة المحرك: {engine}')
+    return SEARCH_PROMPT.format(search_info='\n'.join(parts) if parts else 'غير محدد')
+
+
+def suggest_cars_ai(brand='', model='', year='', engine=''):
+    prompt = _build_search_prompt(brand, model, year, engine)
+
+    providers = [
+        ('Groq', _call_groq),
+        ('Gemini', _call_gemini),
+    ]
+
+    for name, call in providers:
+        try:
+            content = call(prompt)
+            cars = json.loads(content)
+            if isinstance(cars, list) and cars:
+                return {'success': True, 'cars': cars, 'provider': name}
+        except requests.exceptions.Timeout:
+            logger.warning(f'{name} API timeout (search suggest)')
+        except requests.exceptions.RequestException as e:
+            logger.error(f'{name} API error (search suggest): {e}')
+        except (json.JSONDecodeError, KeyError, IndexError) as e:
+            logger.error(f'{name} parse error (search suggest): {e}')
+        except RuntimeError:
+            logger.warning(f'{name} not configured')
+
+    return {'success': False}

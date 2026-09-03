@@ -167,6 +167,7 @@
                     <p class="text-slate-500 text-sm mt-2">حاول تعديل كلمات البحث أو استخدام مرشحات مختلفة</p>
                     <a href="{% url 'search' %}" class="text-amber-400 hover:text-amber-300 font-semibold mt-4 inline-block transition-colors">✕ إعادة تعيين</a>
                 </div>
+                <div id="ai-suggest-container"></div>
             {% else %}
                 <div class="flex flex-wrap justify-between items-center mb-3 md:mb-4 gap-2 text-slate-400">
                     <p class="text-sm font-semibold">🚗 نتائج البحث: <span class="text-amber-400 font-extrabold text-lg" id="resultsCount">{{ cars|length }}</span> سيارة</p>
@@ -629,6 +630,23 @@
             document.addEventListener('htmx:afterSwap', function(evt) {
                 if (evt.target && evt.target.id === 'cars-container') {
                     setTimeout(initReveal, 60);
+                    var aiBox = document.getElementById('ai-suggest-container');
+                    if (aiBox) {
+                        aiBox.innerHTML = '<div class="ai-suggest-box" style="text-align:center;padding:28px 18px;"><div class="spin-wheel"></div><p class="text-amber-400 text-sm font-bold mt-3">🔍 جارٍ البحث عن اقتراحات في قاعدة البيانات...</p><p class="text-slate-500 text-xs mt-1">انتظر من فضلك — نستكشف المزيد من الخيارات</p></div>';
+                        var params = new URLSearchParams();
+                        var bVal = brandInput ? brandInput.value.trim() : '';
+                        var mVal = modelInput ? modelInput.value.trim() : '';
+                        var yVal = yearInput ? yearInput.value.trim() : '';
+                        var eVal = engineInput ? engineInput.value.trim() : '';
+                        if (bVal) params.set('brand', bVal);
+                        if (mVal) params.set('model', mVal);
+                        if (yVal) params.set('year', yVal);
+                        if (eVal) params.set('engine', eVal);
+                        fetch('/search/ai-suggest/?' + params.toString())
+                            .then(function(r) { return r.text(); })
+                            .then(function(html) { aiBox.innerHTML = html; })
+                            .catch(function() { aiBox.innerHTML = '<div class="ai-suggest-box ai-suggest-error"><span class="text-xl" aria-hidden="true">😔</span><p class="text-slate-400 text-sm mt-1">تعذر الاتصال. حاول البحث بكلمات مختلفة.</p></div>'; });
+                    }
                 }
             });
 

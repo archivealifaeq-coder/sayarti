@@ -1,0 +1,34 @@
+{% if ai_result.success %}
+<div class="ai-suggest-box">
+    <div class="ai-suggest-header">
+        <span class="text-2xl" aria-hidden="true">🤖</span>
+        <div>
+            <h4 class="text-amber-400 font-extrabold text-base">اقتراحات الذكاء الاصطناعي</h4>
+            <p class="text-slate-500 text-xs">نتائج مولّدة بالذكاء الاصطناعي — قد لا تتطابق مع قاعدة البيانات</p>
+        </div>
+    </div>
+    <div class="ai-suggest-grid">
+        {% for car in ai_result.cars %}
+        <div class="ai-suggest-card">
+            <div class="ai-suggest-top">
+                <h5 class="text-white font-bold text-sm">{{ forloop.counter }}. {{ car.name }}</h5>
+                <span class="ai-octane">⛽ {{ car.octane|default:"-" }}</span>
+            </div>
+            <div class="ai-suggest-tags">
+                {% if car.year %}<span class="ai-tag">📅 {{ car.year }}</span>{% endif %}
+                {% if car.engine %}<span class="ai-tag">⚙️ {{ car.engine }}</span>{% endif %}
+                {% if car.oil_visc %}<span class="ai-tag">🛢️ {{ car.oil_visc }}</span>{% endif %}
+                {% if car.spark %}<span class="ai-tag">⚡ {{ car.spark }}</span>{% endif %}
+            </div>
+            {% if car.specs %}<p class="text-slate-400 text-xs mt-2 leading-relaxed">{{ car.specs }}</p>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <p class="text-slate-600 text-[10px] text-center mt-3 tracking-wide">⚡ عبر {{ ai_result.provider }}</p>
+</div>
+{% else %}
+<div class="ai-suggest-box ai-suggest-error">
+    <span class="text-xl" aria-hidden="true">😔</span>
+    <p class="text-slate-400 text-sm mt-1">لم نتمكن من إيجاد اقتراحات الآن. حاول البحث بكلمات مختلفة.</p>
+</div>
+{% endif %}
