@@ -216,35 +216,6 @@
 
     </div>
 
-    <!-- ============================================ -->
-    <!--  FOOTER                                    -->
-    <!-- ============================================ -->
-    <footer class="footer-glass" role="contentinfo">
-        <div class="footer-inner">
-            <div class="footer-compact">
-                <a href="{% url 'index' %}" class="footer-logo" aria-label="الرئيسية">🚗 سيارتي</a>
-                <nav class="footer-nav" aria-label="روابط سريعة">
-                    <a href="{% url 'index' %}">الرئيسية</a>
-                    <a href="{% url 'search' %}">البحث</a>
-                    <a href="{% url 'mix_calculator' %}">حاسبة الخلط</a>
-                    <a href="{% url 'budget_finder' %}">شكد فلوسك؟</a>
-                    <a href="{% url 'about' %}">من نحن</a>
-                    <a href="{% url 'privacy' %}">الخصوصية</a>
-                    {% if user.is_staff %}<a href="/admin/" rel="nofollow">لوحة التحكم</a>{% endif %}
-                </nav>
-                <div class="footer-meta">
-                    <a href="mailto:archivealifaeq@gmail.com" class="meta-mail">📧 archivealifaeq@gmail.com</a>
-                    <span class="meta-web">🌐 www.sayarti.org</span>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>
-                    <span style="color: #94a3b8;">© 2026 سيارتي · تطوير <span class="developer">Ali Al Naimy</span></span>
-                </p>
-            </div>
-        </div>
-    </footer>
-
     <button class="back-top" id="backTopBtn" aria-label="العودة إلى الأعلى">↑</button>
 
     <script>
