@@ -453,5 +453,62 @@ def search_ai_suggest(request):
     engine = request.GET.get('engine', '').strip()
     if not (brand or model or year or engine):
         return render(request, 'cars/_ai_suggestions.html', {'ai_result': {'success': False}})
-    result = suggest_cars_ai(brand=brand, model=model, year=year, engine=engine)
-    return render(request, 'cars/_ai_suggestions.html', {'ai_result': result})
+
+    db_results = _find_similar_in_db(brand, model, year, engine)
+
+    ai_result = {'success': False}
+    try:
+        ai_result = suggest_cars_ai(brand=brand, model=model, year=year, engine=engine)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error('AI suggest error: %s', e)
+
+    context = {
+        'db_results': db_results,
+        'ai_result': ai_result,
+    }
+    return render(request, 'cars/_ai_suggestions.html', context)
+
+
+def _find_similar_in_db(brand, model, year, engine):
+    """يبحث في قاعدة البيانات عن السيارة المطلوبة نفسها (النتيجة المهمة)
+    بمعلوماتها الحقيقية والمدققة، أو أقرب تطابق للماركة/الموديل."""
+    qs = CarSpecification.objects.all().order_by('year', 'brand_ar', 'model_ar')
+
+    b = fold_ar(brand)
+    m = fold_ar(model)
+    e = fold_engine(engine)
+
+    candidates = None
+    if b and m:
+        candidates = qs.filter(
+            Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
+        ).filter(
+            Q(model_norm__icontains=m) | Q(model_en__icontains=model)
+        )
+    elif b:
+        candidates = qs.filter(Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand))
+
+    if candidates is not None and not candidates.exists():
+        candidates = None
+
+    if candidates is None:
+        return []
+
+    results = []
+    for car in candidates[:8]:
+        results.append({
+            'name': f"{car.brand_ar} {car.model_ar}",
+            'year': car.year,
+            'engine': car.engine,
+            'fuel': car.fuel,
+            'oil_visc': car.oil_visc,
+            'spark': car.spark,
+            'octane': car.octane,
+            'trim': car.trim or '',
+            'engine_type': car.get_engine_type_display() if car.engine_type else '',
+            'spec_region': car.get_spec_region_display() if car.spec_region else '',
+            'oil_capacity': car.oil_capacity or '',
+            'source': 'قاعدة البيانات',
+        })
+    return results

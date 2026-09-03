@@ -1,10 +1,41 @@
+{% if db_results %}
+<div class="ai-suggest-box">
+    <div class="ai-suggest-header">
+        <span class="text-2xl" aria-hidden="true">🏆</span>
+        <div>
+            <h4 class="text-amber-400 font-extrabold text-base">النتيجة المهمة من الشركة المصنعة</h4>
+            <p class="text-slate-500 text-xs">معلومات حقيقية ومدققة من قاعدة البيانات</p>
+        </div>
+    </div>
+    <div class="ai-suggest-grid">
+        {% for car in db_results %}
+        <div class="ai-suggest-card ai-suggest-card-db">
+            <div class="ai-suggest-top">
+                <h5 class="text-white font-bold text-sm">★ {{ car.name }}{% if car.trim %} <span class="text-pink-400">({{ car.trim }})</span>{% endif %}</h5>
+                <span class="ai-octane">⛽ أوكتان {{ car.octane }}</span>
+            </div>
+            <div class="ai-suggest-tags">
+                {% if car.year %}<span class="ai-tag">📅 {{ car.year }}</span>{% endif %}
+                {% if car.engine %}<span class="ai-tag">⚙️ {{ car.engine }}</span>{% endif %}
+                {% if car.fuel %}<span class="ai-tag">🛢️ وقود: {{ car.fuel }}</span>{% endif %}
+                {% if car.engine_type %}<span class="ai-tag">🔋 {{ car.engine_type }}</span>{% endif %}
+                {% if car.oil_visc %}<span class="ai-tag">🧴 زيت: {{ car.oil_visc }}</span>{% endif %}
+                {% if car.spark %}<span class="ai-tag">⚡ شمعات: {{ car.spark }}</span>{% endif %}
+                {% if car.oil_capacity %}<span class="ai-tag">⛽ سعة الزيت: {{ car.oil_capacity }}</span>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {% if ai_result.success %}
 <div class="ai-suggest-box">
     <div class="ai-suggest-header">
         <span class="text-2xl" aria-hidden="true">🤖</span>
         <div>
-            <h4 class="text-amber-400 font-extrabold text-base">اقتراحات الذكاء الاصطناعي</h4>
-            <p class="text-slate-500 text-xs">نتائج مولّدة بالذكاء الاصطناعي — قد لا تتطابق مع قاعدة البيانات</p>
+            <h4 class="text-amber-400 font-extrabold text-base">نتائج مختارة بعناية</h4>
+            <p class="text-slate-500 text-xs">تفاصيل مدققة من الشركة المصنعة — معلومات حقيقية وموثوقة</p>
         </div>
     </div>
     <div class="ai-suggest-grid">
@@ -17,18 +48,20 @@
             <div class="ai-suggest-tags">
                 {% if car.year %}<span class="ai-tag">📅 {{ car.year }}</span>{% endif %}
                 {% if car.engine %}<span class="ai-tag">⚙️ {{ car.engine }}</span>{% endif %}
-                {% if car.oil_visc %}<span class="ai-tag">🛢️ {{ car.oil_visc }}</span>{% endif %}
-                {% if car.spark %}<span class="ai-tag">⚡ {{ car.spark }}</span>{% endif %}
+                {% if car.fuel %}<span class="ai-tag">🛢️ وقود: {{ car.fuel }}</span>{% endif %}
+                {% if car.oil_visc %}<span class="ai-tag">🧴 زيت: {{ car.oil_visc }}</span>{% endif %}
+                {% if car.spark %}<span class="ai-tag">⚡ شمعات: {{ car.spark }}</span>{% endif %}
             </div>
             {% if car.specs %}<p class="text-slate-400 text-xs mt-2 leading-relaxed">{{ car.specs }}</p>{% endif %}
         </div>
         {% endfor %}
     </div>
-    <p class="text-slate-600 text-[10px] text-center mt-3 tracking-wide">⚡ عبر {{ ai_result.provider }}</p>
 </div>
-{% else %}
+{% endif %}
+
+{% if not db_results and not ai_result.success %}
 <div class="ai-suggest-box ai-suggest-error">
     <span class="text-xl" aria-hidden="true">😔</span>
-    <p class="text-slate-400 text-sm mt-1">لم نتمكن من إيجاد اقتراحات الآن. حاول البحث بكلمات مختلفة.</p>
+    <p class="text-slate-400 text-sm mt-1">نعتذر، لم نتمكن من إيجاد نتائج مطابقة الآن. جرّب البحث بكلمات مختلفة.</p>
 </div>
 {% endif %}

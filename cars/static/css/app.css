@@ -1207,6 +1207,12 @@
             text-align: center;
             padding: 28px 18px;
         }
+        .ai-suggest-card-db {
+            background: rgba(52, 211, 153, 0.08);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            box-shadow: 0 0 18px rgba(52, 211, 153, 0.12);
+        }
+        .ai-suggest-card-db .ai-octane { color: #34d399; }
         @media (max-width: 640px) {
             .ai-suggest-grid { grid-template-columns: 1fr; }
         }
