@@ -170,8 +170,6 @@ def _search_context(request):
             cars = _apply(qs, required, optional)
         else:
             cars = _apply(qs, required, [])
-        if cars is not None and not cars.exists():
-            cars = None
 
     lookup = _cached_lookup_data()
 
