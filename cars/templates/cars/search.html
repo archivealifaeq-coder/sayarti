@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com"/>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{% static 'css/app.css' %}"/>
     <link rel="manifest" href="/manifest.json"/>
     <meta name="theme-color" content="#0f172a"/>
@@ -219,47 +221,25 @@
     <!-- ============================================ -->
     <footer class="footer-glass" role="contentinfo">
         <div class="footer-inner">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <a href="{% url 'index' %}" class="footer-logo">🚗 سيارتي</a>
-                    <p>دليل مواصفات الصيانة للسيارات مع حاسبة خلط الوقود الذكية. نوفر لك معلومات دقيقة وموثوقة لسيارتك.</p>
-                </div>
-                <div class="footer-links">
-                    <h6>روابط سريعة</h6>
-                    <ul>
-                        <li><a href="{% url 'index' %}">🏠 الرئيسية</a></li>
-                        <li><a href="{% url 'search' %}">🔍 البحث</a></li>
-                        <li><a href="{% url 'mix_calculator' %}">🧮 حاسبة الخلط</a></li>
-                        <li><a href="{% url 'budget_finder' %}">💰 شكد فلوسك؟</a></li>
-                        <li><a href="{% url 'about' %}">ℹ️ من نحن</a></li>
-                        <li><a href="{% url 'privacy' %}">🔒 سياسة الخصوصية</a></li>
-                        {% if user.is_staff %}<li><a href="/admin/" rel="nofollow">🔐 لوحة التحكم</a></li>{% endif %}
-                    </ul>
-                </div>
-                <div class="footer-contact">
-                    <h6>تواصل معنا</h6>
-                    <div class="contact-item">
-                        <span class="icon">📧</span>
-                        <a href="mailto:archivealifaeq@gmail.com?subject=استفسار%20عن%20سيارتي&body=السلام%20عليكم،%0A%0Aأكتب%20رسالتك%20هنا...">archivealifaeq@gmail.com</a>
-                    </div>
-                    <div class="contact-item">
-                        <span class="icon">🌐</span>
-                        <span>www.sayarti.org</span>
-                    </div>
-                    <div class="social-links">
-                        <a href="#" aria-label="تويتر" title="تويتر">🐦</a>
-                        <a href="#" aria-label="انستغرام" title="انستغرام">📸</a>
-                        <a href="#" aria-label="يوتيوب" title="يوتيوب">▶️</a>
-                        <a href="#" aria-label="لينكد إن" title="لينكد إن">💼</a>
-                    </div>
+            <div class="footer-compact">
+                <a href="{% url 'index' %}" class="footer-logo" aria-label="الرئيسية">🚗 سيارتي</a>
+                <nav class="footer-nav" aria-label="روابط سريعة">
+                    <a href="{% url 'index' %}">الرئيسية</a>
+                    <a href="{% url 'search' %}">البحث</a>
+                    <a href="{% url 'mix_calculator' %}">حاسبة الخلط</a>
+                    <a href="{% url 'budget_finder' %}">شكد فلوسك؟</a>
+                    <a href="{% url 'about' %}">من نحن</a>
+                    <a href="{% url 'privacy' %}">الخصوصية</a>
+                    {% if user.is_staff %}<a href="/admin/" rel="nofollow">لوحة التحكم</a>{% endif %}
+                </nav>
+                <div class="footer-meta">
+                    <a href="mailto:archivealifaeq@gmail.com" class="meta-mail">📧 archivealifaeq@gmail.com</a>
+                    <span class="meta-web">🌐 www.sayarti.org</span>
                 </div>
             </div>
             <div class="footer-bottom">
                 <p>
-                    <span style="color: #64748b;">© 2026 سيارتي.</span>
-                    <span class="separator">|</span>
-                    <span style="color: #64748b;">تطوير</span>
-                    <span class="developer">Ali Al Naimy</span>
+                    <span style="color: #94a3b8;">© 2026 سيارتي · تطوير <span class="developer">Ali Al Naimy</span></span>
                 </p>
             </div>
         </div>
