@@ -900,6 +900,24 @@
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
         }
         .feature-card .feature-icon { font-size: 2rem; margin-bottom: 6px; display: block; }
+        .feature-card img.feature-icon { width: 48px; height: 48px; object-fit: contain; margin-left: auto; margin-right: auto; }
+        .feature-card { position: relative; }
+        .feature-card--ad {
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(245, 158, 11, 0.08));
+        }
+        .ad-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #0f172a;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 999px;
+            letter-spacing: 0.3px;
+        }
         .feature-card .feature-title { color: #f1f5f9; font-weight: 700; font-size: 0.9rem; }
         .feature-card .feature-desc { color: #94a3b8; font-size: 0.7rem; margin-top: 2px; }
         
@@ -1103,7 +1121,7 @@
         @media (max-width: 768px) {
             .footer-glass .footer-links h6::after { left: 50%; right: auto; transform: translateX(-50%); }
         }
-        .footer-glass .footer-links ul { list-style: none; padding: 0; margin: 0; }
+        .footer-glass .footer-links ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 22px; }
         .footer-glass .footer-links ul li { margin-bottom: 6px; }
         .footer-glass .footer-links ul li a {
             color: #94a3b8;
@@ -1119,6 +1137,7 @@
             transform: translateX(-4px);
         }
         @media (max-width: 768px) {
+            .footer-glass .footer-links ul { justify-content: center; }
             .footer-glass .footer-links ul li a:hover { transform: none; }
         }
         .footer-glass .footer-contact h6 {
@@ -1581,32 +1600,54 @@
         </div>
         
         <!-- ============================================ -->
+        <!--  FEATURE CARDS (بطاقات المميزات)            -->
+        <!-- ============================================ -->
+        {% if feature_cards %}
+        <div class="max-w-7xl mx-auto px-4 pt-6 md:pt-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                {% for f in feature_cards %}
+                {% if f.link %}<a href="{{ f.link }}" class="feature-card feature-card--ad">{% else %}<div class="feature-card">{% endif %}
+                    {% if f.link %}<span class="ad-badge">إعلان</span>{% endif %}
+                    {% if f.image %}
+                        <img src="{{ f.image.url }}" alt="{{ f.title }}" class="feature-icon mx-auto">
+                    {% else %}
+                        <span class="feature-icon">{{ f.icon }}</span>
+                    {% endif %}
+                    <span class="feature-title">{{ f.title }}</span>
+                    {% if f.description %}<span class="feature-desc">{{ f.description }}</span>{% endif %}
+                {% if f.link %}</a>{% else %}</div>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- ============================================ -->
         <!--  GATEWAY CARDS                              -->
         <!-- ============================================ -->
-        <div class="max-w-7xl mx-auto px-4 pt-6 md:pt-10 pb-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6" id="gateway-cards">
-                <a href="{% url 'search' %}" class="glass-card rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
-                    <span class="absolute top-0 left-0 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></span>
-                    <div class="text-5xl mb-4">🔍</div>
-                    <h2 class="text-xl md:text-2xl font-black text-white mb-3">ابحث عن سيارتك</h2>
-                    <p class="text-slate-400 text-sm leading-relaxed">اعثر على المواصفات الكاملة للسيارة التي تريدها، بما فيها الزيت، الفلاتر، وسعة المحرك، بنقرة واحدة.</p>
-                    <span class="inline-block mt-5 text-amber-400 text-sm font-bold">ابدأ البحث  ←</span>
+        <div class="max-w-7xl mx-auto px-4 pt-4 md:pt-5 pb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5" id="gateway-cards">
+                <a href="{% url 'search' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                    <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
+                    <div class="text-3xl mb-2">🔍</div>
+                    <h2 class="text-base md:text-lg font-black text-white mb-1">ابحث عن سيارتك</h2>
+                    <p class="text-slate-400 text-xs leading-relaxed">المواصفات الكاملة: الزيت، الفلاتر، المحرك.</p>
+                    <span class="inline-block mt-2 text-amber-400 text-xs font-bold">ابدأ البحث ←</span>
                 </a>
 
-                <a href="{% url 'mix_calculator' %}" class="glass-card rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
-                    <span class="absolute top-0 left-0 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></span>
-                    <div class="text-5xl mb-4">🧮</div>
-                    <h2 class="text-xl md:text-2xl font-black text-white mb-3">حاسبة الوقود</h2>
-                    <p class="text-slate-400 text-sm leading-relaxed">احسب النسب المثالية بين أنواع الوقود المختلفة للحصول على رقم الأوكتان المناسب لمحركك بدقة.</p>
-                    <span class="inline-block mt-5 text-amber-400 text-sm font-bold">احسب الآن  ←</span>
+                <a href="{% url 'mix_calculator' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                    <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
+                    <div class="text-3xl mb-2">🧮</div>
+                    <h2 class="text-base md:text-lg font-black text-white mb-1">حاسبة الوقود</h2>
+                    <p class="text-slate-400 text-xs leading-relaxed">النسب المثالية لرقم الأوكتان المناسب.</p>
+                    <span class="inline-block mt-2 text-amber-400 text-xs font-bold">احسب الآن ←</span>
                 </a>
 
-                <a href="{% url 'budget_finder' %}" class="glass-card rounded-3xl p-8 text-center hover:-translate-y-1.5 transition-transform relative overflow-hidden group block">
-                    <span class="absolute top-0 left-0 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></span>
-                    <div class="text-5xl mb-4">💰</div>
-                    <h2 class="text-xl md:text-2xl font-black text-white mb-3">شكد فلوسك</h2>
-                    <p class="text-slate-400 text-sm leading-relaxed">حدد ميزانيتك ودعنا نقترح عليك السيارات المناسبة لفلوسك.</p>
-                    <span class="inline-block mt-5 text-amber-400 text-sm font-bold">جرّبها الآن  ←</span>
+                <a href="{% url 'budget_finder' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                    <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
+                    <div class="text-3xl mb-2">💰</div>
+                    <h2 class="text-base md:text-lg font-black text-white mb-1">شكد فلوسك</h2>
+                    <p class="text-slate-400 text-xs leading-relaxed">اقتراحات سيارات تناسب ميزانيتك.</p>
+                    <span class="inline-block mt-2 text-amber-400 text-xs font-bold">جرّبها الآن ←</span>
                 </a>
             </div>
         </div>
