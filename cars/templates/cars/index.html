@@ -885,6 +885,12 @@
         }
         
         .feature-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 110px;
             background: rgba(30, 41, 59, 0.4);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
@@ -892,34 +898,71 @@
             border-radius: 16px;
             padding: 18px 14px;
             text-align: center;
-            transition: all 0.4s ease;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(245, 158, 11, 0.12), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
         }
         .feature-card:hover {
-            border-color: rgba(245, 158, 11, 0.2);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+            border-color: rgba(245, 158, 11, 0.35);
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 16px 38px rgba(245, 158, 11, 0.18);
         }
-        .feature-card .feature-icon { font-size: 2rem; margin-bottom: 6px; display: block; }
-        .feature-card img.feature-icon { width: 48px; height: 48px; object-fit: contain; margin-left: auto; margin-right: auto; }
-        .feature-card { position: relative; }
+        .feature-card:hover::after { opacity: 1; }
+        .feature-card .feature-icon { font-size: 2.1rem; margin-bottom: 6px; display: block; transition: transform 0.4s ease; }
+        .feature-card:hover .feature-icon { transform: scale(1.15) rotate(-6deg); }
+        .feature-card .feature-title { color: #f1f5f9; font-weight: 700; font-size: 0.9rem; }
+        .feature-card .feature-desc { color: #94a3b8; font-size: 0.7rem; margin-top: 2px; }
+
+        /* بطاقة إعلانية: الصورة تملأ القالب بالكامل */
         .feature-card--ad {
+            padding: 0;
             border: 1px solid rgba(245, 158, 11, 0.3);
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(245, 158, 11, 0.08));
+            background: #0f172a;
         }
+        .feature-card--ad .ad-media {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .feature-card--ad:hover .ad-media { transform: scale(1.08); }
+        .feature-card--ad .ad-caption {
+            position: relative;
+            z-index: 2;
+            margin-top: auto;
+            width: 100%;
+            padding: 26px 12px 12px;
+            text-align: right;
+            background: linear-gradient(to top, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.55) 55%, transparent);
+        }
+        .feature-card--ad .ad-title { display: block; color: #f1f5f9; font-weight: 800; font-size: 0.9rem; }
+        .feature-card--ad .ad-desc { display: block; color: #cbd5e1; font-size: 0.72rem; margin-top: 2px; }
+
+        /* شارة الإعلان */
         .ad-badge {
             position: absolute;
             top: 8px;
             right: 8px;
+            z-index: 3;
             background: linear-gradient(135deg, #f59e0b, #fbbf24);
             color: #0f172a;
             font-size: 0.6rem;
             font-weight: 800;
-            padding: 2px 8px;
+            padding: 3px 9px;
             border-radius: 999px;
             letter-spacing: 0.3px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
         }
-        .feature-card .feature-title { color: #f1f5f9; font-weight: 700; font-size: 0.9rem; }
-        .feature-card .feature-desc { color: #94a3b8; font-size: 0.7rem; margin-top: 2px; }
         
         .car-card {
             background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
@@ -1060,177 +1103,68 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid rgba(245, 158, 11, 0.06);
-            padding: 40px 0 0;
-            margin-top: 28px;
+            padding: 16px 0 0;
+            margin-top: 24px;
         }
         .footer-glass .footer-inner {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 24px;
         }
-        .footer-glass .footer-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 40px;
-            padding-bottom: 30px;
-            border-bottom: 1px solid rgba(245, 158, 11, 0.05);
+        .footer-glass .footer-compact {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
-        @media (max-width: 768px) {
-            .footer-glass .footer-grid {
-                grid-template-columns: 1fr;
-                gap: 24px;
-                text-align: center;
-            }
-        }
-        .footer-glass .footer-brand .footer-logo {
-            font-size: 1.8rem;
+        .footer-glass .footer-logo {
+            font-size: 1.2rem;
             font-weight: 900;
             background: linear-gradient(135deg, #fbbf24, #f59e0b);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-decoration: none;
-            display: inline-block;
+            white-space: nowrap;
         }
-        .footer-glass .footer-brand p {
-            color: #94a3b8;
-            font-size: 0.85rem;
-            line-height: 1.7;
-            max-width: 320px;
-        }
-        @media (max-width: 768px) {
-            .footer-glass .footer-brand p { max-width: 100%; }
-        }
-        .footer-glass .footer-links h6 {
-            color: #f1f5f9;
-            font-weight: 700;
-            font-size: 0.95rem;
-            margin-bottom: 12px;
-            position: relative;
-            display: inline-block;
-        }
-        .footer-glass .footer-links h6::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            right: 0;
-            width: 30px;
-            height: 2px;
-            background: linear-gradient(90deg, #fbbf24, #f59e0b);
-            border-radius: 4px;
-        }
-        @media (max-width: 768px) {
-            .footer-glass .footer-links h6::after { left: 50%; right: auto; transform: translateX(-50%); }
-        }
-        .footer-glass .footer-links ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 22px; }
-        .footer-glass .footer-links ul li { margin-bottom: 6px; }
-        .footer-glass .footer-links ul li a {
-            color: #94a3b8;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 0.82rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .footer-glass .footer-links ul li a:hover {
-            color: #fbbf24;
-            transform: translateX(-4px);
-        }
-        @media (max-width: 768px) {
-            .footer-glass .footer-links ul { justify-content: center; }
-            .footer-glass .footer-links ul li a:hover { transform: none; }
-        }
-        .footer-glass .footer-contact h6 {
-            color: #f1f5f9;
-            font-weight: 700;
-            font-size: 0.95rem;
-            margin-bottom: 12px;
-            position: relative;
-            display: inline-block;
-        }
-        .footer-glass .footer-contact h6::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            right: 0;
-            width: 30px;
-            height: 2px;
-            background: linear-gradient(90deg, #fbbf24, #f59e0b);
-            border-radius: 4px;
-        }
-        @media (max-width: 768px) {
-            .footer-glass .footer-contact h6::after { left: 50%; right: auto; transform: translateX(-50%); }
-        }
-        .footer-glass .footer-contact .contact-item {
+        .footer-glass .footer-nav {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #94a3b8;
-            font-size: 0.82rem;
-            margin-bottom: 8px;
-        }
-        .footer-glass .footer-contact .contact-item .icon { font-size: 1rem; opacity: 0.6; }
-        @media (max-width: 768px) {
-            .footer-glass .footer-contact .contact-item { justify-content: center; }
-        }
-        .footer-glass .footer-contact .contact-item a {
-            color: #94a3b8;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        .footer-glass .footer-contact .contact-item a:hover { color: #fbbf24; }
-        .footer-glass .footer-contact .social-links {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
             flex-wrap: wrap;
-        }
-        @media (max-width: 768px) {
-            .footer-glass .footer-contact .social-links { justify-content: center; }
-        }
-        .footer-glass .footer-contact .social-links a {
-            display: inline-flex;
-            align-items: center;
+            gap: 4px 18px;
             justify-content: center;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: rgba(51, 65, 85, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .footer-glass .footer-nav a {
             color: #94a3b8;
             text-decoration: none;
-            transition: all 0.4s ease;
-            font-size: 0.9rem;
+            font-size: 0.78rem;
+            transition: color 0.3s ease;
         }
-        .footer-glass .footer-contact .social-links a:hover {
-            background: rgba(245, 158, 11, 0.15);
-            border-color: rgba(245, 158, 11, 0.2);
-            color: #fbbf24;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.08);
+        .footer-glass .footer-nav a:hover { color: #fbbf24; }
+        .footer-glass .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.75rem;
+            color: #94a3b8;
         }
+        .footer-glass .footer-meta a { color: #94a3b8; text-decoration: none; transition: color 0.3s ease; }
+        .footer-glass .footer-meta a:hover { color: #fbbf24; }
         .footer-glass .footer-bottom {
-            padding: 18px 0;
+            padding: 12px 0;
             text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.03);
-            margin-top: 0;
         }
         .footer-glass .footer-bottom p {
             color: #64748b;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             margin: 0;
         }
-        .footer-glass .footer-bottom .developer {
-            color: #fbbf24;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        .footer-glass .footer-bottom .separator {
-            color: #334155;
-            margin: 0 6px;
-        }
-        @media (max-width: 480px) {
-            .footer-glass .footer-bottom p { font-size: 0.65rem; }
+        .footer-glass .footer-bottom .developer { color: #fbbf24; font-weight: 700; }
+        @media (max-width: 768px) {
+            .footer-glass .footer-compact { justify-content: center; text-align: center; }
+            .footer-glass .footer-meta { justify-content: center; }
         }
         
         .loading-spinner { width: 48px; height: 48px; border: 3px solid rgba(245, 158, 11, 0.08); border-top-color: #fbbf24; border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -1606,16 +1540,22 @@
         <div class="max-w-7xl mx-auto px-4 pt-6 md:pt-8">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {% for f in feature_cards %}
-                {% if f.link %}<a href="{{ f.link }}" class="feature-card feature-card--ad">{% else %}<div class="feature-card">{% endif %}
-                    {% if f.link %}<span class="ad-badge">إعلان</span>{% endif %}
+                {% with is_ad=f.image %}
+                {% if is_ad or f.link %}<a href="{{ f.link|default:'#' }}" class="feature-card feature-card--ad" {% if not f.link %}aria-disabled="true"{% endif %}>{% else %}<div class="feature-card">{% endif %}
+                    {% if is_ad or f.link %}<span class="ad-badge">إعلان</span>{% endif %}
                     {% if f.image %}
-                        <img src="{{ f.image.url }}" alt="{{ f.title }}" class="feature-icon mx-auto">
+                        <span class="ad-media" style="background-image:url('{{ f.image.url }}')"></span>
+                        <span class="ad-caption">
+                            {% if f.title %}<span class="ad-title">{{ f.title }}</span>{% endif %}
+                            {% if f.description %}<span class="ad-desc">{{ f.description }}</span>{% endif %}
+                        </span>
                     {% else %}
                         <span class="feature-icon">{{ f.icon }}</span>
+                        <span class="feature-title">{{ f.title }}</span>
+                        {% if f.description %}<span class="feature-desc">{{ f.description }}</span>{% endif %}
                     {% endif %}
-                    <span class="feature-title">{{ f.title }}</span>
-                    {% if f.description %}<span class="feature-desc">{{ f.description }}</span>{% endif %}
-                {% if f.link %}</a>{% else %}</div>{% endif %}
+                {% if is_ad or f.link %}</a>{% else %}</div>{% endif %}
+                {% endwith %}
                 {% endfor %}
             </div>
         </div>
@@ -1659,49 +1599,24 @@
     <!-- ============================================ -->
     <footer class="footer-glass" role="contentinfo">
         <div class="footer-inner">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <a href="{% url 'index' %}" class="footer-logo">🚗 سيارتي</a>
-                    <p>دليل مواصفات الصيانة للسيارات مع حاسبة خلط الوقود الذكية. نوفر لك معلومات دقيقة وموثوقة لسيارتك.</p>
-                </div>
-                
-                <div class="footer-links">
-                    <h6>روابط سريعة</h6>
-                    <ul>
-                        <li><a href="{% url 'index' %}">🏠 الرئيسية</a></li>
-                        <li><a href="{% url 'mix_calculator' %}">🧮 حاسبة الخلط</a></li>
-                        <li><a href="#cars-section">🚗 السيارات</a></li>
-                        <li><a href="{% url 'about' %}">ℹ️ من نحن</a></li>
-                        <li><a href="{% url 'privacy' %}">🔒 سياسة الخصوصية</a></li>
-                        {% if user.is_staff %}<li><a href="/admin/" rel="nofollow">🔐 لوحة التحكم</a></li>{% endif %}
-                    </ul>
-                </div>
-                
-                <div class="footer-contact">
-                    <h6>تواصل معنا</h6>
-                    <div class="contact-item">
-                        <span class="icon">📧</span>
-                        <a href="mailto:archivealifaeq@gmail.com?subject=استفسار%20عن%20سيارتي&body=السلام%20عليكم،%0A%0Aأكتب%20رسالتك%20هنا...">archivealifaeq@gmail.com</a>
-                    </div>
-                    <div class="contact-item">
-                        <span class="icon">🌐</span>
-                        <span>www.sayarti.org</span>
-                    </div>
-                    <div class="social-links">
-                        <a href="#" aria-label="تويتر" title="تويتر">🐦</a>
-                        <a href="#" aria-label="انستغرام" title="انستغرام">📸</a>
-                        <a href="#" aria-label="يوتيوب" title="يوتيوب">▶️</a>
-                        <a href="#" aria-label="لينكد إن" title="لينكد إن">💼</a>
-                    </div>
+            <div class="footer-compact">
+                <a href="{% url 'index' %}" class="footer-logo" aria-label="الرئيسية">🚗 سيارتي</a>
+                <nav class="footer-nav" aria-label="روابط سريعة">
+                    <a href="{% url 'index' %}">الرئيسية</a>
+                    <a href="{% url 'mix_calculator' %}">حاسبة الخلط</a>
+                    <a href="#cars-section">السيارات</a>
+                    <a href="{% url 'about' %}">من نحن</a>
+                    <a href="{% url 'privacy' %}">الخصوصية</a>
+                    {% if user.is_staff %}<a href="/admin/" rel="nofollow">لوحة التحكم</a>{% endif %}
+                </nav>
+                <div class="footer-meta">
+                    <a href="mailto:archivealifaeq@gmail.com" class="meta-mail">📧 archivealifaeq@gmail.com</a>
+                    <span class="meta-web">🌐 www.sayarti.org</span>
                 </div>
             </div>
-            
             <div class="footer-bottom">
                 <p>
-                    <span style="color: #64748b;">© 2026 سيارتي.</span>
-                    <span class="separator">|</span>
-                    <span style="color: #64748b;">تطوير</span>
-                    <span class="developer">Ali Al Naimy</span>
+                    <span style="color: #94a3b8;">© 2026 سيارتي · تطوير <span class="developer">Ali Al Naimy</span></span>
                 </p>
             </div>
         </div>
