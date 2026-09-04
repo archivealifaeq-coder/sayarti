@@ -7,29 +7,33 @@
 <style>
     .report-wrap { max-width: 1100px; margin: 0 auto; padding: 10px 0; }
     .report-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
-    .report-head h2 { margin: 0; font-size: 1.4rem; }
-    .report-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
-    .report-filters label { font-weight: 600; }
-    .report-filters select, .report-filters input { padding: 6px 8px; border: 1px solid #ccc; border-radius: 5px; }
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; text-decoration: none; }
+    .report-head h2 { margin: 0; font-size: 1.4rem; color: #f1f5f9; }
+    .report-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: #0d1424; border: 1px solid #26334d; border-radius: 10px; padding: 14px; margin-bottom: 16px; box-shadow: 0 8px 26px rgba(0,0,0,.35); }
+    .report-filters label { font-weight: 700; color: #cbd5e1; }
+    .report-filters select, .report-filters input { padding: 7px 9px; border: 1px solid #33415c; border-radius: 6px; background: #111a2e; color: #e2e8f0; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border: none; border-radius: 7px; font-weight: 700; cursor: pointer; text-decoration: none; }
     .btn-primary { background: #417690; color: #fff; }
     .btn-primary:hover { background: #205067; }
     .btn-green { background: #1e7e34; color: #fff; }
     .btn-green:hover { background: #146127; }
-    .sum-box { display: inline-block; background: #eef4fb; color: #1f70b1; padding: 6px 14px; border-radius: 20px; font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; font-size: .85rem; background: #fff; }
-    th { text-align: right; background: #f1f3f5; color: #333; font-weight: 700; padding: 8px 10px; border-bottom: 2px solid #dee2e6; }
-    td { padding: 7px 10px; color: #212529; border-bottom: 1px solid #eee; }
-    tr:hover td { background: #f8f9fa; }
-    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .75rem; font-weight: 700; }
-    .badge-green { background: #d4edda; color: #155724; }
-    .badge-red { background: #f8d7da; color: #721c24; }
-    .code-cell { direction: ltr; text-align: left; font-weight: 700; font-family: monospace; }
-    .back { margin-bottom: 10px; display: inline-block; }
+    .sum-box { display: inline-block; background: #16233a; color: #93c5fd; padding: 6px 14px; border-radius: 20px; font-weight: 700; border: 1px solid #26334d; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; background: #0d1424; border-radius: 10px; overflow: hidden; }
+    th { text-align: right; background: #16233a; color: #f8fafc; font-weight: 800; padding: 9px 10px; border-bottom: 2px solid #26334d; }
+    td { padding: 8px 10px; color: #ffffff; border-bottom: 1px solid #1c2940; }
+    tr:hover td { background: #131f36; }
+    .badge { display: inline-block; padding: 2px 11px; border-radius: 20px; font-size: .75rem; font-weight: 700; }
+    .badge-green { background: rgba(74,222,128,.15); color: #4ade80; }
+    .badge-red { background: rgba(248,113,113,.15); color: #f87171; }
+    .code-cell { direction: ltr; text-align: left; font-weight: 700; font-family: monospace; color: #60a5fa; }
+    .back { margin-bottom: 10px; display: inline-block; color: #93c5fd; font-weight: 700; }
     @media print {
         .report-filters, .report-head .btn, .back { display: none !important; }
         body { background: #fff !important; }
-        .report-head h2, td, th { color: #000 !important; }
+        table, th, td { background: #fff !important; color: #000 !important; border-color: #ccc !important; }
+        .report-head h2 { color: #000 !important; }
+        .code-cell { color: #000 !important; }
+        .badge-green { background: #d4edda !important; color: #155724 !important; }
+        .badge-red { background: #f8d7da !important; color: #721c24 !important; }
     }
 </style>
 {% endblock %}
@@ -42,7 +46,7 @@
         <h2>🎟️ تقرير أكواد الخصم</h2>
         <div>
             <span class="sum-box">الأكواد: {{ total }}</span>
-            <span class="sum-box" style="background:#fce8e6;color:#a50e0e;">مستخدمة: {{ used }}</span>
+            <span class="sum-box" style="background:rgba(248,113,113,.15);color:#f87171;">مستخدمة: {{ used }}</span>
             <button class="btn btn-green" onclick="window.print()">🖨️ طباعة</button>
             <a class="btn btn-primary" href="?{% if period != 'all' %}{% if period == 'day' %}period=day&day={{ request.GET.day|default:'' }}{% elif period == 'month' %}period=month&month={{ request.GET.month|default:'' }}{% else %}period=year&year={{ request.GET.year|default:'' }}{% endif %}{% else %}period=all{% endif %}&download=1">⬇️ تنزيل ملف نصي</a>
         </div>
@@ -70,7 +74,7 @@
         </span>
 
         <button class="btn btn-primary" type="submit">عرض</button>
-        <a class="btn" href="?period=all" style="background:#6c757d;color:#fff;">الكل</a>
+        <a class="btn" href="?period=all" style="background:#33415c;color:#fff;">الكل</a>
     </form>
 
     <table>
@@ -91,7 +95,7 @@
                 <td>{{ r.verified_by|default:"—" }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" style="text-align:center; color:#6c757d; padding:24px;">لا توجد أكواد في هذه الفترة</td></tr>
+            <tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:24px;">لا توجد أكواد في هذه الفترة</td></tr>
             {% endfor %}
         </tbody>
     </table>

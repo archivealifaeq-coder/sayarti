@@ -948,46 +948,46 @@
         .feature-card--ad .ad-title { display: block; color: #f1f5f9; font-weight: 800; font-size: 0.9rem; }
         .feature-card--ad .ad-desc { display: block; color: #cbd5e1; font-size: 0.72rem; margin-top: 2px; }
 
-        /* زر «احصل على خصم» العائم فوق البنر أو البطاقة */
+        /* زر الخصم العائم — واحد فقط داخل السلايدر، يتبع الشركة النشطة */
         .promo-float {
             position: absolute;
-            z-index: 20;
-            top: 12px;
-            left: 12px;
+            z-index: 30;
+            top: 16px;
+            left: 16px;
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            padding: 9px 16px;
+            padding: 10px 18px;
             border-radius: 999px;
-            border: 2px solid rgba(255, 255, 255, 0.35);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             background: linear-gradient(135deg, #f59e0b, #ef4444);
             color: #0f172a;
             font-weight: 800;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             line-height: 1;
-            box-shadow: 0 8px 22px rgba(245, 158, 11, 0.45);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.5);
             cursor: pointer;
             transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
             white-space: nowrap;
+            animation: promoFloat 3s ease-in-out infinite;
+        }
+        /* حركة عائمة لطيفة داخل مساحة السلايدر */
+        @keyframes promoFloat {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-7px); }
+            100% { transform: translateY(0); }
         }
         .promo-float:hover {
             transform: translateY(-2px) scale(1.05);
-            box-shadow: 0 12px 28px rgba(245, 158, 11, 0.6);
-            filter: brightness(1.07);
+            box-shadow: 0 14px 30px rgba(245, 158, 11, 0.65);
+            filter: brightness(1.08);
         }
         .promo-float:active { transform: scale(0.97); }
         .promo-float .pf-disc {
             background: rgba(255, 255, 255, 0.35);
-            padding: 2px 8px;
+            padding: 2px 9px;
             border-radius: 999px;
-            font-size: 0.72rem;
-        }
-        /* في بطاقات المميزات الصغيرة يُصغَّر قليلاً */
-        .feature-card .promo-float {
-            top: 8px;
-            left: 8px;
-            padding: 7px 12px;
-            font-size: 0.74rem;
+            font-size: 0.75rem;
         }
 
         /* شارة الإعلان */
@@ -1401,9 +1401,6 @@
                 <div class="ticker-item">
                     <span class="ticker-icon">📌</span>
                     <span class="ticker-text">{{ banner.title|escape|truncatechars:30 }}</span>
-                    {% if banner.sponsor %}
-                    <button type="button" class="ticker-btn promo-trigger" data-sponsor-slug="{{ banner.sponsor.slug }}" data-sponsor-name="{{ banner.sponsor.name }}" data-discount="{{ banner.sponsor.discount }}">🎟️ احصل على خصم</button>
-                    {% endif %}
                     <a href="{{ banner.button_url|escape }}" class="ticker-btn" {% if banner.button_url and banner.button_url != '#' %}target="_blank" rel="noopener noreferrer"{% endif %}>{{ banner.button_text|escape|default:"عرض" }}</a>
                 </div>
                 {% endif %}
@@ -1477,12 +1474,10 @@
                 
                 {% for banner in banners %}
                     {% if banner.position == 'slider' and banner.is_active %}
-                    <div class="slider-main-slide" data-focal="center">
-                        
-                        {% if banner.sponsor %}
-                        <button type="button" class="promo-float promo-trigger" data-sponsor-slug="{{ banner.sponsor.slug }}" data-sponsor-name="{{ banner.sponsor.name }}" data-discount="{{ banner.sponsor.discount }}">🎟️ احصل على خصم <span class="pf-disc">-{{ banner.sponsor.discount }}%</span></button>
-                        {% endif %}
-
+                    <div class="slider-main-slide" data-focal="center"
+                         data-sponsor-slug="{% if banner.sponsor %}{{ banner.sponsor.slug }}{% endif %}"
+                         data-sponsor-name="{% if banner.sponsor %}{{ banner.sponsor.name }}{% endif %}"
+                         data-sponsor-discount="{% if banner.sponsor %}{{ banner.sponsor.discount }}{% endif %}">
                         <div class="slide-image-wrapper">
                             {% if banner.image and banner.image.url %}
                                 <img src="{{ banner.image.url }}" 
@@ -1581,6 +1576,9 @@
             <div class="slider-main-counter" aria-hidden="true">
                 <span id="slideCurrentNum">01</span><span class="sep">/</span><span id="slideTotalNum">01</span>
             </div>
+
+            <!-- زر الخصم العائم — يتبع الشركة الخاصة بالشريحة النشطة فقط -->
+            <button type="button" id="sliderPromoFloat" class="promo-float promo-trigger" style="display:none;" data-sponsor-slug="" data-sponsor-name="" data-discount="">🎟️ <span class="pf-text">احصل على خصم</span> <span class="pf-disc"></span></button>
         </div>
         
         <!-- ============================================ -->
@@ -1603,9 +1601,6 @@
                         <span class="feature-icon">{{ f.icon }}</span>
                         <span class="feature-title">{{ f.title }}</span>
                         {% if f.description %}<span class="feature-desc">{{ f.description }}</span>{% endif %}
-                    {% endif %}
-                    {% if f.sponsor %}
-                        <button type="button" class="promo-float promo-trigger" data-sponsor-slug="{{ f.sponsor.slug }}" data-sponsor-name="{{ f.sponsor.name }}" data-discount="{{ f.sponsor.discount }}">🎟️ احصل على خصم <span class="pf-disc">-{{ f.sponsor.discount }}%</span></button>
                     {% endif %}
                 {% if is_ad or f.link %}</a>{% else %}</div>{% endif %}
                 {% endwith %}
@@ -1732,6 +1727,25 @@
                 
                 updateMainSlider(0, false);
                 if (mainCount > 1) startMainAutoPlay();
+
+                /* ✅ تحديث زر الخصم العائم ليتوافق مع الشركة في الشريحة النشطة */
+                function syncPromoFloat(activeSlide) {
+                    var btn = document.getElementById('sliderPromoFloat');
+                    if (!btn) return;
+                    if (!activeSlide) { btn.style.display = 'none'; return; }
+                    var slug = activeSlide.getAttribute('data-sponsor-slug');
+                    var name = activeSlide.getAttribute('data-sponsor-name');
+                    var disc = activeSlide.getAttribute('data-sponsor-discount');
+                    if (!slug || !name) { btn.style.display = 'none'; return; }
+                    btn.setAttribute('data-sponsor-slug', slug);
+                    btn.setAttribute('data-sponsor-name', name);
+                    btn.setAttribute('data-discount', disc || '');
+                    var textEl = btn.querySelector('.pf-text');
+                    if (textEl) textEl.textContent = 'اضغط على الزر للحصول على خصم من ' + name;
+                    var discEl = btn.querySelector('.pf-disc');
+                    if (discEl) discEl.textContent = (disc ? '-' + disc + '%' : '');
+                    btn.style.display = 'inline-flex';
+                }
                 
                 function updateMainSlider(index, animate) {
                     if (mainTransitioning) return;
@@ -1747,6 +1761,9 @@
                     mainSlides.forEach(function(slide, i) {
                         slide.classList.toggle('active', i === mainIndex);
                     });
+                    
+                    /* ✅ تحديث زر الخصم العائم — يتبع الشركة الخاصة بالشريحة النشطة */
+                    syncPromoFloat(mainSlides[mainIndex]);
                     
                     mainDots.forEach(function(dot, i) {
                         dot.classList.toggle('active', i === mainIndex);
