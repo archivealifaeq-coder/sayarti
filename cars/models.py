@@ -341,6 +341,15 @@ class FeatureCard(models.Model):
         verbose_name="رابط البطاقة",
         help_text="عند تعبئته تصبح البطاقة قابلة للنقر (إعلان)"
     )
+    sponsor = models.ForeignKey(
+        Sponsor,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        verbose_name="الشركة الراعية",
+        related_name='feature_cards',
+        help_text="اربط البطاقة بشركة راعية ليظهر فيها زر «احصل على خصم»"
+    )
     order = models.IntegerField(
         default=0,
         verbose_name="الترتيب",

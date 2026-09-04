@@ -948,6 +948,48 @@
         .feature-card--ad .ad-title { display: block; color: #f1f5f9; font-weight: 800; font-size: 0.9rem; }
         .feature-card--ad .ad-desc { display: block; color: #cbd5e1; font-size: 0.72rem; margin-top: 2px; }
 
+        /* زر «احصل على خصم» العائم فوق البنر أو البطاقة */
+        .promo-float {
+            position: absolute;
+            z-index: 20;
+            top: 12px;
+            left: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 16px;
+            border-radius: 999px;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #0f172a;
+            font-weight: 800;
+            font-size: 0.82rem;
+            line-height: 1;
+            box-shadow: 0 8px 22px rgba(245, 158, 11, 0.45);
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+            white-space: nowrap;
+        }
+        .promo-float:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 28px rgba(245, 158, 11, 0.6);
+            filter: brightness(1.07);
+        }
+        .promo-float:active { transform: scale(0.97); }
+        .promo-float .pf-disc {
+            background: rgba(255, 255, 255, 0.35);
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+        }
+        /* في بطاقات المميزات الصغيرة يُصغَّر قليلاً */
+        .feature-card .promo-float {
+            top: 8px;
+            left: 8px;
+            padding: 7px 12px;
+            font-size: 0.74rem;
+        }
+
         /* شارة الإعلان */
         .ad-badge {
             position: absolute;
@@ -1437,6 +1479,10 @@
                     {% if banner.position == 'slider' and banner.is_active %}
                     <div class="slider-main-slide" data-focal="center">
                         
+                        {% if banner.sponsor %}
+                        <button type="button" class="promo-float promo-trigger" data-sponsor-slug="{{ banner.sponsor.slug }}" data-sponsor-name="{{ banner.sponsor.name }}" data-discount="{{ banner.sponsor.discount }}">🎟️ احصل على خصم <span class="pf-disc">-{{ banner.sponsor.discount }}%</span></button>
+                        {% endif %}
+
                         <div class="slide-image-wrapper">
                             {% if banner.image and banner.image.url %}
                                 <img src="{{ banner.image.url }}" 
@@ -1471,9 +1517,6 @@
                                     <span>📌</span> {{ banner.button_text|escape }}
                                 {% endif %}
                             </div>
-                            {% if banner.sponsor %}
-                                <button type="button" class="slide-btn promo-trigger" data-sponsor-slug="{{ banner.sponsor.slug }}" data-sponsor-name="{{ banner.sponsor.name }}" data-discount="{{ banner.sponsor.discount }}">🎟️ احصل على خصم</button>
-                            {% endif %}
                             {% if banner.button_text and banner.button_url %}
                                 <a href="{{ banner.button_url|escape }}" class="slide-btn">{{ banner.button_text|escape }}</a>
                             {% endif %}
@@ -1560,6 +1603,9 @@
                         <span class="feature-icon">{{ f.icon }}</span>
                         <span class="feature-title">{{ f.title }}</span>
                         {% if f.description %}<span class="feature-desc">{{ f.description }}</span>{% endif %}
+                    {% endif %}
+                    {% if f.sponsor %}
+                        <button type="button" class="promo-float promo-trigger" data-sponsor-slug="{{ f.sponsor.slug }}" data-sponsor-name="{{ f.sponsor.name }}" data-discount="{{ f.sponsor.discount }}">🎟️ احصل على خصم <span class="pf-disc">-{{ f.sponsor.discount }}%</span></button>
                     {% endif %}
                 {% if is_ad or f.link %}</a>{% else %}</div>{% endif %}
                 {% endwith %}
@@ -1982,6 +2028,8 @@
         document.addEventListener('click', function(e) {
             var btn = e.target.closest('.promo-trigger');
             if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
             var slug = btn.getAttribute('data-sponsor-slug');
             var name = btn.getAttribute('data-sponsor-name');
             var disc = btn.getAttribute('data-discount');
