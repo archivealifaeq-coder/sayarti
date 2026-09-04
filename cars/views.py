@@ -595,7 +595,8 @@ def verify_code_page(request, slug):
             from django.utils import timezone
             promo.status = 'used'
             promo.used_at = timezone.now()
-            promo.save(update_fields=['status', 'used_at'])
+            promo.verified_by = sponsor.name
+            promo.save(update_fields=['status', 'used_at', 'verified_by'])
             result = {'status': 'valid', 'message': 'الكود صحيح وساري — الخصم مفعّل.', 'code': promo.code, 'discount': sponsor.discount}
 
     return render(request, 'cars/code_verify.html', {
@@ -672,7 +673,8 @@ def services_dashboard(request):
             from django.utils import timezone
             promo.status = 'used'
             promo.used_at = timezone.now()
-            promo.save(update_fields=['status', 'used_at'])
+            promo.verified_by = sponsor.name
+            promo.save(update_fields=['status', 'used_at', 'verified_by'])
             result = {'status': 'valid', 'message': 'الكود صحيح وساري — الخصم مفعّل.', 'code': promo.code, 'discount': sponsor.discount}
 
     total_codes = PromoCode.objects.filter(sponsor=sponsor).count()

@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.template import Template, RequestContext
 from django.utils.html import format_html, mark_safe
 from django.db.models import Count
+from django.db import models as db_models
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode
 from .services.excel_importer import import_cars_from_excel
 
@@ -456,11 +457,11 @@ class SponsorForm(forms.ModelForm):
 
     class Meta:
         model = Sponsor
-        fields = ['name', 'slug', 'code_prefix', 'discount', 'website', 'password', 'is_active', 'password_raw']
+        fields = ['name', 'slug', 'code_prefix', 'discount', 'is_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for f in ('name', 'code_prefix', 'website'):
+        for f in ('name', 'code_prefix'):
             if f in self.fields:
                 self.fields[f].required = False
 
@@ -468,51 +469,50 @@ class SponsorForm(forms.ModelForm):
 @admin.register(Sponsor)
 class SponsorAdmin(admin.ModelAdmin):
     form = SponsorForm
-    list_display = ('name_preview', 'slug', 'discount_badge', 'codes_count', 'active_badge', 'has_password_badge')
+    list_display = ('name_preview', 'slug', 'discount_badge', 'codes_count', 'banners_count', 'active_badge')
     list_filter = ('is_active',)
     search_fields = ('name', 'slug')
-    readonly_fields = ('name', 'slug', 'code_prefix', 'created_at', 'last_login_display')
     list_per_page = 25
 
     fieldsets = (
-        ('🔐 حساب الشركة الراعية', {
-            'fields': ('slug', 'password_raw', 'discount', 'name', 'code_prefix', 'is_active'),
-            'description': 'اكتب هنا اسم المستخدم وكلمة المرور ونسبة الخصم — تعرّف كل هذه البيانات بنفسك.'
-        }),
-        ('📋 أخرى', {
-            'fields': ('website', 'created_at', 'last_login_display'),
-            'classes': ('collapse',),
+        ('🔐 بيانات الحساب', {
+            'fields': ('name', 'slug', 'code_prefix', 'discount', 'password_raw', 'is_active'),
+            'description': 'أدخل الاسم والبادئة ونسبة الخصم وكلمة المرور.'
         }),
     )
 
     def get_readonly_fields(self, request, obj=None):
-        return ('created_at', 'last_login_display', 'password')
+        ro = []
+        return ro
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if 'slug' in form.base_fields:
-            form.base_fields['slug'].help_text = 'اسم المستخدم الذي يدخله الراعي في صفحة الدخول (أحرف إنجليزية فقط)'
+            form.base_fields['slug'].help_text = 'اسم المستخدم للدخول (إنجليزي فقط) — يُولَّد تلقائياً من الاسم'
+        if 'code_prefix' in form.base_fields:
+            form.base_fields['code_prefix'].help_text = 'بادئة الكود مثل HISAM — تُولَّد تلقائياً'
         if 'discount' in form.base_fields:
-            form.base_fields['discount'].help_text = 'نسبة الخصم التي يحصل عليها الزائر'
+            form.base_fields['discount'].help_text = 'نسبة الخصم %'
         if 'password_raw' in form.base_fields:
             if obj and obj.password:
                 form.base_fields['password_raw'].help_text = 'اتركه فارغاً للإبقاء على كلمة المرور الحالية'
             else:
-                form.base_fields['password_raw'].help_text = 'مطلوب — تُخزَّن مشفّرة ولا تُعرض مرة أخرى'
+                form.base_fields['password_raw'].help_text = 'مطلوب — تُخزَّن مشفّرة'
         return form
 
     def save_model(self, request, obj, form, change):
         raw = form.cleaned_data.get('password_raw')
         if raw:
             obj.set_password(raw)
-        if not obj.name:
-            obj.name = obj.slug
+        if not obj.slug:
+            import re
+            obj.slug = re.sub(r'[^a-z0-9]', '', obj.name.lower().replace(' ', ''))
         if not obj.code_prefix:
             obj.code_prefix = obj.slug.upper()
         super().save_model(request, obj, form, change)
 
     def name_preview(self, obj):
-        return format_html('<span style="font-weight:700;">{}</span>', obj.name)
+        return format_html('<b>{}</b>', obj.name)
     name_preview.short_description = 'الشركة'
 
     def discount_badge(self, obj):
@@ -523,36 +523,27 @@ class SponsorAdmin(admin.ModelAdmin):
         total = obj.codes.count()
         used = obj.codes.filter(status='used').count()
         color = '#4ade80' if used > 0 else '#64748b'
-        return format_html('<span style="color:{};">{}/{} </span>', color, used, total)
-    codes_count.short_description = 'الأكواد (مستخدمة/الكل)'
+        return format_html('<span style="color:{};">{}/{}</span>', color, used, total)
+    codes_count.short_description = 'الأكواد'
+
+    def banners_count(self, obj):
+        return obj.banners.count()
+    banners_count.short_description = 'البنرات'
 
     def active_badge(self, obj):
         if obj.is_active:
-            return mark_safe('<span style="background:#22c55e20; padding:3px 10px; border-radius:12px; color:#4ade80;">✅ مفعل</span>')
-        return mark_safe('<span style="background:#ef444420; padding:3px 10px; border-radius:12px; color:#f87171;">❌ متوقف</span>')
+            return mark_safe('<span class="badge badge-green" style="background:#22c55e20;color:#4ade80;">مفعل</span>')
+        return mark_safe('<span class="badge badge-red" style="background:#ef444420;color:#f87171;">متوقف</span>')
     active_badge.short_description = 'الحالة'
-
-    def has_password_badge(self, obj):
-        if obj.password:
-            return mark_safe('<span style="color:#4ade80;">✔️</span>')
-        return mark_safe('<span style="color:#f87171;">✖️</span>')
-    has_password_badge.short_description = 'السجل'
-
-    def last_login_display(self, obj):
-        codes = obj.codes.order_by('-used_at').filter(status='used').first()
-        if codes and codes.used_at:
-            return format_html('<span style="color:#94a3b8;">{}</span>', codes.used_at.strftime('%Y-%m-%d %H:%M'))
-        return mark_safe('<span style="color:#475569;">لم يتحقق بعد</span>')
-    last_login_display.short_description = 'آخر تحقق'
 
 
 @admin.register(PromoCode)
 class PromoCodeAdmin(admin.ModelAdmin):
-    list_display = ('code', 'sponsor', 'status_badge', 'created_at', 'used_at')
+    list_display = ('code', 'sponsor', 'status_badge', 'created_at', 'used_at', 'verified_by_display')
     list_filter = ('status', 'sponsor')
-    search_fields = ('code', 'sponsor__name')
+    search_fields = ('code', 'sponsor__name', 'verified_by')
     date_hierarchy = 'created_at'
-    readonly_fields = ('code', 'created_at', 'used_at')
+    readonly_fields = ('code', 'created_at', 'used_at', 'verified_by')
     list_per_page = 50
 
     def status_badge(self, obj):
@@ -561,17 +552,71 @@ class PromoCodeAdmin(admin.ModelAdmin):
         return format_html('<span style="background:#22c55e20; padding:2px 12px; border-radius:12px; color:#4ade80;">نشط</span>')
     status_badge.short_description = 'الحالة'
 
+    def verified_by_display(self, obj):
+        if obj.verified_by:
+            return format_html('<span style="color:#60a5fa;">{}</span>', obj.verified_by)
+        return '—'
+    verified_by_display.short_description = 'تم التحقق من قبل'
+
 
 admin.site.index_template = 'admin/custom_index.html'
 
 
 def get_dashboard_stats():
     from .services.ga_stats import get_visitor_stats
+
+    sponsors_data = Sponsor.objects.annotate(
+        bc=Count('banners'),
+        tc=Count('codes'),
+        uc=Count('codes', filter=db_models.Q(codes__status='used')),
+    ).order_by('name')
+
+    sponsors_table = []
+    for s in sponsors_data:
+        sponsors_table.append({
+            'name': s.name,
+            'slug': s.slug,
+            'discount': s.discount,
+            'banners_count': s.bc,
+            'total_codes': s.tc,
+            'used_codes': s.uc,
+            'is_active': s.is_active,
+        })
+
+    banners_table = list(
+        AdBanner.objects.select_related('sponsor').order_by('position', 'order', '-created_at').values(
+            'id', 'title', 'position', 'order', 'is_active', 'sponsor__name'
+        )[:20]
+    )
+    for b in banners_table:
+        b['sponsor_name'] = b.get('sponsor__name') or ''
+
+    recent_codes_qs = PromoCode.objects.select_related('sponsor').order_by('-created_at')[:15]
+    recent_codes = []
+    for c in recent_codes_qs:
+        recent_codes.append({
+            'code': c.code,
+            'sponsor_name': c.sponsor.name,
+            'status': c.status,
+            'created_at': c.created_at.strftime('%Y-%m-%d %H:%M') if c.created_at else '',
+            'used_at': c.used_at.strftime('%Y-%m-%d %H:%M') if c.used_at else None,
+            'verified_by': c.verified_by or '—',
+        })
+
+    total_codes = PromoCode.objects.count()
+    used_codes = PromoCode.objects.filter(status='used').count()
+
     return {
         'total_cars': CarSpecification.objects.count(),
         'total_brands': CarSpecification.objects.values('brand_ar').distinct().count(),
         'total_banners': AdBanner.objects.count(),
         'active_banners': AdBanner.objects.filter(is_active=True).count(),
+        'total_sponsors': Sponsor.objects.count(),
+        'total_codes': total_codes,
+        'used_codes': used_codes,
+        'sponsors_table': sponsors_table,
+        'banners_table': banners_table,
+        'recent_codes': recent_codes,
         'visitor_stats': get_visitor_stats(),
     }
 

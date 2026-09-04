@@ -192,10 +192,6 @@ class Sponsor(models.Model):
 
 
 class PromoCode(models.Model):
-    """كود خصم فريد يولَّد لكل زائر يضغط زر الخصم لدى شركة راعية.
-
-    يتحول إلى 'used' عند فحصه بنجاح من موظف الشركة في صفحة التحقق.
-    """
     STATUS_CHOICES = [
         ('active', 'ساري (غير مستخدم)'),
         ('used', 'مُستخدم'),
@@ -211,7 +207,7 @@ class PromoCode(models.Model):
         Sponsor,
         on_delete=models.CASCADE,
         related_name='codes',
-        verbose_name="الشركة",
+        verbose_name="الشركة المولّدة",
     )
     status = models.CharField(
         max_length=10,
@@ -221,6 +217,13 @@ class PromoCode(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ التوليد")
     used_at = models.DateTimeField(null=True, blank=True, verbose_name="تاريخ الاستخدام")
+    verified_by = models.CharField(
+        max_length=150,
+        blank=True,
+        default='',
+        verbose_name="تم التحقق من قبل",
+        help_text="اسم الشركة التي فحصت واستخدمت الكود"
+    )
 
     def __str__(self):
         return self.code
