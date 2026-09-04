@@ -281,6 +281,10 @@ class AdBannerAdmin(admin.ModelAdmin):
         ('📝 المحتوى', {
             'fields': ('title', 'subtitle', 'position')
         }),
+        ('🎟️ ربط كود الخصم (اختياري)', {
+            'fields': ('sponsor',),
+            'description': 'اختر شركة راعية ليظهر زر «احصل على خصم» في هذا الإعلان. اتركه فارغاً لبنر عادي بدون خصم.'
+        }),
         ('🖼️ الصور', {
             'fields': ('image', 'image_mobile'),
             'description': '📸 سطح المكتب: 1920×820 بكسل (21:9) | 📱 الهاتف: 800×600 بكسل (4:3)'
@@ -472,34 +476,17 @@ class SponsorAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('🔐 حساب الشركة الراعية', {
-            'fields': ('slug', 'password_raw', 'discount'),
-            'description': 'أدخل بيانات الحساب فقط — باقي الحقول تُنشأ تلقائياً.'
+            'fields': ('slug', 'password_raw', 'discount', 'name', 'code_prefix', 'is_active'),
+            'description': 'اكتب هنا اسم المستخدم وكلمة المرور ونسبة الخصم — تعرّف كل هذه البيانات بنفسك.'
         }),
-        ('📋 التفاصيل (تلقائي)', {
-            'fields': ('name', 'code_prefix', 'is_active', 'website', 'created_at', 'last_login_display'),
+        ('📋 أخرى', {
+            'fields': ('website', 'created_at', 'last_login_display'),
             'classes': ('collapse',),
         }),
     )
 
-    def get_fields(self, request, obj=None):
-        if obj:
-            return ('slug', 'password_raw', 'discount', 'name', 'code_prefix', 'is_active', 'website', 'created_at', 'last_login_display')
-        return ('slug', 'password_raw', 'discount')
-
-    def get_fieldsets(self, request, obj=None):
-        if obj is None:
-            return (
-                ('🔐 حساب الشركة الراعية', {
-                    'fields': ('slug', 'password_raw', 'discount'),
-                    'description': 'أدخل بيانات الحساب فقط — باقي الحقول تُنشأ تلقائياً بعد الحفظ.'
-                }),
-            )
-        return self.fieldsets
-
     def get_readonly_fields(self, request, obj=None):
-        if obj:
-            return ('name', 'slug', 'code_prefix', 'created_at', 'last_login_display')
-        return ('created_at', 'last_login_display')
+        return ('created_at', 'last_login_display', 'password')
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -518,8 +505,9 @@ class SponsorAdmin(admin.ModelAdmin):
         raw = form.cleaned_data.get('password_raw')
         if raw:
             obj.set_password(raw)
-        if not change:
+        if not obj.name:
             obj.name = obj.slug
+        if not obj.code_prefix:
             obj.code_prefix = obj.slug.upper()
         super().save_model(request, obj, form, change)
 
