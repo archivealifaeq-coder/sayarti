@@ -456,9 +456,9 @@ class SponsorForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['name'].required = False
-        self.fields['code_prefix'].required = False
-        self.fields['website'].required = False
+        for f in ('name', 'code_prefix', 'website'):
+            if f in self.fields:
+                self.fields[f].required = False
 
 
 @admin.register(Sponsor)
@@ -503,12 +503,15 @@ class SponsorAdmin(admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        form.base_fields['slug'].help_text = 'اسم المستخدم الذي يدخله الراعي في صفحة الدخول (أحرف إنجليزية فقط)'
-        form.base_fields['discount'].help_text = 'نسبة الخصم التي يحصل عليها الزائر'
-        if obj and obj.password:
-            form.base_fields['password_raw'].help_text = 'اتركه فارغاً للإبقاء على كلمة المرور الحالية'
-        else:
-            form.base_fields['password_raw'].help_text = 'مطلوب — تُخزَّن مشفّرة ولا تُعرض مرة أخرى'
+        if 'slug' in form.base_fields:
+            form.base_fields['slug'].help_text = 'اسم المستخدم الذي يدخله الراعي في صفحة الدخول (أحرف إنجليزية فقط)'
+        if 'discount' in form.base_fields:
+            form.base_fields['discount'].help_text = 'نسبة الخصم التي يحصل عليها الزائر'
+        if 'password_raw' in form.base_fields:
+            if obj and obj.password:
+                form.base_fields['password_raw'].help_text = 'اتركه فارغاً للإبقاء على كلمة المرور الحالية'
+            else:
+                form.base_fields['password_raw'].help_text = 'مطلوب — تُخزَّن مشفّرة ولا تُعرض مرة أخرى'
         return form
 
     def save_model(self, request, obj, form, change):
