@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q, Count
 from django.http import JsonResponse, HttpResponse
 from django import forms
@@ -576,11 +577,24 @@ def generate_promo_code(request):
     if active_count >= 500:
         return JsonResponse({'success': False, 'error': 'عدد الأكواد النشطة للشركة وصل الحد الأقصى'}, status=429)
 
-    code = _new_code(sponsor)
+    # حماية من سباق التوافق: بين فحص وجود الكود وإدراجه قد يتفرّغ طلب آخر
+    # لنفس الكود (خاصة عند بادئة مشتركة). نعيد المحاولة بكود جديد بدل خطأ 500.
+    from django.db import IntegrityError
+    code = None
+    for _ in range(10):
+        candidate = _new_code(sponsor)
+        if not candidate:
+            break
+        try:
+            PromoCode.objects.create(code=candidate, sponsor=sponsor, status='active')
+            code = candidate
+            break
+        except IntegrityError:
+            continue  # تصادم (تسابق) — جرّب كوداً آخر
+
     if not code:
         return JsonResponse({'success': False, 'error': 'تعذر توليد كود الآن'}, status=500)
 
-    PromoCode.objects.create(code=code, sponsor=sponsor, status='active')
     return JsonResponse({
         'success': True,
         'code': code,
@@ -708,3 +722,94 @@ def services_dashboard(request):
 def services_logout(request):
     request.session.flush()
     return redirect('services_login')
+
+
+_REPORT_PERIODS = (
+    ('all', 'الكل'),
+    ('day', 'يوم'),
+    ('month', 'شهر'),
+    ('year', 'سنة'),
+)
+
+
+@staff_member_required
+def admin_codes_report(request):
+    """تقرير أكواد الخصم لجهة الطباعة/التصدير النصي (للمدير فقط).
+
+    فلترة اليوم/الشهر/السنة، يعرض كل أكواد الخصم ضمن النطاق، وينزل ملف
+    نصي (txt) مرتباً بنفس التفاصيل عبر ?download=1.
+    """
+    from datetime import date
+    today = date.today()
+
+    period = request.GET.get('period', 'month')
+    if period not in ('all', 'day', 'month', 'year'):
+        period = 'month'
+
+    qs = PromoCode.objects.select_related('sponsor').order_by('-created_at')
+
+    if period == 'day':
+        day = request.GET.get('day') or today.isoformat()
+        qs = qs.filter(created_at__date=day)
+    elif period == 'month':
+        month = request.GET.get('month') or today.strftime('%Y-%m')
+        y, _, m = month.partition('-')
+        qs = qs.filter(created_at__year=int(y), created_at__month=int(m))
+    elif period == 'year':
+        year = request.GET.get('year') or str(today.year)
+        qs = qs.filter(created_at__year=int(year))
+    else:
+        qs = qs
+
+    rows = list(qs)
+    total = len(rows)
+    used = sum(1 for r in rows if r.status == 'used')
+
+    def _lines():
+        lines = []
+        lines.append('=' * 50)
+        lines.append('تقرير أكواد الخصم — سيارتي')
+        lines.append('=' * 50)
+        period_label = dict(_REPORT_PERIODS).get(period, 'الكل')
+        if period == 'day':
+            sel = request.GET.get('day') or today.isoformat()
+        elif period == 'month':
+            sel = request.GET.get('month') or today.strftime('%Y-%m')
+        elif period == 'year':
+            sel = request.GET.get('year') or str(today.year)
+        else:
+            sel = 'الكل'
+        lines.append(f'الفترة: {period_label} | {sel}')
+        lines.append(f'عدد الأكواد: {total} | المستخدمة: {used}')
+        lines.append('-' * 50)
+        lines.append('الكود\tالشركة\tالحالة\tتاريخ التوليد\tتاريخ الاستخدام\tتم التحقق من قبل')
+        lines.append('-' * 50)
+        status_map = {'active': 'نشط', 'used': 'مستخدم'}
+        for r in rows:
+            lines.append(
+                '\t'.join([
+                    r.code,
+                    r.sponsor.name,
+                    status_map.get(r.status, r.status),
+                    r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '',
+                    r.used_at.strftime('%Y-%m-%d %H:%M') if r.used_at else '',
+                    r.verified_by or '—',
+                ])
+            )
+        lines.append('=' * 50)
+        return '\n'.join(lines)
+
+    if request.GET.get('download') == '1':
+        filename = f"promo_codes_{period}_{sel}.txt" if period != 'all' else "promo_codes_all.txt"
+        text = _lines()
+        response = HttpResponse(text, content_type='text/plain; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, 'admin/codes_report.html', {
+        'periods': _REPORT_PERIODS,
+        'period': period,
+        'rows': rows,
+        'total': total,
+        'used': used,
+    })
