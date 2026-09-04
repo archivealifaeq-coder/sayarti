@@ -443,40 +443,116 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     settings_summary.short_description = 'Status'
 
 
+class SponsorForm(forms.ModelForm):
+    password_raw = forms.CharField(
+        label='كلمة المرور',
+        widget=forms.PasswordInput(attrs={'placeholder': '••••••••'}),
+        required=False,
+    )
+
+    class Meta:
+        model = Sponsor
+        fields = ['name', 'slug', 'code_prefix', 'discount', 'website', 'password', 'is_active', 'password_raw']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].required = False
+        self.fields['code_prefix'].required = False
+        self.fields['website'].required = False
+
+
 @admin.register(Sponsor)
 class SponsorAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug', 'code_prefix', 'discount', 'is_active', 'website', 'has_password')
-    list_editable = ('is_active',)
+    form = SponsorForm
+    list_display = ('name_preview', 'slug', 'discount_badge', 'codes_count', 'active_badge', 'has_password_badge')
     list_filter = ('is_active',)
-    search_fields = ('name', 'slug', 'code_prefix')
-    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name', 'slug')
+    readonly_fields = ('name', 'slug', 'code_prefix', 'created_at', 'last_login_display')
+    list_per_page = 25
+
     fieldsets = (
-        ('🏢 الشركة', {
-            'fields': ('name', 'slug', 'code_prefix', 'discount', 'website', 'is_active')
+        ('🔐 حساب الشركة الراعية', {
+            'fields': ('slug', 'password_raw', 'discount'),
+            'description': 'أدخل بيانات الحساب فقط — باقي الحقول تُنشأ تلقائياً.'
         }),
-        ('🔐 حساب نافذة الخدمات', {
-            'fields': ('password',),
-            'description': 'كلمة المرور التي يستخدمها الراعي للدخول إلى «نافذة الخدمات» والتحقق من الأكواد. اكتب كلمة مرور جديدة عند الحفظ لتغييرها (تُخزَّن مشفّرة).'
+        ('📋 التفاصيل (تلقائي)', {
+            'fields': ('name', 'code_prefix', 'is_active', 'website', 'created_at', 'last_login_display'),
+            'classes': ('collapse',),
         }),
     )
 
-    def has_password(self, obj):
-        return mark_safe('<span style="color:#4ade80;">✔️ مضبوطة</span>') if obj.password else mark_safe('<span style="color:#f87171;">✖️ فارغة</span>')
-    has_password.short_description = 'كلمة المرور'
+    def get_fields(self, request, obj=None):
+        if obj:
+            return ('slug', 'password_raw', 'discount', 'name', 'code_prefix', 'is_active', 'website', 'created_at', 'last_login_display')
+        return ('slug', 'password_raw', 'discount')
+
+    def get_fieldsets(self, request, obj=None):
+        if obj is None:
+            return (
+                ('🔐 حساب الشركة الراعية', {
+                    'fields': ('slug', 'password_raw', 'discount'),
+                    'description': 'أدخل بيانات الحساب فقط — باقي الحقول تُنشأ تلقائياً بعد الحفظ.'
+                }),
+            )
+        return self.fieldsets
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ('name', 'slug', 'code_prefix', 'created_at', 'last_login_display')
+        return ('created_at', 'last_login_display')
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
+        form.base_fields['slug'].help_text = 'اسم المستخدم الذي يدخله الراعي في صفحة الدخول (أحرف إنجليزية فقط)'
+        form.base_fields['discount'].help_text = 'نسبة الخصم التي يحصل عليها الزائر'
         if obj and obj.password:
-            form.base_fields['password'].help_text = 'اتركه فارغاً للإبقاء على كلمة المرور الحالية، أو اكتب جديدة للتغيير.'
+            form.base_fields['password_raw'].help_text = 'اتركه فارغاً للإبقاء على كلمة المرور الحالية'
         else:
-            form.base_fields['password'].help_text = 'مطلوب لتمكين الراعي من الدخول إلى نافذة الخدمات.'
+            form.base_fields['password_raw'].help_text = 'مطلوب — تُخزَّن مشفّرة ولا تُعرض مرة أخرى'
         return form
 
     def save_model(self, request, obj, form, change):
-        raw = form.cleaned_data.get('password')
+        raw = form.cleaned_data.get('password_raw')
         if raw:
             obj.set_password(raw)
+        if not change:
+            obj.name = obj.slug
+            obj.code_prefix = obj.slug.upper()
         super().save_model(request, obj, form, change)
+
+    def name_preview(self, obj):
+        return format_html('<span style="font-weight:700;">{}</span>', obj.name)
+    name_preview.short_description = 'الشركة'
+
+    def discount_badge(self, obj):
+        return format_html('<span style="background:#fbbf2420; padding:3px 12px; border-radius:12px; color:#fbbf24; font-weight:700;">{}%</span>', obj.discount)
+    discount_badge.short_description = 'الخصم'
+
+    def codes_count(self, obj):
+        total = obj.codes.count()
+        used = obj.codes.filter(status='used').count()
+        color = '#4ade80' if used > 0 else '#64748b'
+        return format_html('<span style="color:{};">{}/{} </span>', color, used, total)
+    codes_count.short_description = 'الأكواد (مستخدمة/الكل)'
+
+    def active_badge(self, obj):
+        if obj.is_active:
+            return mark_safe('<span style="background:#22c55e20; padding:3px 10px; border-radius:12px; color:#4ade80;">✅ مفعل</span>')
+        return mark_safe('<span style="background:#ef444420; padding:3px 10px; border-radius:12px; color:#f87171;">❌ متوقف</span>')
+    active_badge.short_description = 'الحالة'
+
+    def has_password_badge(self, obj):
+        if obj.password:
+            return mark_safe('<span style="color:#4ade80;">✔️</span>')
+        return mark_safe('<span style="color:#f87171;">✖️</span>')
+    has_password_badge.short_description = 'السجل'
+
+    def last_login_display(self, obj):
+        codes = obj.codes.order_by('-used_at').filter(status='used').first()
+        if codes and codes.used_at:
+            return format_html('<span style="color:#94a3b8;">{}</span>', codes.used_at.strftime('%Y-%m-%d %H:%M'))
+        return mark_safe('<span style="color:#475569;">لم يتحقق بعد</span>')
+    last_login_display.short_description = 'آخر تحقق'
 
 
 @admin.register(PromoCode)

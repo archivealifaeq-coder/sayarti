@@ -556,6 +556,10 @@ def generate_promo_code(request):
     if not sponsor:
         return JsonResponse({'success': False, 'error': 'شركة غير موجودة أو غير مفعلة'}, status=404)
 
+    active_count = PromoCode.objects.filter(sponsor=sponsor, status='active').count()
+    if active_count >= 500:
+        return JsonResponse({'success': False, 'error': 'عدد الأكواد النشطة للشركة وصل الحد الأقصى'}, status=429)
+
     code = _new_code(sponsor)
     if not code:
         return JsonResponse({'success': False, 'error': 'تعذر توليد كود الآن'}, status=500)
@@ -600,6 +604,13 @@ def verify_code_page(request, slug):
     })
 
 
+def _client_ip(request):
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '127.0.0.1')
+
+
 def services_login(request):
     """صفحة «نافذة الخدمات» — تسجيل دخول موحّد للرعاة/المعلنين.
 
@@ -611,14 +622,24 @@ def services_login(request):
     if request.method == 'POST':
         identifier = request.POST.get('identifier', '').strip()
         password = request.POST.get('password', '')
-        sponsor = (Sponsor.objects.filter(slug=identifier, is_active=True).first()
-                   or Sponsor.objects.filter(name=identifier, is_active=True).first())
-        if sponsor and sponsor.password and sponsor.check_password(password):
-            request.session['sponsor_id'] = sponsor.id
-            request.session['sponsor_name'] = sponsor.name
-            request.session['sponsor_slug'] = sponsor.slug
-            return redirect(next_url)
-        error = 'بيانات الدخول غير صحيحة — تأكد من اسم الحساب وكلمة المرور.'
+        client_ip = _client_ip(request)
+
+        fail_key = 'sfail:' + client_ip
+        failures = cache.get(fail_key, 0)
+        if failures >= 5:
+            error = 'تم حظر الدخول مؤقتاً بسبب محاولات كثيرة — حاول بعد قليل.'
+        else:
+            sponsor = (Sponsor.objects.filter(slug=identifier, is_active=True).first()
+                       or Sponsor.objects.filter(name=identifier, is_active=True).first())
+            if sponsor and sponsor.password and sponsor.check_password(password):
+                cache.delete(fail_key)
+                request.session.flush()
+                request.session['sponsor_id'] = sponsor.id
+                request.session['sponsor_name'] = sponsor.name
+                request.session['sponsor_slug'] = sponsor.slug
+                return redirect(next_url)
+            cache.set(fail_key, failures + 1, 300)
+            error = 'بيانات الدخول غير صحيحة — تأكد من اسم الحساب وكلمة المرور.'
 
     return render(request, 'cars/services.html', {
         'mode': 'login',
