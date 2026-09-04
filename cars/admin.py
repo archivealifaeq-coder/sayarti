@@ -267,16 +267,18 @@ class AdBannerAdmin(admin.ModelAdmin):
     list_display = (
         'title_preview', 
         'position_badge', 
+        'sponsor_display',
         'order',
         'is_active',
         'created_at_display'
     )
     
     list_editable = ('order', 'is_active')
-    list_filter = ('position', 'is_active')
-    search_fields = ('title', 'button_text')
+    list_filter = ('position', 'is_active', 'sponsor')
+    search_fields = ('title', 'subtitle', 'button_text', 'sponsor__name')
     ordering = ('position', 'order', '-created_at')
     list_per_page = 20
+    list_select_related = ('sponsor',)
 
     fieldsets = (
         ('📝 المحتوى', {
@@ -284,11 +286,13 @@ class AdBannerAdmin(admin.ModelAdmin):
         }),
         ('🎟️ ربط كود الخصم (اختياري)', {
             'fields': ('sponsor',),
-            'description': 'اختر شركة راعية ليظهر زر «احصل على خصم» في هذا الإعلان. اتركه فارغاً لبنر عادي بدون خصم.'
+            'description': 'اختر شركة راعية ليظهر زر «احصل على خصم» في هذا الإعلان. اتركه فارغاً لبنر عادي بدون خصم.',
+            'classes': ('collapse',),
         }),
         ('🖼️ الصور', {
             'fields': ('image', 'image_mobile'),
-            'description': '📸 سطح المكتب: 1920×820 بكسل (21:9) | 📱 الهاتف: 800×600 بكسل (4:3)'
+            'description': '📸 سطح المكتب: 1920×820 بكسل (21:9) | 📱 الهاتف: 800×600 بكسل (4:3)',
+            'classes': ('collapse',),
         }),
         ('🎨 الألوان (احتياطي)', {
             'fields': ('background_color', 'text_color'),
@@ -314,6 +318,12 @@ class AdBannerAdmin(admin.ModelAdmin):
         return mark_safe('<span style="background: #f59e0b20; padding: 2px 12px; border-radius: 12px; color: #fbbf24;">🎠 سلايدر</span>')
     position_badge.short_description = 'الموقع'
     
+    def sponsor_display(self, obj):
+        if obj.sponsor_id:
+            return format_html('<span style="background:#8b5cf620; padding:2px 12px; border-radius:12px; color:#a78bfa;">🎟️ {}</span>', obj.sponsor.name)
+        return mark_safe('<span style="color:#475569;">—</span>')
+    sponsor_display.short_description = 'الشركة'
+
     def created_at_display(self, obj):
         return format_html('<span style="color: #64748b; font-size: 0.8rem;">{}</span>', obj.created_at.strftime('%Y-%m-%d %H:%M'))
     created_at_display.short_description = 'تاريخ الإضافة'
@@ -474,6 +484,14 @@ class SponsorAdmin(admin.ModelAdmin):
     search_fields = ('name', 'slug')
     list_per_page = 25
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            _bc=Count('banners', distinct=True),
+            _tc=Count('codes', distinct=True),
+            _uc=Count('codes', distinct=True, filter=db_models.Q(codes__status='used')),
+        )
+
     fieldsets = (
         ('🔐 بيانات الحساب', {
             'fields': ('name', 'slug', 'code_prefix', 'discount', 'password_raw', 'is_active'),
@@ -520,14 +538,21 @@ class SponsorAdmin(admin.ModelAdmin):
     discount_badge.short_description = 'الخصم'
 
     def codes_count(self, obj):
-        total = obj.codes.count()
-        used = obj.codes.filter(status='used').count()
+        total = getattr(obj, '_tc', None)
+        used = getattr(obj, '_uc', None)
+        if total is None:
+            total = obj.codes.count()
+        if used is None:
+            used = obj.codes.filter(status='used').count()
         color = '#4ade80' if used > 0 else '#64748b'
         return format_html('<span style="color:{};">{}/{}</span>', color, used, total)
     codes_count.short_description = 'الأكواد'
 
     def banners_count(self, obj):
-        return obj.banners.count()
+        bc = getattr(obj, '_bc', None)
+        if bc is None:
+            bc = obj.banners.count()
+        return bc
     banners_count.short_description = 'البنرات'
 
     def active_badge(self, obj):
@@ -545,6 +570,7 @@ class PromoCodeAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     readonly_fields = ('code', 'created_at', 'used_at', 'verified_by')
     list_per_page = 50
+    list_select_related = ('sponsor',)
 
     def status_badge(self, obj):
         if obj.status == 'used':

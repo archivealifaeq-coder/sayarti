@@ -527,17 +527,33 @@ def _find_similar_in_db(brand, model, year, engine):
 
 
 def _new_code(sponsor):
-    """يولّد كوداً فريداً (بادئة + 4 أرقام) غير موجود مسبقاً في القاعدة."""
+    """يولّد كوداً فريداً (بادئة + أرقام) غير موجود مسبقاً في القاعدة.
+
+    يُفحص التفرد عالمياً (code فريد في جدول PromoCode) وليس بين أكواد
+    الشركة فقط، حتى لا يصطدم كودا شركتين لهما نفس البادئة فيسبب خطأ 500.
+    يُستعمل استعلام وجود مفهرس بدل تحميل كل الأكواد في الذاكرة — مهم مع
+    تراكم الأكواد.
+    """
     import random
-    used = set(PromoCode.objects.filter(sponsor=sponsor).values_list('code', flat=True))
-    for _ in range(30):
-        code = f"{sponsor.code_prefix}-{random.randint(1000, 9999)}"
-        if code not in used:
+
+    prefix = (sponsor.code_prefix or '').strip().upper()
+    if not prefix:
+        prefix = ''.join(ch.strip() for ch in getattr(sponsor, 'slug', '') or '' if ch.isalnum())[:6].upper()
+    if not prefix:
+        prefix = 'CODE'
+
+    # الكود فريد عالمياً (unique=True) لذا نفحص كل الصفوف، لا صفوف الشركة فقط.
+    def _exists(code):
+        return PromoCode.objects.filter(code=code).exists()
+
+    for _ in range(40):
+        code = f"{prefix}-{random.randint(1000, 9999)}"
+        if not _exists(code):
             return code
-    # احتياط: أرقام أوسع مع بادئة طويلة
-    for _ in range(50):
-        code = f"{sponsor.code_prefix}-{random.randint(10000, 99999)}"
-        if code not in used:
+    # احتياط: أرقام أوسع للتقليل من فرص التصادم تحت بادئة مشتركة
+    for _ in range(80):
+        code = f"{prefix}-{random.randint(100000, 999999)}"
+        if not _exists(code):
             return code
     return None
 

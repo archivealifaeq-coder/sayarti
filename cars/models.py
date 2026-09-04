@@ -214,9 +214,10 @@ class PromoCode(models.Model):
         choices=STATUS_CHOICES,
         default='active',
         verbose_name="الحالة",
+        db_index=True,
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ التوليد")
-    used_at = models.DateTimeField(null=True, blank=True, verbose_name="تاريخ الاستخدام")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ التوليد", db_index=True)
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name="تاريخ الاستخدام", db_index=True)
     verified_by = models.CharField(
         max_length=150,
         blank=True,
