@@ -1,13 +1,14 @@
 ﻿import pandas as pd
 from pathlib import Path
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q, Count
 from django.http import JsonResponse, HttpResponse
 from django import forms
 from django.core.cache import cache
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode
 from .services.excel_importer import import_cars_from_excel
 from .services.textnorm import fold_ar, fold_engine
 
@@ -523,3 +524,148 @@ def _find_similar_in_db(brand, model, year, engine):
             'source': 'قاعدة البيانات',
         })
     return results
+
+
+def _new_code(sponsor):
+    """يولّد كوداً فريداً (بادئة + 4 أرقام) غير موجود مسبقاً في القاعدة."""
+    import random
+    used = set(PromoCode.objects.filter(sponsor=sponsor).values_list('code', flat=True))
+    for _ in range(30):
+        code = f"{sponsor.code_prefix}-{random.randint(1000, 9999)}"
+        if code not in used:
+            return code
+    # احتياط: أرقام أوسع مع بادئة طويلة
+    for _ in range(50):
+        code = f"{sponsor.code_prefix}-{random.randint(10000, 99999)}"
+        if code not in used:
+            return code
+    return None
+
+
+@csrf_exempt
+def generate_promo_code(request):
+    """يولّد كود خصم فريداً لزائر لدى شركة راعية (يُستدعى من زر «احصل على خصم»).
+
+    POST: sponsor=<slug>
+    يعيد JSON: { success, code, discount, sponsor, status }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST only'}, status=405)
+    slug = request.POST.get('sponsor', '').strip() or request.GET.get('sponsor', '').strip()
+    sponsor = Sponsor.objects.filter(slug=slug, is_active=True).first()
+    if not sponsor:
+        return JsonResponse({'success': False, 'error': 'شركة غير موجودة أو غير مفعلة'}, status=404)
+
+    code = _new_code(sponsor)
+    if not code:
+        return JsonResponse({'success': False, 'error': 'تعذر توليد كود الآن'}, status=500)
+
+    PromoCode.objects.create(code=code, sponsor=sponsor, status='active')
+    return JsonResponse({
+        'success': True,
+        'code': code,
+        'discount': sponsor.discount,
+        'sponsor': sponsor.name,
+        'status': 'active',
+    })
+
+
+def verify_code_page(request, slug):
+    """صفحة تحقق خاصة بموظف الشركة: تُدخل الكود ليتأكد أنه حقيقي وساري.
+
+    المسار: /verify/<slug>/  — مثال زيت الحسام: /verify/hisam/
+    """
+    sponsor = Sponsor.objects.filter(slug=slug, is_active=True).first()
+    if not sponsor:
+        return render(request, 'cars/code_verify.html', {'sponsor': None})
+
+    result = None
+    code_input = request.POST.get('code', '').strip().upper()
+    if request.method == 'POST' and code_input:
+        promo = PromoCode.objects.filter(code=code_input, sponsor=sponsor).first()
+        if not promo:
+            result = {'status': 'invalid', 'message': 'الكود غير صحيح — تأكد من الكتابة وأعد المحاولة.'}
+        elif promo.status == 'used':
+            result = {'status': 'used', 'message': 'هذا الكود مستخدم مسبقاً ولا يصلح للخصم مرة أخرى.', 'code': promo.code}
+        else:
+            from django.utils import timezone
+            promo.status = 'used'
+            promo.used_at = timezone.now()
+            promo.save(update_fields=['status', 'used_at'])
+            result = {'status': 'valid', 'message': 'الكود صحيح وساري — الخصم مفعّل.', 'code': promo.code, 'discount': sponsor.discount}
+
+    return render(request, 'cars/code_verify.html', {
+        'sponsor': sponsor,
+        'result': result,
+    })
+
+
+def services_login(request):
+    """صفحة «نافذة الخدمات» — تسجيل دخول موحّد للرعاة/المعلنين.
+
+    يدخل بها من يملك حساباً (راعي) ليرى قسمه ويتحقق من الأكواد.
+    """
+    next_url = request.GET.get('next') or 'services_dashboard'
+    error = None
+
+    if request.method == 'POST':
+        identifier = request.POST.get('identifier', '').strip()
+        password = request.POST.get('password', '')
+        sponsor = (Sponsor.objects.filter(slug=identifier, is_active=True).first()
+                   or Sponsor.objects.filter(name=identifier, is_active=True).first())
+        if sponsor and sponsor.password and sponsor.check_password(password):
+            request.session['sponsor_id'] = sponsor.id
+            request.session['sponsor_name'] = sponsor.name
+            request.session['sponsor_slug'] = sponsor.slug
+            return redirect(next_url)
+        error = 'بيانات الدخول غير صحيحة — تأكد من اسم الحساب وكلمة المرور.'
+
+    return render(request, 'cars/services.html', {
+        'mode': 'login',
+        'error': error,
+    })
+
+
+def _current_sponsor(request):
+    sponsor_id = request.session.get('sponsor_id')
+    if not sponsor_id:
+        return None
+    return Sponsor.objects.filter(id=sponsor_id, is_active=True).first()
+
+
+def services_dashboard(request):
+    """لوحة الراعي داخل نافذة الخدمات (تتطلب تسجيل الدخول)."""
+    sponsor = _current_sponsor(request)
+    if not sponsor:
+        return redirect('services_login')
+
+    result = None
+    code_input = request.POST.get('code', '').strip().upper()
+    if request.method == 'POST' and code_input:
+        promo = PromoCode.objects.filter(code=code_input, sponsor=sponsor).first()
+        if not promo:
+            result = {'status': 'invalid', 'message': 'الكود غير صحيح — تأكد من الكتابة وأعد المحاولة.'}
+        elif promo.status == 'used':
+            result = {'status': 'used', 'message': 'هذا الكود مستخدم مسبقاً ولا يصلح للخصم مرة أخرى.', 'code': promo.code}
+        else:
+            from django.utils import timezone
+            promo.status = 'used'
+            promo.used_at = timezone.now()
+            promo.save(update_fields=['status', 'used_at'])
+            result = {'status': 'valid', 'message': 'الكود صحيح وساري — الخصم مفعّل.', 'code': promo.code, 'discount': sponsor.discount}
+
+    total_codes = PromoCode.objects.filter(sponsor=sponsor).count()
+    used_codes = PromoCode.objects.filter(sponsor=sponsor, status='used').count()
+
+    return render(request, 'cars/services.html', {
+        'mode': 'dashboard',
+        'sponsor': sponsor,
+        'result': result,
+        'total_codes': total_codes,
+        'used_codes': used_codes,
+    })
+
+
+def services_logout(request):
+    request.session.flush()
+    return redirect('services_login')

@@ -39,6 +39,7 @@
                 <a href="{% url 'search' %}" class="nav-link active" aria-current="page">🔍 البحث</a>
                 <a href="{% url 'mix_calculator' %}" class="nav-link">🧮 حاسبة الخلط</a>
                 <a href="{% url 'budget_finder' %}" class="nav-link">💰 شكد فلوسك</a>
+                <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">💼 نافذة الخدمات</a>
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
             <button type="button" id="installBtn" class="pwa-install-btn md:flex hidden" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>

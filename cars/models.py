@@ -134,11 +134,118 @@ class CarSpecification(models.Model):
         return f"{self.brand_ar} - {self.model_ar} ({self.year})"
 
 
+class Sponsor(models.Model):
+    """شركة راعية (مثال: زيت الحسام) لديها أكواد خصم يولدها الموقع لزواره.
+
+    كل شركة لها بادئة كود ونسبة خصم وصفحة تحقق خاصة لموظفها.
+    """
+    name = models.CharField(max_length=150, verbose_name="اسم الشركة")
+    slug = models.SlugField(
+        max_length=100,
+        unique=True,
+        verbose_name="المعرّف (slug)",
+        help_text="يُستخدم في رابط صفحة التحقق — مثال: hisam → sayarti.org/verify/hisam/"
+    )
+    code_prefix = models.CharField(
+        max_length=20,
+        verbose_name="بادئة الكود",
+        help_text="بداية الكود المولّد — مثال: HISAM → كود مثل HISAM-4821"
+    )
+    discount = models.IntegerField(
+        default=10,
+        verbose_name="نسبة الخصم %",
+        help_text="تُعرض للزائر عند توليد الكود وتظهر لموظف الشركة في الفحص"
+    )
+    website = models.URLField(
+        blank=True,
+        verbose_name="الموقع / صفحة الشركة",
+        help_text="اختياري — يُعرض كرابط للزائر للمزيد حول الشركة"
+    )
+    password = models.CharField(
+        max_length=128,
+        blank=True,
+        verbose_name="كلمة مرور حساب الراعي",
+        help_text="يستخدمها الراعي لتسجيل الدخول إلى «نافذة الخدمات» للتحقق من الأكواد — تُخزَّن مشفّرة"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="مفعل",
+        help_text="✔️ نشطة والأكواد تُولَّد منها | ❌ متوقفة"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ الإضافة")
+
+    def set_password(self, raw_password):
+        from django.contrib.auth.hashers import make_password
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "شركة راعية"
+        verbose_name_plural = "الشركات الراعية"
+
+
+class PromoCode(models.Model):
+    """كود خصم فريد يولَّد لكل زائر يضغط زر الخصم لدى شركة راعية.
+
+    يتحول إلى 'used' عند فحصه بنجاح من موظف الشركة في صفحة التحقق.
+    """
+    STATUS_CHOICES = [
+        ('active', 'ساري (غير مستخدم)'),
+        ('used', 'مُستخدم'),
+    ]
+
+    code = models.CharField(
+        max_length=40,
+        unique=True,
+        verbose_name="الكود",
+        help_text="يُولَّد تلقائياً — مثال HISAM-4821"
+    )
+    sponsor = models.ForeignKey(
+        Sponsor,
+        on_delete=models.CASCADE,
+        related_name='codes',
+        verbose_name="الشركة",
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='active',
+        verbose_name="الحالة",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ التوليد")
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name="تاريخ الاستخدام")
+
+    def __str__(self):
+        return self.code
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "كود خصم"
+        verbose_name_plural = "أكواد الخصم"
+
+
 class AdBanner(models.Model):
     POSITION_CHOICES = [
         ('ticker', '📢 شريط متحرك علوي (5%) - أعلى الصفحة'),
         ('slider', '🎠 سلايدر رئيسي (35%) - وسط الصفحة'),
     ]
+
+    sponsor = models.ForeignKey(
+        Sponsor,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        verbose_name="الشركة الراعية",
+        related_name='banners',
+        help_text="اربط البنر بشركة راعية ليظهر فيها زر «احصل على خصم»"
+    )
 
     title = models.CharField(max_length=200, verbose_name="العنوان")
     subtitle = models.CharField(max_length=200, blank=True, null=True, verbose_name="العنوان الفرعي")

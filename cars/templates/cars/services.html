@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% if mode == 'dashboard' %}{{ sponsor.name }} — نافذة الخدمات{% else %}نافذة الخدمات{% endif %}</title>
+<meta name="robots" content="noindex">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    min-height: 100vh;
+    color: #e2e8f0;
+    direction: rtl;
+    padding: 20px;
+}
+.wrap { max-width: 620px; margin: 0 auto; }
+.card {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(10px);
+    border-radius: 18px;
+    padding: 26px 24px;
+    margin-top: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.4);
+}
+.topbar { display: flex; align-items: center; justify-content: space-between; max-width: 620px; margin: 0 auto; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; color: #fbbf24; text-decoration: none; }
+.brand span { font-size: 1.5rem; }
+.service-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(59,130,246,.2); border: 1px solid rgba(96,165,250,.4);
+    color: #60a5fa; padding: 6px 14px; border-radius: 999px; font-size: .8rem; font-weight: 700;
+}
+h1 { font-size: 1.5rem; margin: 4px 0 4px; }
+h2 { font-size: 1.2rem; margin-bottom: 6px; }
+.center { text-align: center; }
+.muted { color: #94a3b8; font-size: .85rem; }
+.notice {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: rgba(59,130,246,.12); border: 1px solid rgba(96,165,250,.35);
+    border-radius: 12px; padding: 12px 14px; margin: 16px 0; font-size: .85rem; color: #bfdbfe;
+}
+.notice .ic { font-size: 1.2rem; }
+label { display: block; font-size: .85rem; color: #cbd5e1; margin: 14px 0 6px; }
+input[type=text], input[type=password] {
+    width: 100%; padding: 13px 14px; font-size: 1rem;
+    background: rgba(15,23,42,.6); color: #e2e8f0;
+    border: 2px solid #334155; border-radius: 10px; outline: none;
+}
+input:focus { border-color: #2563eb; }
+button.btn {
+    width: 100%; margin-top: 16px; padding: 14px; font-size: 1rem; font-weight: 700;
+    color: #fff; background: #2563eb; border: none; border-radius: 10px; cursor: pointer;
+}
+button.btn:hover { background: #1d4ed8; }
+button.btn.ghost { background: transparent; border: 1px solid #475569; color: #cbd5e1; }
+button.btn.ghost:hover { border-color: #f87171; color: #f87171; }
+.err {
+    background: #fee2e2; color: #991b1b; border-radius: 10px;
+    padding: 12px 14px; font-weight: 700; font-size: .9rem; margin-bottom: 4px;
+}
+.msg { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: .9rem; font-weight: 700; }
+.msg.valid { background: #dcfce7; color: #166534; }
+.msg.used  { background: #fed7aa; color: #9a3412; }
+.msg.invalid { background: #fee2e2; color: #991b1b; }
+code { letter-spacing: 1px; font-size: 1.1rem; font-weight: 800; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0; }
+.stat {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 14px; padding: 16px; text-align: center;
+}
+.stat .num { font-size: 2rem; font-weight: 800; color: #fbbf24; }
+.stat .lbl { font-size: .78rem; color: #94a3b8; margin-top: 4px; }
+.verify-box {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 14px; padding: 16px;
+}
+.links { margin-top: 20px; text-align: center; }
+.links a { color: #60a5fa; font-size: .85rem; text-decoration: none; }
+.links a:hover { text-decoration: underline; }
+.foot { text-align: center; color: #475569; font-size: .78rem; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="topbar">
+        <a href="/" class="brand"><span>🚗</span> سيارتي</a>
+        <span class="service-badge">💼 نافذة الخدمات</span>
+    </div>
+
+    {% if mode == 'login' %}
+    <div class="card">
+        <div class="center">
+            <div style="font-size:2.5rem;">🔐</div>
+            <h1>نافذة الخدمات</h1>
+            <p class="muted">للشركات الراعية والمعلنين فقط</p>
+        </div>
+
+        <div class="notice">
+            <span class="ic">ℹ️</span>
+            <span>هذه الميزة مخصّصة للمعلنين والشركات الراعية الحاصلة على حساب. من خلالها يمكن للراعي تسجيل الدخول والتحقق من أكواد الخصم التي استلمها العملاء من الموقع، ومتابعة إحصاءات شركته.<br>
+            لا يملك حساباً؟ تواصل مع إدارة الموقع.</span>
+        </div>
+
+        {% if error %}<div class="err">⚠️ {{ error }}</div>{% endif %}
+
+        <form method="post" autocomplete="off">
+            {% csrf_token %}
+            <label for="id_identifier">اسم الحساب أو المعرّف</label>
+            <input type="text" name="identifier" id="id_identifier" required placeholder="مثال: hisam أو زيت الحسام">
+            <label for="id_password">كلمة المرور</label>
+            <input type="password" name="password" id="id_password" required>
+            <button type="submit" class="btn">دخول</button>
+        </form>
+    </div>
+
+    {% else %}
+    <div class="card">
+        <div class="center">
+            <div style="font-size:2.2rem;">🏠</div>
+            <h1>{{ sponsor.name }}</h1>
+            <p class="muted">بادئة الكود: {{ sponsor.code_prefix }} &nbsp;•&nbsp; خصم: {{ sponsor.discount }}%</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="num">{{ total_codes }}</div>
+                <div class="lbl">إجمالي من حصلوا على كود شركتك</div>
+            </div>
+            <div class="stat">
+                <div class="num" style="color:#4ade80;">{{ used_codes }}</div>
+                <div class="lbl">أكواد تم تفعيلها (مستخدمة)</div>
+            </div>
+        </div>
+
+        <div class="verify-box">
+            <h2>🔍 التحقق من كود الخصم</h2>
+            <p class="muted">أدخل الكود الذي استلمه العميل منك ليتم التحقق من صحته وسريانه.</p>
+            <form method="post" autocomplete="off">
+                {% csrf_token %}
+                <label for="code">الكود</label>
+                <input type="text" name="code" id="code" placeholder="مثال: {{ sponsor.code_prefix }}-0000" required>
+                <button type="submit" class="btn">تحقّق من الكود</button>
+            </form>
+
+            {% if result %}
+                <div class="msg {{ result.status }}">
+                    {% if result.status == 'valid' %}
+                        ✅ {{ result.message }}
+                        <div style="margin-top:8px;font-size:1.1rem;font-weight:800;">
+                            الكود: <code>{{ result.code }}</code> — خصم {{ result.discount }}%
+                        </div>
+                    {% elif result.status == 'used' %}
+                        ⚠️ {{ result.message }} <code>{{ result.code }}</code>
+                    {% else %}
+                        ❌ {{ result.message }}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="links">
+            <a href="/">← العودة إلى الموقع</a>
+        </div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+        <p class="muted" style="margin-bottom:10px;">تسجيل الدخول مفتوح بحساب: {{ sponsor.name }}</p>
+        <form method="post" action="{% url 'services_logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn ghost">تسجيل الخروج</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <p class="foot">نافذة الخدمات — سيارتي • مخصّصة للشركات الراعية والمعلنين</p>
+</div>
+</body>
+</html>

@@ -1341,6 +1341,7 @@
                 <a href="{% url 'index' %}" class="nav-link active" aria-current="page">الرئيسية</a>
                 <a href="{% url 'mix_calculator' %}" class="nav-link">🧮 حاسبة الخلط</a>
                 <a href="#cars-section" class="nav-link">🚗 السيارات</a>
+                <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">💼 نافذة الخدمات</a>
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
             <button type="button" id="installBtn" class="pwa-install-btn md:flex hidden" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
@@ -1358,6 +1359,9 @@
                 <div class="ticker-item">
                     <span class="ticker-icon">📌</span>
                     <span class="ticker-text">{{ banner.title|escape|truncatechars:30 }}</span>
+                    {% if banner.sponsor %}
+                    <button type="button" class="ticker-btn promo-trigger" data-sponsor-slug="{{ banner.sponsor.slug }}" data-sponsor-name="{{ banner.sponsor.name }}" data-discount="{{ banner.sponsor.discount }}">🎟️ احصل على خصم</button>
+                    {% endif %}
                     <a href="{{ banner.button_url|escape }}" class="ticker-btn" {% if banner.button_url and banner.button_url != '#' %}target="_blank" rel="noopener noreferrer"{% endif %}>{{ banner.button_text|escape|default:"عرض" }}</a>
                 </div>
                 {% endif %}
@@ -1467,6 +1471,9 @@
                                     <span>📌</span> {{ banner.button_text|escape }}
                                 {% endif %}
                             </div>
+                            {% if banner.sponsor %}
+                                <button type="button" class="slide-btn promo-trigger" data-sponsor-slug="{{ banner.sponsor.slug }}" data-sponsor-name="{{ banner.sponsor.name }}" data-discount="{{ banner.sponsor.discount }}">🎟️ احصل على خصم</button>
+                            {% endif %}
                             {% if banner.button_text and banner.button_url %}
                                 <a href="{{ banner.button_url|escape }}" class="slide-btn">{{ banner.button_text|escape }}</a>
                             {% endif %}
@@ -1607,6 +1614,7 @@
                     <a href="#cars-section">السيارات</a>
                     <a href="{% url 'about' %}">من نحن</a>
                     <a href="{% url 'privacy' %}">الخصوصية</a>
+                    <a href="{% url 'services_login' %}">💼 نافذة الخدمات</a>
                     {% if user.is_staff %}<a href="/admin/" rel="nofollow">لوحة التحكم</a>{% endif %}
                 </nav>
                 <div class="footer-meta">
@@ -1942,6 +1950,75 @@
                 });
             });
         }
+    </script>
+
+    <!-- كود الخصم modal -->
+    <div id="promoModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(2,6,23,.85); align-items:center; justify-content:center; padding:20px;">
+        <div style="background:#fff; color:#0f172a; max-width:360px; width:100%; border-radius:16px; padding:28px 22px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5);">
+            <div id="promoSpinner" style="font-size:2.5rem; margin-bottom:10px;">🎟️</div>
+            <h3 id="promoTitle" style="margin:0 0 6px; font-size:1.2rem; color:#0f172a;">كود الخصم الخاص بك</h3>
+            <p id="promoSub" style="color:#64748b; font-size:.85rem; margin:0 0 14px;">من شركة زيت الحسام</p>
+            <div id="promoCodeEl" style="display:none;">
+                <div style="font-size:1.6rem; font-weight:800; letter-spacing:3px; color:#1d4ed8; background:#eff6ff; border:2px dashed #93c5fd; border-radius:10px; padding:14px; margin-bottom:12px;" id="promoCodeText"></div>
+                <p style="color:#16a34a; font-weight:700; font-size:.9rem;" id="promoDiscountText"></p>
+                <p style="color:#94a3b8; font-size:.78rem; margin-top:8px;">📸 صوّر الكود واذهب به للشركة للحصول على الخصم</p>
+                <button type="button" onclick="document.getElementById('promoModal').style.display='none'" style="margin-top:14px; background:#1d4ed8; color:#fff; border:none; padding:10px 22px; border-radius:10px; font-weight:700; cursor:pointer;">إغلاق</button>
+            </div>
+            <div id="promoError" style="display:none; color:#dc2626; font-weight:700; font-size:.9rem; padding:10px;"></div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var modal = document.getElementById('promoModal');
+        var spinner = document.getElementById('promoSpinner');
+        var title = document.getElementById('promoTitle');
+        var sub = document.getElementById('promoSub');
+        var codeWrap = document.getElementById('promoCodeEl');
+        var codeText = document.getElementById('promoCodeText');
+        var discText = document.getElementById('promoDiscountText');
+        var errEl = document.getElementById('promoError');
+
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.promo-trigger');
+            if (!btn) return;
+            var slug = btn.getAttribute('data-sponsor-slug');
+            var name = btn.getAttribute('data-sponsor-name');
+            var disc = btn.getAttribute('data-discount');
+            codeWrap.style.display = 'none';
+            errEl.style.display = 'none';
+            spinner.style.display = '';
+            title.textContent = 'جارٍ توليد الكود...';
+            sub.textContent = name;
+            modal.style.display = 'flex';
+
+            var body = new URLSearchParams();
+            body.set('sponsor', slug);
+            fetch('/api/promo-code/generate/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': (window.csrfToken || '') },
+                credentials: 'same-origin',
+                body: body
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                spinner.style.display = 'none';
+                if (data.success) {
+                    title.textContent = 'كود الخصم الخاص بك';
+                    codeText.textContent = data.code;
+                    discText.textContent = 'خصم ' + data.discount + '% من ' + data.sponsor;
+                    codeWrap.style.display = 'block';
+                } else {
+                    errEl.textContent = data.error || 'تعذر توليد الكود';
+                    errEl.style.display = 'block';
+                    title.textContent = 'عذراً';
+                }
+            }).catch(function() {
+                spinner.style.display = 'none';
+                errEl.textContent = 'تعذر الاتصال بالخادم';
+                errEl.style.display = 'block';
+                title.textContent = 'عذراً';
+            });
+        });
+    })();
     </script>
     </body>
 </html>

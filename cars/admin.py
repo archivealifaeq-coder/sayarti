@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django.template import Template, RequestContext
 from django.utils.html import format_html, mark_safe
 from django.db.models import Count
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -441,6 +441,58 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             return mark_safe('<span style="color: #fbbf24;">⚠️ ID exists but ads disabled</span>')
         return mark_safe('<span style="color: #64748b;">⚪ AdSense not linked yet</span>')
     settings_summary.short_description = 'Status'
+
+
+@admin.register(Sponsor)
+class SponsorAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'code_prefix', 'discount', 'is_active', 'website', 'has_password')
+    list_editable = ('is_active',)
+    list_filter = ('is_active',)
+    search_fields = ('name', 'slug', 'code_prefix')
+    prepopulated_fields = {'slug': ('name',)}
+    fieldsets = (
+        ('🏢 الشركة', {
+            'fields': ('name', 'slug', 'code_prefix', 'discount', 'website', 'is_active')
+        }),
+        ('🔐 حساب نافذة الخدمات', {
+            'fields': ('password',),
+            'description': 'كلمة المرور التي يستخدمها الراعي للدخول إلى «نافذة الخدمات» والتحقق من الأكواد. اكتب كلمة مرور جديدة عند الحفظ لتغييرها (تُخزَّن مشفّرة).'
+        }),
+    )
+
+    def has_password(self, obj):
+        return mark_safe('<span style="color:#4ade80;">✔️ مضبوطة</span>') if obj.password else mark_safe('<span style="color:#f87171;">✖️ فارغة</span>')
+    has_password.short_description = 'كلمة المرور'
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if obj and obj.password:
+            form.base_fields['password'].help_text = 'اتركه فارغاً للإبقاء على كلمة المرور الحالية، أو اكتب جديدة للتغيير.'
+        else:
+            form.base_fields['password'].help_text = 'مطلوب لتمكين الراعي من الدخول إلى نافذة الخدمات.'
+        return form
+
+    def save_model(self, request, obj, form, change):
+        raw = form.cleaned_data.get('password')
+        if raw:
+            obj.set_password(raw)
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(PromoCode)
+class PromoCodeAdmin(admin.ModelAdmin):
+    list_display = ('code', 'sponsor', 'status_badge', 'created_at', 'used_at')
+    list_filter = ('status', 'sponsor')
+    search_fields = ('code', 'sponsor__name')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('code', 'created_at', 'used_at')
+    list_per_page = 50
+
+    def status_badge(self, obj):
+        if obj.status == 'used':
+            return format_html('<span style="background:#ef444420; padding:2px 12px; border-radius:12px; color:#f87171;">مستخدم</span>')
+        return format_html('<span style="background:#22c55e20; padding:2px 12px; border-radius:12px; color:#4ade80;">نشط</span>')
+    status_badge.short_description = 'الحالة'
 
 
 admin.site.index_template = 'admin/custom_index.html'
