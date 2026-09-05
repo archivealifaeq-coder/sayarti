@@ -3,102 +3,73 @@
 
 {% block title %}تقرير أكواد الخصم | سيارتي{% endblock %}
 
-{% block extrastyle %}{{ block.super }}
-<style>
-    .report-wrap { max-width: 1100px; margin: 0 auto; padding: 10px 0; }
-    .report-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
-    .report-head h2 { margin: 0; font-size: 1.4rem; color: #f1f5f9; }
-    .report-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: #0d1424; border: 1px solid #26334d; border-radius: 10px; padding: 14px; margin-bottom: 16px; box-shadow: 0 8px 26px rgba(0,0,0,.35); }
-    .report-filters label { font-weight: 700; color: #cbd5e1; }
-    .report-filters select, .report-filters input { padding: 7px 9px; border: 1px solid #33415c; border-radius: 6px; background: #111a2e; color: #e2e8f0; }
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border: none; border-radius: 7px; font-weight: 700; cursor: pointer; text-decoration: none; }
-    .btn-primary { background: #417690; color: #fff; }
-    .btn-primary:hover { background: #205067; }
-    .btn-green { background: #1e7e34; color: #fff; }
-    .btn-green:hover { background: #146127; }
-    .sum-box { display: inline-block; background: #16233a; color: #93c5fd; padding: 6px 14px; border-radius: 20px; font-weight: 700; border: 1px solid #26334d; }
-    table { width: 100%; border-collapse: collapse; font-size: .85rem; background: #0d1424; border-radius: 10px; overflow: hidden; }
-    th { text-align: right; background: #16233a; color: #f8fafc; font-weight: 800; padding: 9px 10px; border-bottom: 2px solid #26334d; }
-    td { padding: 8px 10px; color: #ffffff; border-bottom: 1px solid #1c2940; }
-    tr:hover td { background: #131f36; }
-    .badge { display: inline-block; padding: 2px 11px; border-radius: 20px; font-size: .75rem; font-weight: 700; }
-    .badge-green { background: rgba(74,222,128,.15); color: #4ade80; }
-    .badge-red { background: rgba(248,113,113,.15); color: #f87171; }
-    .code-cell { direction: ltr; text-align: left; font-weight: 700; font-family: monospace; color: #60a5fa; }
-    .back { margin-bottom: 10px; display: inline-block; color: #93c5fd; font-weight: 700; }
-    @media print {
-        .report-filters, .report-head .btn, .back { display: none !important; }
-        body { background: #fff !important; }
-        table, th, td { background: #fff !important; color: #000 !important; border-color: #ccc !important; }
-        .report-head h2 { color: #000 !important; }
-        .code-cell { color: #000 !important; }
-        .badge-green { background: #d4edda !important; color: #155724 !important; }
-        .badge-red { background: #f8d7da !important; color: #721c24 !important; }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="report-wrap">
-    <a class="back" href="/admin/">← العودة للوحة التحكم</a>
+<div style="max-width: 1200px; margin: 0 auto; padding: 6px 0;">
+    <a class="back" style="display:inline-block; margin-bottom:10px; font-weight:700;" href="/admin/">← العودة للوحة التحكم</a>
 
-    <div class="report-head">
-        <h2>🎟️ تقرير أكواد الخصم</h2>
-        <div>
+    <div class="report-head" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+        <h2 style="margin:0; font-size:1.4rem; color:#0f172a;">🎟️ تقرير أكواد الخصم</h2>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <span class="sum-box">الأكواد: {{ total }}</span>
-            <span class="sum-box" style="background:rgba(248,113,113,.15);color:#f87171;">مستخدمة: {{ used }}</span>
+            <span class="sum-box" style="background:rgba(185,28,28,.1); color:#b91c1c;">مستخدمة: {{ used }}</span>
             <button class="btn btn-green" onclick="window.print()">🖨️ طباعة</button>
             <a class="btn btn-primary" href="?{% if period != 'all' %}{% if period == 'day' %}period=day&day={{ request.GET.day|default:'' }}{% elif period == 'month' %}period=month&month={{ request.GET.month|default:'' }}{% else %}period=year&year={{ request.GET.year|default:'' }}{% endif %}{% else %}period=all{% endif %}&download=1">⬇️ تنزيل ملف نصي</a>
         </div>
     </div>
 
-    <form class="report-filters" method="get">
-        <label>الفترة:</label>
-        <select name="period" id="periodSel">
+    <form class="report-filters" method="get" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:16px;">
+        <label style="font-weight:700; color:#334155;">الفترة:</label>
+        <select name="period" id="periodSel" style="padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; color:#1e293b;">
             {% for p, label in periods %}
             <option value="{{ p }}" {% if p == period %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
 
         <span id="dayField" style="display:none;">
-            <label>اليوم:</label>
-            <input type="date" name="day" value="{{ request.GET.day|default:'' }}">
+            <label style="font-weight:700; color:#334155;">اليوم:</label>
+            <input type="date" name="day" value="{{ request.GET.day|default:'' }}" style="padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px;">
         </span>
         <span id="monthField" style="display:none;">
-            <label>الشهر:</label>
-            <input type="month" name="month" value="{{ request.GET.month|default:'' }}">
+            <label style="font-weight:700; color:#334155;">الشهر:</label>
+            <input type="month" name="month" value="{{ request.GET.month|default:'' }}" style="padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px;">
         </span>
         <span id="yearField" style="display:none;">
-            <label>السنة:</label>
-            <input type="number" name="year" min="2020" max="2100" value="{{ request.GET.year|default:'' }}" placeholder="2026">
+            <label style="font-weight:700; color:#334155;">السنة:</label>
+            <input type="number" name="year" min="2020" max="2100" value="{{ request.GET.year|default:'' }}" placeholder="2026" style="padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px;">
         </span>
 
         <button class="btn btn-primary" type="submit">عرض</button>
-        <a class="btn" href="?period=all" style="background:#33415c;color:#fff;">الكل</a>
+        <a class="btn btn-outline" href="?period=all">الكل</a>
     </form>
 
-    <table>
-        <thead>
-            <tr>
-                <th>الكود</th><th>الشركة</th><th>الحالة</th>
-                <th>تاريخ التوليد</th><th>تاريخ الاستخدام</th><th>تم التحقق من قبل</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in rows %}
-            <tr>
-                <td class="code-cell">{{ r.code }}</td>
-                <td>{{ r.sponsor.name }}</td>
-                <td>{% if r.status == 'used' %}<span class="badge badge-red">مستخدم</span>{% else %}<span class="badge badge-green">نشط</span>{% endif %}</td>
-                <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
-                <td>{{ r.used_at|date:"Y-m-d H:i"|default:"—" }}</td>
-                <td>{{ r.verified_by|default:"—" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:24px;">لا توجد أكواد في هذه الفترة</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+        <table style="width:100%; border-collapse:collapse; font-size:.87rem;">
+            <thead>
+                <tr>
+                    <th style="text-align:right; background:#f8fafc; color:#334155; font-weight:800; padding:11px 12px; border-bottom:2px solid #e2e8f0;">الكود</th>
+                    <th style="text-align:right; background:#f8fafc; color:#334155; font-weight:800; padding:11px 12px; border-bottom:2px solid #e2e8f0;">الشركة</th>
+                    <th style="text-align:right; background:#f8fafc; color:#334155; font-weight:800; padding:11px 12px; border-bottom:2px solid #e2e8f0;">الحالة</th>
+                    <th style="text-align:right; background:#f8fafc; color:#334155; font-weight:800; padding:11px 12px; border-bottom:2px solid #e2e8f0;">تاريخ التوليد</th>
+                    <th style="text-align:right; background:#f8fafc; color:#334155; font-weight:800; padding:11px 12px; border-bottom:2px solid #e2e8f0;">تاريخ الاستخدام</th>
+                    <th style="text-align:right; background:#f8fafc; color:#334155; font-weight:800; padding:11px 12px; border-bottom:2px solid #e2e8f0;">تم التحقق من قبل</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td class="code-cell" style="direction:ltr; text-align:left; font-weight:700; font-family:Consolas, monospace; color:#1d4ed8; padding:10px 12px;">{{ r.code }}</td>
+                    <td style="padding:10px 12px; color:#1e293b;">{{ r.sponsor.name }}</td>
+                    <td style="padding:10px 12px;">{% if r.status == 'used' %}<span class="badge badge-red">مستخدم</span>{% else %}<span class="badge badge-green">نشط</span>{% endif %}</td>
+                    <td style="padding:10px 12px; color:#1e293b;">{{ r.created_at|date:"Y-m-d H:i" }}</td>
+                    <td style="padding:10px 12px; color:#1e293b;">{{ r.used_at|date:"Y-m-d H:i"|default:"—" }}</td>
+                    <td style="padding:10px 12px; color:#1e293b;">{{ r.verified_by|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; color:#64748b; padding:24px;">لا توجد أكواد في هذه الفترة</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>

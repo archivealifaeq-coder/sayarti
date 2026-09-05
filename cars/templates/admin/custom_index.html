@@ -1,57 +1,11 @@
 {% extends "admin/index.html" %}
 {% load i18n %}
 
-{% block extrastyle %}
-{{ block.super }}
-<style>
-    #content { max-width: 1100px; margin: 0 auto; }
-    .dashboard-stats { margin-bottom: 24px; }
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 18px 0 28px; }
-    .stat-box {
-        background: linear-gradient(145deg, #101a2e, #070b16);
-        padding: 20px; border-radius: 14px; text-align: center;
-        border: 1px solid rgba(245,158,11,.18); box-shadow: 0 6px 24px rgba(0,0,0,.4);
-    }
-    .stat-box .stat-icon { font-size: 2rem; margin-bottom: 4px; }
-    .stat-box .stat-num { font-size: 1.8rem; font-weight: 800; color: #fff; margin: 4px 0; }
-    .stat-box .stat-label { color: #cbd5e1; font-size: .86rem; font-weight: 600; }
-    .section-card {
-        background: #ffffff; border: 1px solid #e2e8f0;
-        border-radius: 14px; padding: 20px; margin-bottom: 18px;
-        box-shadow: 0 8px 26px rgba(0,0,0,.12);
-    }
-    .section-card h3 { color: #0f172a; font-size: 1rem; font-weight: 800; margin-bottom: 12px; }
-    .section-card table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-    .section-card th { text-align: right; color: #334155; font-weight: 800; padding: 8px 10px; border-bottom: 1px solid rgba(15,23,42,.15); }
-    .section-card td { padding: 8px 10px; color: #000000; border-bottom: 1px solid rgba(15,23,42,.08); }
-    .section-card td.num { font-weight: 800; color: #b45309; text-align: center; }
-    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .75rem; font-weight: 700; }
-    .badge-green { background: rgba(22,163,74,.12); color: #15803d; }
-    .badge-amber { background: rgba(217,119,6,.12); color: #b45309; }
-    .badge-red { background: rgba(220,38,38,.12); color: #b91c1c; }
-    .badge-blue { background: rgba(29,78,216,.12); color: #1d4ed8; }
-    .print-btn {
-        display: inline-flex; align-items: center; gap: 6px;
-        background: #417690; color: #fff; border: none; padding: 8px 18px;
-        border-radius: 8px; font-weight: 700; cursor: pointer; font-size: .85rem;
-    }
-    .print-btn:hover { background: #205067; }
-    @media print {
-        body { background: #fff !important; color: #000 !important; }
-        .print-btn, #header, #nav-main, #nav-sidebar, .breadcrumbs, .submit-row { display: none !important; }
-        .dashboard-stats * { color: #000 !important; background: #fff !important; border-color: #ccc !important; box-shadow: none !important; }
-        .stat-box { border: 1px solid #ccc !important; }
-        .section-card { border: 1px solid #ddd !important; }
-        .section-card th { background: #f5f5f5 !important; color: #333 !important; }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="dashboard-stats">
 
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
-        <h2 style="color:#f1f5f9; font-size:1.3rem; margin:0;">📊 لوحة التحكم — تقرير عام</h2>
+        <h2 style="color:#0f172a; font-size:1.3rem; margin:0;">📊 لوحة التحكم — تقرير عام</h2>
         <button class="print-btn" onclick="window.print()">🖨️ طباعة التقرير</button>
     </div>
 
@@ -138,7 +92,7 @@
             <tbody>
             {% for c in recent_codes %}
             <tr>
-                <td style="direction:ltr; text-align:left; font-weight:700;">{{ c.code }}</td>
+                <td class="code-cell">{{ c.code }}</td>
                 <td>{{ c.sponsor_name }}</td>
                 <td>{% if c.status == 'used' %}<span class="badge badge-red">مستخدم</span>{% else %}<span class="badge badge-green">نشط</span>{% endif %}</td>
                 <td>{{ c.created_at }}</td>
@@ -161,20 +115,16 @@
             <div class="stat-box"><div class="stat-num" style="color:#f87171;">{{ visitor_stats.total }}</div><div class="stat-label">الكلي</div></div>
         </div>
         {% else %}
-        <p style="color:#94a3b8; font-size:.85rem;">{% if visitor_stats.message %}{{ visitor_stats.message }}{% else %}لم يتم إعداد التحليلات بعد{% endif %}</p>
+        <p style="color:#64748b; font-size:.85rem;">{% if visitor_stats.message %}{{ visitor_stats.message }}{% else %}لم يتم إعداد التحليلات بعد{% endif %}</p>
         {% endif %}
     </div>
 
-    <div style="text-align:center; margin-top:10px;">
-        <a href="/admin/cars/carspecification/" style="color:#fbbf24; font-weight:700;">🚗 إدارة السيارات ←</a>
-        &nbsp;&nbsp;
-        <a href="/admin/cars/sponsor/" style="color:#60a5fa; font-weight:700;">🏢 إدارة الرعاة ←</a>
-        &nbsp;&nbsp;
-        <a href="/admin/cars/promocode/" style="color:#34d399; font-weight:700;">🎟️ إدارة الأكواد ←</a>
-        &nbsp;&nbsp;
-        <a href="/admin/cars/adbanner/" style="color:#f87171; font-weight:700;">📢 إدارة البنرات ←</a>
-        &nbsp;&nbsp;
-        <a href="/admin/report/codes/" style="color:#a78bfa; font-weight:700;">📄 تقرير الأكواد للطباعة ←</a>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:14px;">
+        <a class="btn btn-outline" href="/admin/cars/carspecification/">🚗 إدارة السيارات</a>
+        <a class="btn btn-outline" href="/admin/cars/sponsor/">🏢 إدارة الرعاة</a>
+        <a class="btn btn-outline" href="/admin/cars/promocode/">🎟️ إدارة الأكواد</a>
+        <a class="btn btn-outline" href="/admin/cars/adbanner/">📢 إدارة البنرات</a>
+        <a class="btn btn-outline" href="/admin/report/codes/">📄 تقرير الأكواد للطباعة</a>
     </div>
 
 </div>
