@@ -241,7 +241,14 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'unique-snowflake',
-    }
+    },
+    # ذاكرة تخزين مشتركة بين كل عمال gunicorn (في قاعدة البيانات) تُستخدم فقط
+    # للـ throttle (محاولات الدخول وحدّ التوليد) كي لا يتجاوز المهاجم الحاجز
+    # بتوزيع طلباته على عمال مختلفين.
+    'shared': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache_shared',
+    },
 }
 
 

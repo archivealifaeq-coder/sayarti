@@ -8,7 +8,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q, Count
 from django.http import JsonResponse, HttpResponse
 from django import forms
-from django.core.cache import cache
+from django.core.cache import cache, caches
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode
 from .services.excel_importer import import_cars_from_excel
 from .services.textnorm import fold_ar, fold_engine
@@ -586,6 +586,15 @@ def generate_promo_code(request):
     if not sponsor:
         return JsonResponse({'success': False, 'error': 'شركة غير موجودة أو غير مفعلة'}, status=404)
 
+    # حدّ توليد لكل عنوان IP في الساعة — الحماية تشترك بين كل عمال gunicorn
+    # (تخزين في قاعدة البيانات لا في ذاكرة العامل الواحد).
+    shared = caches['shared']
+    ip = _client_ip(request)
+    rate_key = 'codegen:' + ip
+    generated = shared.get(rate_key, 0)
+    if generated >= CODE_GEN_RATE_LIMIT:
+        return JsonResponse({'success': False, 'error': 'حاول مرة أخرى لاحقاً'}, status=429)
+
     active_count = PromoCode.objects.filter(sponsor=sponsor, status='active').count()
     if active_count >= 500:
         return JsonResponse({'success': False, 'error': 'عدد الأكواد النشطة للشركة وصل الحد الأقصى'}, status=429)
@@ -607,6 +616,8 @@ def generate_promo_code(request):
 
     if not code:
         return JsonResponse({'success': False, 'error': 'تعذر توليد كود الآن'}, status=500)
+
+    shared.set(rate_key, generated + 1, 3600)
 
     return JsonResponse({
         'success': True,
@@ -674,20 +685,20 @@ def services_login(request):
         client_ip = _client_ip(request)
 
         fail_key = 'sfail:' + client_ip
-        failures = cache.get(fail_key, 0)
+        failures = caches['shared'].get(fail_key, 0)
         if failures >= 5:
             error = 'تم حظر الدخول مؤقتاً بسبب محاولات كثيرة — حاول بعد قليل.'
         else:
             sponsor = (Sponsor.objects.filter(slug=identifier, is_active=True).first()
                        or Sponsor.objects.filter(name=identifier, is_active=True).first())
             if sponsor and sponsor.password and sponsor.check_password(password):
-                cache.delete(fail_key)
+                caches['shared'].delete(fail_key)
                 request.session.flush()
                 request.session['sponsor_id'] = sponsor.id
                 request.session['sponsor_name'] = sponsor.name
                 request.session['sponsor_slug'] = sponsor.slug
                 return redirect(next_url)
-            cache.set(fail_key, failures + 1, 300)
+            caches['shared'].set(fail_key, failures + 1, 300)
             error = 'بيانات الدخول غير صحيحة — تأكد من اسم الحساب وكلمة المرور.'
 
     return render(request, 'cars/services.html', {
@@ -751,6 +762,9 @@ _REPORT_PERIODS = (
 
 # حد أقصى للصفوف المحمّلة/المعروضة في التقرير دفعة واحدة؛ البقية تبقى في قاعدة البيانات
 _REPORT_LIMIT = 500
+
+# حد توليد أكواد لكل عنوان IP في الساعة (حماية من التخزين الآلي)
+CODE_GEN_RATE_LIMIT = 60
 
 
 @staff_member_required

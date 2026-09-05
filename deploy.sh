@@ -9,6 +9,7 @@ echo '== 2/4 الترحيلات (إن وجدت) =='
 source venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate --noinput
+python manage.py createcachetable django_cache_shared
 
 echo '== 3/4 إصلاح تسمية الوقود الهجين =='
 python manage.py shell -c "
