@@ -731,6 +731,9 @@ _REPORT_PERIODS = (
     ('year', 'سنة'),
 )
 
+# حد أقصى للصفوف المحمّلة/المعروضة في التقرير دفعة واحدة؛ البقية تبقى في قاعدة البيانات
+_REPORT_LIMIT = 500
+
 
 @staff_member_required
 def admin_codes_report(request):
@@ -746,24 +749,42 @@ def admin_codes_report(request):
     if period not in ('all', 'day', 'month', 'year'):
         period = 'month'
 
+    def _valid_int(value, default):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
     qs = PromoCode.objects.select_related('sponsor').order_by('-created_at')
 
     if period == 'day':
-        day = request.GET.get('day') or today.isoformat()
-        qs = qs.filter(created_at__date=day)
+        day = request.GET.get('day')
+        if not day:
+            day = today.isoformat()
+        try:
+            day_filter = date.fromisoformat(day)
+        except ValueError:
+            day_filter = today
+        qs = qs.filter(created_at__date=day_filter)
     elif period == 'month':
-        month = request.GET.get('month') or today.strftime('%Y-%m')
+        month = request.GET.get('month')
+        if not month:
+            month = today.strftime('%Y-%m')
         y, _, m = month.partition('-')
-        qs = qs.filter(created_at__year=int(y), created_at__month=int(m))
+        qs = qs.filter(
+            created_at__year=_valid_int(y, today.year),
+            created_at__month=_valid_int(m, today.month),
+        )
     elif period == 'year':
-        year = request.GET.get('year') or str(today.year)
-        qs = qs.filter(created_at__year=int(year))
-    else:
-        qs = qs
+        year = request.GET.get('year')
+        if not year:
+            year = str(today.year)
+        qs = qs.filter(created_at__year=_valid_int(year, today.year))
 
-    rows = list(qs)
-    total = len(rows)
-    used = sum(1 for r in rows if r.status == 'used')
+    # إجمالي صحيح من قاعدة البيانات والصفوف المقصوصة فقط تُحمَّل في الذاكرة
+    total = qs.count()
+    used = qs.filter(status='used').count()
+    rows = list(qs[:_REPORT_LIMIT])
 
     if period == 'day':
         sel = request.GET.get('day') or today.isoformat()
