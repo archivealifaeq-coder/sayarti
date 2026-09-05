@@ -6,6 +6,7 @@ from django import forms
 from django.http import HttpResponse
 from django.template import Template, RequestContext
 from django.utils.html import format_html, mark_safe
+from django.core.cache import cache
 from django.db.models import Count
 from django.db import models as db_models
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode
@@ -588,7 +589,21 @@ class PromoCodeAdmin(admin.ModelAdmin):
 admin.site.index_template = 'admin/custom_index.html'
 
 
+DASH_STATS_CACHE_KEY = 'admin_dash_stats'
+DASH_STATS_CACHE_TTL = 60
+
+
 def get_dashboard_stats():
+    """إحصاءات لوحة التحكم — تُحسب وتُخزَّن دقيقة كاملة حتى لا تُثقَل كل صفحة إدارة.
+
+    تُمسح تلقائياً بانتهاء الصلاحية (60 ثانية)؛ الأرقام داخل 60 ثانية كافية للوحة.
+    """
+    from django.core.cache import cache as _cache
+
+    cached = _cache.get(DASH_STATS_CACHE_KEY)
+    if cached is not None:
+        return cached
+
     from .services.ga_stats import get_visitor_stats
 
     sponsors_data = Sponsor.objects.annotate(
@@ -632,7 +647,7 @@ def get_dashboard_stats():
     total_codes = PromoCode.objects.count()
     used_codes = PromoCode.objects.filter(status='used').count()
 
-    return {
+    result = {
         'total_cars': CarSpecification.objects.count(),
         'total_brands': CarSpecification.objects.values('brand_ar').distinct().count(),
         'total_banners': AdBanner.objects.count(),
@@ -645,6 +660,8 @@ def get_dashboard_stats():
         'recent_codes': recent_codes,
         'visitor_stats': get_visitor_stats(),
     }
+    _cache.set(DASH_STATS_CACHE_KEY, result, DASH_STATS_CACHE_TTL)
+    return result
 
 
 from django.template.context_processors import request as request_processor

@@ -1,4 +1,5 @@
 ﻿from django.db import models
+from django.core.cache import cache
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
@@ -374,6 +375,10 @@ class FeatureCard(models.Model):
         verbose_name = "بطاقة مميزات"
         verbose_name_plural = "بطاقات المميزات"
 
+SITE_SETTINGS_CACHE_KEY = 'site_settings_obj'
+SITE_SETTINGS_CACHE_TTL = 60
+
+
 class SiteSettings(models.Model):
     """Global site settings - singleton row (ID=1)."""
     show_ads = models.BooleanField(
@@ -456,8 +461,13 @@ class SiteSettings(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+        cache.delete(SITE_SETTINGS_CACHE_KEY)
 
     @classmethod
     def load(cls):
+        obj = cache.get(SITE_SETTINGS_CACHE_KEY)
+        if obj is not None:
+            return obj
         obj, _ = cls.objects.get_or_create(pk=1)
+        cache.set(SITE_SETTINGS_CACHE_KEY, obj, SITE_SETTINGS_CACHE_TTL)
         return obj

@@ -298,6 +298,20 @@ def import_excel_view(request):
     return render(request, 'cars/import_excel.html', {'form': form})
 
 
+MIX_CAR_LIMIT = 3000
+
+
+def _mix_cars():
+    """قائمة السيارات لحاسبة الخلط — مقصودة عمداً بحد أقصى (أحدث/أشهر أولاً).
+
+    القائمة الكاملة ضخمة وقد تتضخم؛ يبقى باقي السيارات في قاعدة البيانات
+    وتصل إليه عبر البحث أو لوحة الإدارة. لا تُحمَّل كل الصفوف في الذاكرة.
+    """
+    return (CarSpecification.objects.all()
+            .order_by('-year', 'brand_ar', 'model_ar')
+            .only('id', 'brand_ar', 'model_ar', 'year', 'octane', 'oil_capacity')[:MIX_CAR_LIMIT])
+
+
 def mix_calculator_view(request):
     result = None
     
@@ -309,15 +323,15 @@ def mix_calculator_view(request):
             tank = float(request.POST.get('tank_capacity'))
             
             if tank <= 0:
-                messages.error(request, "\u26a0\ufe0f \u0633\u0639\u0629 \u0627\u0644\u062e\u0632\u0627\u0646 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631")
-                return render(request, 'cars/mix_calculator.html', {'cars': CarSpecification.objects.all().order_by('brand_ar', 'model_ar'), 'result': result})
+                messages.error(request, "⚠️ سعة الخزان يجب أن تكون أكبر من صفر")
+                return render(request, 'cars/mix_calculator.html', {'cars': _mix_cars(), 'result': result})
             
             if o1 < 80 or o1 > 120 or o2 < 80 or o2 > 120:
-                messages.error(request, "\u26a0\ufe0f \u0631\u0642\u0645 \u0627\u0644\u0623\u0648\u0643\u062a\u0627\u0646 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0628\u064a\u0646 80 \u0648 120")
-                return render(request, 'cars/mix_calculator.html', {'cars': CarSpecification.objects.all().order_by('brand_ar', 'model_ar'), 'result': result})
+                messages.error(request, "⚠️ رقم الأوكتان يجب أن يكون بين 80 و 120")
+                return render(request, 'cars/mix_calculator.html', {'cars': _mix_cars(), 'result': result})
             
             if not (min(o1, o2) <= target <= max(o1, o2)):
-                messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0623\u0648\u0643\u062a\u0627\u0646 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0628\u064a\u0646 \u0627\u0644\u0646\u0648\u0639\u064a\u0646")
+                messages.error(request, "⚠️ الأوكتان المطلوب يجب أن يكون بين النوعين")
             else:
                 if o1 != o2:
                     r1 = (target - o2) / (o1 - o2)
@@ -334,14 +348,13 @@ def mix_calculator_view(request):
                     'target': target,
                     'tank': tank,
                 }
-                messages.success(request, "\u2705 \u062a\u0645 \u062d\u0633\u0627\u0628 \u0627\u0644\u062e\u0644\u0637\u0629 \u0628\u0646\u062c\u0627\u062d!")
+                messages.success(request, "✅ تم حساب الخلطة بنجاح!")
         except ValueError:
-            messages.error(request, "\u26a0\ufe0f \u064a\u0631\u062c\u0649 \u0625\u062f\u062e\u0627\u0644 \u0623\u0631\u0642\u0627\u0645 \u0635\u062d\u064a\u062d\u0629.")
+            messages.error(request, "⚠️ يرجى إدخال أرقام صحيحة.")
         except ZeroDivisionError:
-            messages.error(request, "\u26a0\ufe0f \u062d\u062f\u062b \u062e\u0637\u0623 \u0641\u064a \u0627\u0644\u062d\u0633\u0627\u0628. \u062a\u0623\u0643\u062f \u0645\u0646 \u0627\u0644\u0642\u064a\u0645 \u0627\u0644\u0645\u062f\u062e\u0644\u0629.")
+            messages.error(request, "⚠️ حدث خطأ في الحساب. تأكد من القيم المدخلة.")
     
-    cars = CarSpecification.objects.all().only('id', 'brand_ar', 'model_ar', 'year', 'octane', 'oil_capacity').order_by('brand_ar', 'model_ar')
-    return render(request, 'cars/mix_calculator.html', {'cars': cars, 'result': result})
+    return render(request, 'cars/mix_calculator.html', {'cars': _mix_cars(), 'result': result})
 
 
 def recommendations_view(request, car_id):
@@ -636,9 +649,14 @@ def verify_code_page(request, slug):
 
 
 def _client_ip(request):
+    """عنوان الزائر الحقيقي خلف nginx دون قدرة الزائر على تزويره.
+
+    nginx يُلحق عنوانه الحقيقي ($remote_addr) آخر X-Forwarded-For؛ أول قيمة
+    يرسلها الزائر نفسه فيمكن تزويرها، لذا نأخذ القيمة الأخيرة دائماً.
+    """
     xff = request.META.get('HTTP_X_FORWARDED_FOR')
     if xff:
-        return xff.split(',')[0].strip()
+        return xff.rsplit(',')[-1].strip()
     return request.META.get('REMOTE_ADDR', '127.0.0.1')
 
 
