@@ -765,20 +765,21 @@ def admin_codes_report(request):
     total = len(rows)
     used = sum(1 for r in rows if r.status == 'used')
 
+    if period == 'day':
+        sel = request.GET.get('day') or today.isoformat()
+    elif period == 'month':
+        sel = request.GET.get('month') or today.strftime('%Y-%m')
+    elif period == 'year':
+        sel = request.GET.get('year') or str(today.year)
+    else:
+        sel = 'الكل'
+    period_label = dict(_REPORT_PERIODS).get(period, 'الكل')
+
     def _lines():
         lines = []
         lines.append('=' * 50)
         lines.append('تقرير أكواد الخصم — سيارتي')
         lines.append('=' * 50)
-        period_label = dict(_REPORT_PERIODS).get(period, 'الكل')
-        if period == 'day':
-            sel = request.GET.get('day') or today.isoformat()
-        elif period == 'month':
-            sel = request.GET.get('month') or today.strftime('%Y-%m')
-        elif period == 'year':
-            sel = request.GET.get('year') or str(today.year)
-        else:
-            sel = 'الكل'
         lines.append(f'الفترة: {period_label} | {sel}')
         lines.append(f'عدد الأكواد: {total} | المستخدمة: {used}')
         lines.append('-' * 50)
