@@ -617,7 +617,7 @@ def get_dashboard_stats():
     for b in banners_table:
         b['sponsor_name'] = b.get('sponsor__name') or ''
 
-    recent_codes_qs = PromoCode.objects.select_related('sponsor').order_by('-created_at')[:15]
+    recent_codes_qs = PromoCode.objects.select_related('sponsor').order_by('-created_at')[:20]
     recent_codes = []
     for c in recent_codes_qs:
         recent_codes.append({
