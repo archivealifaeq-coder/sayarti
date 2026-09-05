@@ -2033,6 +2033,15 @@
 
     <script>
     (function() {
+        /* تعريف آمن لرمز CSRF (يُستعمل في ترويسة الطلب). لا سبتمبر هذا الطلب
+           منذ @csrf_exempt، لكنه يضمن السلامة إن تغيّرت الإعدادات مستقبلاً. */
+        if (!window.csrfToken) {
+            try {
+                var cb = document.cookie.match(/csrftoken=([\w-]+)/);
+                window.csrfToken = cb ? cb[1] : '';
+            } catch (e) { window.csrfToken = ''; }
+        }
+
         var modal = document.getElementById('promoModal');
         var spinner = document.getElementById('promoSpinner');
         var title = document.getElementById('promoTitle');
