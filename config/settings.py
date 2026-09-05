@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -278,7 +279,10 @@ SECURE_REFERRER_POLICY = 'same-origin'
 _PROD_SECURE_OVERRIDE = os.getenv('PROD_SECURE', '').lower() in ('1', 'true', 'yes', 'on')
 _IS_PROD = (not DEBUG) or _PROD_SECURE_OVERRIDE
 
-if _IS_PROD:
+# أثناء الاختبارات لا نفرض HTTPS ولا كوكيز آمنة: أداة الاختبار تتحدث HTTP.
+_IS_TEST = 'test' in sys.argv
+
+if _IS_PROD and not _IS_TEST:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -294,3 +298,22 @@ if _IS_PROD:
         # نطاق افتراضي آمن؛ غيّره من .env إن كان النطاق مختلفاً
         _origins = ['https://sayarti.org', 'https://www.sayarti.org']
     CSRF_TRUSTED_ORIGINS = _origins
+
+
+# ============================================================
+# SQLite: تقليل "database is locked" تحت تحمّل التزامن — WAL
+# يسمح بقراءة متوازية مع الكتابة، وbusy_timeout ينتظر القفل بدل الفشل
+# الفوري. (لا يؤثر على PostgreSQL: يعمل فقط عند الاتصال بـ sqlite)
+# ============================================================
+from django.db.backends.signals import connection_created
+from django.dispatch import receiver
+
+
+@receiver(connection_created)
+def _sqlite_concurrency_setup(sender, connection, **kwargs):
+    if connection.vendor != 'sqlite':
+        return
+    with connection.cursor() as cursor:
+        cursor.execute('PRAGMA journal_mode=WAL;')
+        cursor.execute('PRAGMA busy_timeout=5000;')
+        cursor.execute('PRAGMA synchronous=NORMAL;')
