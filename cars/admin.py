@@ -574,8 +574,8 @@ class PromoCodeAdmin(admin.ModelAdmin):
 
     def status_badge(self, obj):
         if obj.status == 'used':
-            return format_html('<span style="background:#ef444420; padding:2px 12px; border-radius:12px; color:#f87171;">مستخدم</span>')
-        return format_html('<span style="background:#22c55e20; padding:2px 12px; border-radius:12px; color:#4ade80;">نشط</span>')
+            return mark_safe('<span style="background:#ef444420; padding:2px 12px; border-radius:12px; color:#f87171;">مستخدم</span>')
+        return mark_safe('<span style="background:#22c55e20; padding:2px 12px; border-radius:12px; color:#4ade80;">نشط</span>')
     status_badge.short_description = 'الحالة'
 
     def verified_by_display(self, obj):
