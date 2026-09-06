@@ -10,7 +10,7 @@ set -euo pipefail
 # ---- 0) إعدادات (عدّل إن لزم) ----------------------------------------------
 APP_DIR="/var/www/sayarti"
 BACKUP_NAME="sayarti-full-backup"
-WORK_DIR="${APP_DIR}/backup_work"
+WORK_DIR="/tmp/sayarti_backup_$$"
 BACKUP_DIR="${WORK_DIR}/artifact"
 DATE_STAMP="$(date +%Y-%m-%d_%H%M%S)"
 

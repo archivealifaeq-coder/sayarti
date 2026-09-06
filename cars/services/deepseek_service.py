@@ -10,7 +10,7 @@ GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 GROQ_MODEL = 'qwen/qwen3.8-27b'
 TIMEOUT = 35
 
-GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent'
 
 BUDGET_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.
 تحدث باللغة العربية الفصحى الواضحة واللطيفة (تجنب اللهجة العامية).
@@ -136,8 +136,8 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
     prompt = _build_prompt(budget, currency, car_type, condition)
 
     providers = [
-        ('Groq', _call_groq),
         ('Gemini', _call_gemini),
+        ('Groq', _call_groq),
     ]
 
     errors = []
@@ -212,8 +212,8 @@ def suggest_cars_ai(brand='', model='', year='', engine=''):
     prompt = _build_search_prompt(brand, model, year, engine)
 
     providers = [
-        ('Groq', _call_groq),
         ('Gemini', _call_gemini),
+        ('Groq', _call_groq),
     ]
 
     for name, call in providers:
