@@ -770,7 +770,7 @@
                     return;
                 }
                 quickBusy = true;
-                quickResults.innerHTML = '<div class="quick-loading"><div class="spin-wheel" style="width:36px;height:36px;"></div><p class="text-slate-400 text-sm mt-2">الذكاء يفهم طلبك ويجلب لك النتائج...</p></div>';
+                quickResults.innerHTML = '<div class="quick-loading"><div class="spin-wheel" style="width:40px;height:40px;"></div><p class="text-slate-300 text-sm mt-2 font-bold">⏳ أبو الشباب، انتظرنا شوية</p><p class="text-slate-500 text-xs mt-1">وراح نجهّزلك أدق النتائج...</p></div>';
                 if (quickBtn) quickBtn.disabled = true;
                 fetch('/search/quick/?q=' + encodeURIComponent(q), { headers: { 'Accept': 'text/html' } })
                     .then(function(r) { return r.text(); })

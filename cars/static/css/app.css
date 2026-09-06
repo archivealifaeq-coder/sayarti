@@ -1606,14 +1606,30 @@
             white-space: nowrap;
         }
         .quick-db-specs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px 12px;
-            color: #94a3b8;
-            font-size: 0.68rem;
-            font-weight: 600;
-            padding: 8px 0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px 10px;
+            color: #cbd5e1;
+            font-size: 0.66rem;
+            font-weight: 700;
+            padding: 9px 0 4px;
             border-top: 1px dashed rgba(148, 163, 184, 0.14);
+        }
+        .quick-db-specs span {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 8px;
+            padding: 4px 7px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .quick-db-specs span b { color: #fbbf24; font-size: 0.72rem; flex-shrink: 0; }
+        @media (min-width: 640px) {
+            .quick-db-specs { grid-template-columns: repeat(2, 1fr); }
         }
         .quick-db-go {
             display: inline-block;

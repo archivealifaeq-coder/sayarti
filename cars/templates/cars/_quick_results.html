@@ -51,10 +51,15 @@
                     {% if car.fuel %}<span class="quick-dot">⛽ {{ car.fuel }}</span>{% endif %}
                 </div>
                 <div class="quick-db-specs">
-                    {% if car.octane %}<span>⭕ أوكتان {{ car.octane }}</span>{% endif %}
-                    {% if car.oil_visc %}<span>🛢️ {{ car.oil_visc }}</span>{% endif %}
-                    {% if car.tire_size %}<span>🛞 {{ car.tire_size }}</span>{% endif %}
-                    {% if car.battery %}<span>🔋 {{ car.battery }}</span>{% endif %}
+                    {% if car.octane %}<span><b>⭕</b> أوكتان {{ car.octane }}</span>{% endif %}
+                    {% if car.oil_visc %}<span><b>🛢️</b> {{ car.oil_visc }}</span>{% endif %}
+                    {% if car.oil_capacity %}<span><b>🧴</b> {{ car.oil_capacity }}</span>{% endif %}
+                    {% if car.spark %}<span><b>⚡</b> {{ car.spark }}</span>{% endif %}
+                    {% if car.tire_size %}<span><b>🛞</b> {{ car.tire_size }}</span>{% endif %}
+                    {% if car.battery %}<span><b>🔋</b> {{ car.battery }}</span>{% endif %}
+                    {% if car.transmission_type %}<span><b>⚙️</b> {{ car.transmission_type }}</span>{% endif %}
+                    {% if car.transmission_oil_spec %}<span><b>🛢️</b> ناقل: {{ car.transmission_oil_spec }}</span>{% endif %}
+                    {% if car.oil_brands %}<span><b>🏷️</b> زيت: {{ car.oil_brands }}</span>{% endif %}
                 </div>
                 <span class="quick-db-go">عرض التوصيات والتفاصيل ←</span>
             </a>
