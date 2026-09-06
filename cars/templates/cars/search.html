@@ -80,19 +80,14 @@
                             <span class="mode-card-icon">⚡</span>
                             <div>
                                 <h3 class="mode-card-title">البحث السريع</h3>
-                                <p class="mode-card-note">اكتب ماركة وموديل سيارتك والسنة — والذكاء يفهمك ويجلب لك كل المواصفات والمحركات تلقائياً</p>
+                                <p class="mode-card-note">اكتب ماركة وموديل سيارتك والسنة — ونجهّز لك أدقّ النتائج</p>
                             </div>
                         </div>
                         <div class="quick-search-row">
-                            <input type="text" id="quickSearchInput" class="search-input" placeholder="مثال: كورلا 2022 هايبرد" maxlength="200" autocomplete="off">
+                            <input type="text" id="quickSearchInput" class="search-input" placeholder="كورلا 2022 هايبرد" maxlength="200" autocomplete="off">
                             <button type="button" class="btn-primary quick-search-btn" id="quickSearchBtn">🔍 بحث</button>
                         </div>
-                        <div class="quick-hints">
-                            <span class="quick-hints-label">جرّب:</span>
-                            <button type="button" class="chip quick-hint" data-q="كورلا 2022 هايبرد">كورلا 2022 هايبرد</button>
-                            <button type="button" class="chip quick-hint" data-q="هايلكس 2020 ديزل">هايلكس 2020 ديزل</button>
-                            <button type="button" class="chip quick-hint" data-q="كامري هايبرد">كامري هايبرد</button>
-                        </div>
+                        
                         <div id="quick-results" class="quick-results"></div>
                     </div>
 
@@ -814,15 +809,6 @@
                 });
                 quickInput.addEventListener('click', function(e) { e.stopPropagation(); });
             }
-
-            var quickHints = document.querySelectorAll('.quick-hint');
-            quickHints.forEach(function(chip) {
-                chip.addEventListener('click', function() {
-                    var q = chip.getAttribute('data-q') || '';
-                    if (quickInput) quickInput.value = q;
-                    runQuickSearch(q);
-                });
-            });
 
             /* إن كانت الصفحة محمّلة بمعاملات بحث (رابط مباشر) نفتح الوضعين تلقائياً */
             var hasParams = '{{ has_params|yesno:"1,0" }}' === '1';
