@@ -75,31 +75,6 @@
             white-space: nowrap;
         }
         .pwa-install-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 30px rgba(245, 158, 11, 0.45); }
-        .pwa-install-fab {
-            position: fixed;
-            bottom: 84px;
-            left: 22px;
-            z-index: 9991;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #0a0f1a;
-            font-weight: 800;
-            font-size: 0.85rem;
-            padding: 12px 22px;
-            border-radius: 60px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-            box-shadow: 0 10px 35px rgba(245, 158, 11, 0.4);
-            animation: installPulse 2.6s ease-in-out infinite;
-        }
-        @keyframes installPulse {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
-        }
-        .pwa-install-fab:hover { transform: translateY(-3px) scale(1.05); }
         #pwaModal { display: none; }
         #pwaModal.open { display: flex; }
         .pwa-modal-overlay {
@@ -1941,8 +1916,6 @@
                         }
                         deferredPrompt = null;
                         if (installBtn) installBtn.style.display = 'none';
-                        var fab = document.getElementById('pwaInstallFab');
-                        if (fab) fab.style.display = 'none';
                     });
                 } else {
                     openPwaModal();
@@ -1950,22 +1923,6 @@
             }
 
             if (installBtn) installBtn.addEventListener('click', doInstall);
-
-            var fab = document.getElementById('pwaInstallFab');
-            var fabGo = document.getElementById('pwaInstallFabGo');
-            var fabClose = document.getElementById('pwaInstallFabClose');
-            if (fabGo && fabGo.addEventListener) {
-                fabGo.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    doInstall();
-                });
-            }
-            if (fabClose && fabClose.addEventListener) {
-                fabClose.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (fab) fab.style.display = 'none';
-                });
-            }
 
             window.addEventListener('beforeinstallprompt', function(e) {
                 e.preventDefault();
@@ -1980,8 +1937,6 @@
             window.addEventListener('appinstalled', function() {
                 deferredPrompt = null;
                 if (installBtn) installBtn.style.display = 'none';
-                var fab = document.getElementById('pwaInstallFab');
-                if (fab) fab.style.display = 'none';
             });
 
             var modalClose = document.getElementById('pwaModalClose');
@@ -1991,16 +1946,6 @@
 
         })();
     </script>
-
-    <button type="button" id="pwaInstallFab" class="pwa-install-fab" aria-label="تثبيت التطبيق">
-        <span class="pwa-fab-head">📲 <b>ثبّت تطبيق سيارتي</b><span class="pwa-fab-x" id="pwaInstallFabClose" role="button" tabindex="0" aria-label="إغلاق">✕</span></span>
-        <span class="pwa-fab-steps">
-            1️⃣ اضغط المشاركة <b>⬆️</b> في المتصفح<br>
-            2️⃣ اختر إضافة إلى الشاشة الرئيسية<br>
-            3️⃣ اضغط <b>إضافة</b> — يصبح تطبيق 🚗
-        </span>
-        <span class="pwa-fab-cta" id="pwaInstallFabGo">⬇️ تثبيت الآن</span>
-    </button>
 
     <div id="pwaModal">
         <div class="pwa-modal-overlay" onclick="if(event.target===this)this.parentElement.classList.remove('open')">
