@@ -90,6 +90,7 @@
             transition: all 0.3s ease;
         }
         .car-result:hover { border-color: rgba(245, 158, 11, 0.3); transform: translateY(-2px); }
+        .car-result.over-budget { border-color: rgba(250, 204, 21, 0.45); background: rgba(250, 204, 21, 0.05); }
 
         .price-badge {
             display: inline-block;
@@ -225,21 +226,23 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                        <label class="block text-slate-300 text-sm font-semibold mb-2">🚗 نوع السيارة</label>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">🚗 نوع السيارة / المواصفات</label>
                         <select name="car_type" class="select-custom">
-                            <option value="all">الكل</option>
-                            <option value="japanese">ياباني (تويوتا، نيسان، مازدا)</option>
-                            <option value="korean">كوري (هيونداي، كيا)</option>
-                            <option value="chinese">صيني (شيري، MG، جيلي)</option>
-                            <option value="american">أمريكي (شفروليت، فورد)</option>
-                            <option value="european">أوروبي (فولكس، أوبل)</option>
+                            <option value="all" {% if car_type == 'all' %}selected{% endif %}>الكل</option>
+                            <option value="japanese" {% if car_type == 'japanese' %}selected{% endif %}>ياباني (تويوتا، نيسان، مازدا)</option>
+                            <option value="korean" {% if car_type == 'korean' %}selected{% endif %}>كوري (هيونداي، كيا)</option>
+                            <option value="chinese" {% if car_type == 'chinese' %}selected{% endif %}>صيني (شيري، MG، جيلي)</option>
+                            <option value="american" {% if car_type == 'american' %}selected{% endif %}>أمريكي (شيفروليه، فورد، دودج)</option>
+                            <option value="german" {% if car_type == 'german' %}selected{% endif %}>ألماني (فولكس فاغن، أوبل، BMW، مرسيدس)</option>
+                            <option value="european" {% if car_type == 'european' %}selected{% endif %}>أوروبي (رينو، بيجو، وغيرها)</option>
+                            <option value="iranian" {% if car_type == 'iranian' %}selected{% endif %}>إيراني (سايبا، إيران خودرو)</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-slate-300 text-sm font-semibold mb-2">📦 الحالة</label>
                         <select name="condition" class="select-custom">
-                            <option value="used">مستعمل</option>
-                            <option value="new">جديد</option>
+                            <option value="used" {% if condition == 'used' %}selected{% endif %}>مستعمل</option>
+                            <option value="new" {% if condition == 'new' %}selected{% endif %}>جديد</option>
                         </select>
                     </div>
                 </div>
@@ -271,7 +274,7 @@
 
             {% elif result %}
                 {% if result.success %}
-                <div class="mb-4 flex flex-wrap justify-between items-center">
+                <div class="mb-4 flex flex-wrap justify-between items-center gap-2">
                     <a href="{% url 'budget_finder' %}" class="text-amber-400 hover:text-amber-300 transition text-sm font-semibold">🔄 بحث جديد</a>
                     <p class="text-slate-400 text-sm">
                         💰 الميزانية: <span class="text-amber-400 font-bold">{{ budget|floatformat:0 }}</span>
@@ -280,20 +283,36 @@
                     </p>
                 </div>
 
-                <h2 class="text-xl font-bold text-white mb-4">🚗 خياراتك المتاحة:</h2>
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                    <h2 class="text-xl font-bold text-white">🚗 خياراتك المتاحة:</h2>
+                    <span class="price-badge">✨ {{ result.cars|length }} خيارات دقيقة</span>
+                    {% if result.provider == 'Gemini' %}
+                    <span class="tag-badge tag-blue">🤖 أعدّها Gemini الذكاء الاصطناعي</span>
+                    {% else %}
+                    <span class="tag-badge tag-blue">🤖 أعدّها {{ result.provider }}</span>
+                    {% endif %}
+                </div>
+
+                {% if result.cars|length < 2 %}
+                <p class="text-slate-400 text-xs mb-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                    ℹ️ لم نجد خيارين كافيين ضمن ميزانيتك بدرجة عالية من الدقة، فعرضنا الأقرب فقط.
+                </p>
+                {% endif %}
 
                 <div class="space-y-4">
                     {% for car in result.cars %}
-                    <div class="car-result">
+                    <div class="car-result{% if car.over_budget %} over-budget{% endif %}">
                         <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
-                            <h3 class="text-lg font-bold text-white">{{ forloop.counter }}. {{ car.name }}</h3>
-                            <span class="price-badge">{{ car.price_iq }}</span>
+                            <h3 class="text-lg font-bold text-white">{{ forloop.counter }}. {{ car.name }}
+                                {% if car.over_budget %}<span class="tag-badge" style="background:rgba(250,204,21,0.15); color:#fde047; border:1px solid rgba(250,204,21,0.25);">⚠️ فوق الميزانية بقليل</span>{% endif %}
+                            </h3>
+                            <span class="price-badge">{{ car.price_iq|default:"—" }}</span>
                         </div>
-                        <p class="text-slate-400 text-sm mb-3">{{ car.price_usd }} دولار</p>
+                        <p class="text-slate-400 text-sm mb-3">{{ car.price_usd|default:"—" }} دولار</p>
                         <div class="flex flex-wrap gap-2 mb-3">
-                            <span class="tag-badge tag-blue">⚙️ {{ car.engine }}</span>
-                            <span class="tag-badge tag-green">⛽ {{ car.fuel_economy }}</span>
-                            <span class="tag-badge tag-amber">🔧 {{ car.maintenance }}</span>
+                            <span class="tag-badge tag-blue">⚙️ {{ car.engine|default:"—" }}</span>
+                            <span class="tag-badge tag-green">⛽ {{ car.fuel_economy|default:"جيد" }}</span>
+                            <span class="tag-badge tag-amber">🔧 {{ car.maintenance|default:"متوسطة" }}</span>
                             <span class="tag-badge tag-blue">📅 {{ car.year }}</span>
                         </div>
                         <p class="text-slate-300 text-sm">{{ car.pros }}</p>
@@ -302,7 +321,7 @@
                 </div>
 
                 <div class="mt-6 p-4 rounded-xl text-center" style="background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.1);">
-                    <p class="text-slate-400 text-xs">⚠️ الأسعار تقريبية وتختلف حسب البائع وحالة الكيلومترات ولوحة المدينة</p>
+                    <p class="text-slate-400 text-xs">⚠️ الأسعار تقريبية ومدقّقة ضمن ميزانيتك وتختلف حسب حالة السيارة والكيلومترات ولوحة المدينة</p>
                 </div>
 
                 {% else %}

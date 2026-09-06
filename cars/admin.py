@@ -435,7 +435,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         }),
         ('🤖 الذكاء الاصطناعي (شكد فلوسك)', {
             'fields': ('groq_api_key', 'gemini_api_key', 'deepseek_api_key'),
-            'description': '<b>Groq (الأساسي)</b>: مجاني بدون بطاقة من console.groq.com — <b>Gemini (الاحتياطي)</b>: من aistudio.google.com — <b>DeepSeek</b>: احتياطي اختياري من platform.deepseek.com. بدون مفتاح Groq تظهر رسالة "غير مفعلة".'
+            'description': '<b>DeepSeek (الأساسي)</b>: من platform.deepseek.com — <b>Groq</b>: احتياطي سريع — <b>Gemini</b>: احتياطي أخير. بدون مفتاح DeepSeek ستنتقل الخدمة تلقائياً للاحتياطيات.'
         }),
     )
 

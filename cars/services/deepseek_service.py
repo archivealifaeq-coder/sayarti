@@ -1,7 +1,10 @@
 import json
 import logging
+import hashlib
+import re
 import requests
 from django.conf import settings
+from django.core.cache import cache, caches
 from ..models import SiteSettings
 
 logger = logging.getLogger('cars')
@@ -10,36 +13,60 @@ GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 GROQ_MODEL = 'qwen/qwen3.8-27b'
 TIMEOUT = 35
 
+DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
+DEEPSEEK_MODEL = getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-v4-flash')
 GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent'
 
-BUDGET_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.
-تحدث باللغة العربية الفصحى الواضحة واللطيفة (تجنب اللهجة العامية).
+MAX_BUDGET_RESULTS = 2
+MIN_YEAR = 1990
+MAX_YEAR = 2026
+PRICE_TOLERANCE = 1.03  # هامش صغير: 3%
+
+PERSIAN_BRANDS = 'سايبا (ساينا، كيك، برايد)، إيكو/ایرانخودرو (سمند، بارس، دينا، رانا، تارا، رونا)'
+
+BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في سوق السيارات العراقي (بغداد والبصرة وبقية المدن).
+تحدّث بالعربية الفصحى الواضحة واللطيفة (تجنّب اللهجة العامية).
 
 الميزانية: {budget} {currency_name}
-نوع السيارة: {car_type}
+نوع السيارة المفضّل: {car_type}
 الحالة: {condition}
 
-أعطني 6-8 سيارات مناسبة بالسوق العراقي بالتنسيق التالي (JSON فقط، بدون نص إضافي):
+المطلوب: أعطني بالضبط سيارتين فقط مناسبتين ومتوفرتين فعلاً في السوق العراقي وضمن الميزانية.
+
+سلم الأسعار التقريبي في العراق (مرجع فقط — تويوتا أغلى قيمة من غيرها والكوري أوسط):
+- اقتصادية صغيرة (كيا بيكانتو، هيونداي i10، شفروليه سبارك/أوبترا، دايوس، سوزوكي): 7-15 مليون دينار
+- اقتصادية إيرانية سايبا (ساينا، كيك، برايد): 8-14 مليون، إيكو/ایرانخودرو (سمند، بارس، دينا): 10-18 مليون
+- سيدان عائلية (هيونداي النترا، كيا سيراتو، مازدا 3، نيسان صني، تويوتا كورولا): 15-35 مليون (كورولا الأعلى قيمة)
+- سيدان متوسطة (تويوتا كامري، هيونداي سوناتا، مازدا 6، شيفروليه ماليبو): 30-55 مليون
+- SUV صغيرة صينية (شيري تيغو، جيلي، MG، بايك): 15-30 مليون
+- SUV متوسطة (تويوتا راف4، هيونداي توكسون، كيا سبورتاج): 35-55 مليون
+- فاخرة أمريكية/ألمانية (فورد، شيفروليه، فولكس فاغن، BMW، مرسيدس، أوبل): 35 مليون وأكثر حسب العمود والسنة
+
+قواعد صارمة (مطلوبة 100%):
+1. كل سيارة يجب أن تكون ضمن الميزانية تماماً — ممنوع تجاوز {budget} {currency_name} بأي حال من الأحوال.
+2. الأسعار واقعية ومتناسقة مع سلم الأسعار أعلاه ومع عمر السيارة (الأقدم أرخص، الأحدث أغلى). لا تضخّم الأسعار ولا تخنقها.
+3. أعطني بالضبط سيارتين فقط، الأقرب سعراً للميزانية والأدق من ناحية التوفر والصيانة (ممنوع التكرار).
+4. يجب أن يكون السعر قريباً جداً من الميزانية بدون تجاوزها قدر الإمكان؛ استهدف سيارات ضمن 85% إلى 100% من الميزانية.
+5. الزيادة بين price_min و price_max يجب ألا تتجاوز 30%.
+6. سنة السيارة واقعية: بين {min_year} و {max_year}.
+7. قيم price_min و price_max أرقام صحيحة بالـ {currency_name} (بدون فاصلة أو صيغة نصية).
+8. اكتب JSON فقط بدون أي نص قبله أو بعده:
+
 [
   {{
-    "name": "اسم السيارة والموديل",
+    "name": "اسم السيارة الكامل بالموديل",
     "year": 2018,
-    "price_iq": "20-25 مليون",
-    "price_usd": "13,000-16,000",
+    "price_min": 18000000,
+    "price_max": 22000000,
+    "price_iq": "18-22 مليون",
+    "price_usd": "12,000-14,500",
     "engine": "1.6L",
     "fuel_economy": "ممتاز/جيد/مقبول",
     "maintenance": "رخيصة/متوسطة/غالية",
-    "pros": "مميزات مختصرة بلغة عربية فصحى"
+    "pros": "مميزات مختصرة بالفصحى"
   }}
 ]
-
-قواعد:
-1. الأسعار بالدينار العراقي والدولار، واقعية ومطابقة للأسعار الفعلية في السوق العراقي
-2. فقط سيارات متوفرة فعلياً بالعراق
-3. اذكر ماركات متوفرة: تويوتا، هيونداي، كيا، نيسان، مازدا، شيري، MG، جيلي، وغيرها
-4. لا تتجاوز الميزانية
-5. أضف في "pros" فصحى لطيفة ومهذبة
-6. JSON فقط بدون أي نص قبل أو بعد"""
+"""
 
 
 def _get_key(settings_field, env_field):
@@ -62,6 +89,26 @@ def _clean_json(content):
     return content
 
 
+def _cache_key(prefix, payload):
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    digest = hashlib.sha256(raw.encode('utf-8')).hexdigest()
+    return f'ai:{prefix}:{digest}'
+
+
+def _cache_get(key):
+    try:
+        return caches['shared'].get(key)
+    except Exception:
+        return cache.get(key)
+
+
+def _cache_set(key, value, timeout):
+    try:
+        caches['shared'].set(key, value, timeout)
+    except Exception:
+        cache.set(key, value, timeout)
+
+
 def _build_prompt(budget, currency, car_type, condition):
     currency_names = {
         'iqd': 'دينار عراقي',
@@ -72,8 +119,10 @@ def _build_prompt(budget, currency, car_type, condition):
         'japanese': 'ياباني (تويوتا، نيسان، مازدا)',
         'korean': 'كوري (هيونداي، كيا)',
         'chinese': 'صيني (شيري، MG، جيلي)',
-        'american': 'أمريكي (شفروليت، فورد)',
-        'european': 'أوروبي (فولكس، أوبل)',
+        'american': 'أمريكي (شيفروليه، فورد، دودج)',
+        'german': 'ألماني (فولكس فاغن، أوبل، BMW، مرسيدس)',
+        'european': 'أوروبي عام (فولكس، أوبل، رينو، بيجو)',
+        'iranian': f'إيراني ({PERSIAN_BRANDS})',
     }
     condition_names = {
         'used': 'مستعمل',
@@ -84,6 +133,8 @@ def _build_prompt(budget, currency, car_type, condition):
         currency_name=currency_names.get(currency, 'دينار عراقي'),
         car_type=car_type_names.get(car_type, 'أي نوع'),
         condition=condition_names.get(condition, 'مستعمل'),
+        min_year=MIN_YEAR,
+        max_year=MAX_YEAR,
     )
 
 
@@ -103,6 +154,30 @@ def _call_groq(prompt):
             'messages': [{'role': 'user', 'content': prompt}],
             'temperature': 0.7,
             'max_tokens': 2500,
+        },
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    return _clean_json(data['choices'][0]['message']['content'])
+
+
+def _call_deepseek(prompt):
+    api_key = _get_key('deepseek_api_key', 'DEEPSEEK_API_KEY')
+    if not api_key:
+        raise RuntimeError('DEEPSEEK_API_KEY not configured')
+
+    resp = requests.post(
+        DEEPSEEK_API_URL,
+        headers={
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+        },
+        json={
+            'model': DEEPSEEK_MODEL,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'temperature': 0.25,
+            'max_tokens': 1200,
         },
         timeout=TIMEOUT,
     )
@@ -132,12 +207,97 @@ def _call_gemini(prompt):
     return _clean_json(text)
 
 
+def _to_int(value):
+    """يحوّل قيمة (رقم أو نص أرقام) إلى int، ويعيد None إن تعذّر."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        digits = re.sub(r'[^\d]', '', value)
+        return int(digits) if digits else None
+    return None
+
+
+def _sanitize_results(cars, budget, currency):
+    """تنقيح صارم لنتائج الميزانية من الذكاء الاصطناعي:
+
+    1. يستبعد أي سيارة أدنى سعر لها يتجاوز الميزانية (مع هامش 3%).
+    2. يزيل التكرار بالاسم ويرتّب من الأرخص للأغلى.
+    3. يضبط مناطق الحقول المفقودة ويصحّح سنة غير منطقية.
+    4. لا يتجاوز الناتج سيارتين.
+    """
+    if not isinstance(cars, list):
+        return []
+
+    seen = set()
+    clean = []
+    affordable = []
+
+    for car in cars:
+        if not isinstance(car, dict):
+            continue
+        name = str(car.get('name') or '').strip()
+        if not name or name.lower() in seen:
+            continue
+        seen.add(name.lower())
+
+        pmin = _to_int(car.get('price_min'))
+        pmax = _to_int(car.get('price_max'))
+        fallback = pmin if pmin is not None else pmax
+        lo = fallback if fallback is not None else 0
+
+        if lo > 0 and lo > budget * PRICE_TOLERANCE:
+            car['over_budget'] = True
+            affordable.append(car)
+            continue
+
+        try:
+            year = int(car.get('year') or 0)
+        except (TypeError, ValueError):
+            year = 0
+        if year < MIN_YEAR or year > MAX_YEAR:
+            year = 0
+        car['year'] = year or 2020
+
+        if pmax is not None and pmax < (pmin or 0):
+            car['price_max'] = car.get('price_min')
+        if pmax is not None and budget and pmax > budget:
+            car['price_max'] = budget
+
+        clean.append(car)
+        if len(clean) >= MAX_BUDGET_RESULTS:
+            break
+
+    if clean:
+        clean.sort(key=lambda c: (_to_int(c.get('price_min')) or 0))
+        return clean
+
+    # لا شيء ضمن الميزانية؛ أعد أقرب النتائج (فوق الميزانية) مع تنبيه واضح
+    affordable.sort(key=lambda c: _to_int(c.get('price_min')) or 0)
+    return affordable[:MAX_BUDGET_RESULTS]
+
+
 def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'):
+    key = _cache_key('budget', {
+        'budget': budget,
+        'currency': currency,
+        'car_type': car_type,
+        'condition': condition,
+        'limit': MAX_BUDGET_RESULTS,
+    })
+    cached = _cache_get(key)
+    if cached:
+        return cached
+
     prompt = _build_prompt(budget, currency, car_type, condition)
 
     providers = [
-        ('Gemini', _call_gemini),
+        ('DeepSeek', _call_deepseek),
         ('Groq', _call_groq),
+        ('Gemini', _call_gemini),
     ]
 
     errors = []
@@ -146,21 +306,25 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
             content = call(prompt)
             cars = json.loads(content)
             if isinstance(cars, list) and cars:
-                return {'success': True, 'cars': cars, 'provider': name}
-            errors.append(f'{name}: نتيجة فارغة')
+                cars = _sanitize_results(cars, budget, currency)
+                if cars:
+                    result = {'success': True, 'cars': cars, 'provider': name}
+                    _cache_set(key, result, 60 * 60 * 24 * 14)
+                    return result
+                errors.append(f'{name}: لا نتائج ضمن الميزانية')
         except requests.exceptions.Timeout:
             errors.append(f'{name}: انتهت المهلة')
             logger.warning(f'{name} API timeout')
         except requests.exceptions.RequestException as e:
-            errors.append(f'{name}: خطأ اتصال ({e})')
-            logger.error(f'{name} API error: {e}')
+            errors.append(f'{name}: خطأ اتصال')
+            logger.error('%s API error: %s', name, e.__class__.__name__)
         except (json.JSONDecodeError, KeyError, IndexError) as e:
             errors.append(f'{name}: تعذر تحليل النتيجة')
             logger.error(f'{name} parse error: {e}')
         except RuntimeError as e:
             logger.warning(str(e))
 
-    return {'success': False, 'error': 'تعذر الحصول على نتيجة. حاول مرة أخرى.'}
+    return {'success': False, 'error': 'لم نعثر على سيارات ضمن هذا المبلغ بدرجة كافية من الدقة — جرّب ميزانية أعلى أو عدّل الخيارات.'}
 
 
 SEARCH_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.
@@ -209,11 +373,17 @@ def _build_search_prompt(brand, model, year, engine):
 
 
 def suggest_cars_ai(brand='', model='', year='', engine=''):
+    key = _cache_key('suggest', {'brand': brand, 'model': model, 'year': year, 'engine': engine})
+    cached = _cache_get(key)
+    if cached:
+        return cached
+
     prompt = _build_search_prompt(brand, model, year, engine)
 
     providers = [
-        ('Gemini', _call_gemini),
+        ('DeepSeek', _call_deepseek),
         ('Groq', _call_groq),
+        ('Gemini', _call_gemini),
     ]
 
     for name, call in providers:
@@ -221,11 +391,13 @@ def suggest_cars_ai(brand='', model='', year='', engine=''):
             content = call(prompt)
             cars = json.loads(content)
             if isinstance(cars, list) and cars:
-                return {'success': True, 'cars': cars, 'provider': name}
+                result = {'success': True, 'cars': cars, 'provider': name}
+                _cache_set(key, result, 60 * 60 * 24 * 7)
+                return result
         except requests.exceptions.Timeout:
             logger.warning(f'{name} API timeout (search suggest)')
         except requests.exceptions.RequestException as e:
-            logger.error(f'{name} API error (search suggest): {e}')
+            logger.error('%s API error (search suggest): %s', name, e.__class__.__name__)
         except (json.JSONDecodeError, KeyError, IndexError) as e:
             logger.error(f'{name} parse error (search suggest): {e}')
         except RuntimeError:
@@ -257,23 +429,30 @@ QUICK_PARSE_PROMPT = """أنت مساعد ذكي متخصص في فك رموز �
 def parse_free_query(query):
     """يفكّ جملة البحث الحر إلى حقول منظمة (ماركة، موديل، سنة، محرك...)
 
-    المزوّد الأساسي: Gemini، والاحتياطي: Groq. تُجرب حتى ينجح أحدهما.
+    المزوّد الأساسي: DeepSeek، والاحتياطيات: Groq ثم Gemini. تُجرب حتى ينجح أحدها.
     """
+    key = _cache_key('parse', {'query': query})
+    cached = _cache_get(key)
+    if cached:
+        return cached
+
     prompt = QUICK_PARSE_PROMPT.format(query=query)
     providers = [
-        ('Gemini', _call_gemini),
+        ('DeepSeek', _call_deepseek),
         ('Groq', _call_groq),
+        ('Gemini', _call_gemini),
     ]
     for name, call in providers:
         try:
             content = call(prompt)
             data = json.loads(content)
             if isinstance(data, dict):
+                _cache_set(key, data, 60 * 60 * 24 * 30)
                 return data
         except requests.exceptions.Timeout:
             logger.warning(f'{name} timeout (parse_free_query)')
         except requests.exceptions.RequestException as e:
-            logger.error(f'{name} error (parse_free_query): {e}')
+            logger.error('%s error (parse_free_query): %s', name, e.__class__.__name__)
         except (json.JSONDecodeError, KeyError, IndexError) as e:
             logger.error(f'{name} parse error (parse_free_query): {e}')
         except RuntimeError:
