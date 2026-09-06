@@ -54,96 +54,142 @@
         <!-- ============================================ -->
         <div class="text-center px-4 pt-6 pb-2 section-spacing">
             <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-3">🔍 ابحث عن <span class="highlight">سيارتك</span></h1>
-            <p class="text-slate-400 text-sm md:text-base max-w-2xl mx-auto">اكتب ما تعرفه فقط — ابحث بالماركة، أو أضف الموديل والسنة. كل ما تركته فارغاً يُتجاهل تلقائياً.</p>
+            <p class="text-slate-400 text-sm md:text-base max-w-2xl mx-auto">طريقتان ذكيتان للوصول لمواصفات سيارتك الدقيقة — سريع يفهمك مباشرة، أو مخصص بكل التفاصيل.</p>
         </div>
 
         <!-- ============================================ -->
-        <!--  SEARCH FORM                                -->
+        <!--  SEARCH CARD (gate + two golden modes)      -->
         <!-- ============================================ -->
         <div class="max-w-7xl mx-auto px-4 section-spacing" id="cars-section">
-            <div class="glass-card" id="search-section">
+            <div class="glass-card" id="search-section" style="position:relative;">
 
-                <form hx-get="{% url 'search' %}"
-                      hx-target="#cars-container"
-                      hx-select="#cars-container"
-                      hx-push-url="true"
-                      hx-indicator="#loading-spinner"
-                      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                      id="searchForm"
-                      role="search"
-                      novalidate>
+                <button type="button" class="search-gate" id="searchGate" aria-expanded="false" {% if has_params %}style="display:none;"{% endif %}>
+                    <span class="search-gate-icon">🚗</span>
+                    <span class="search-gate-text">
+                        <span class="search-gate-title">ابحث عن سيارتك</span>
+                        <span class="search-gate-sub">اضغط هنا — ستظهر أمامك طريقتان للبحث</span>
+                    </span>
+                    <span class="search-gate-chev" aria-hidden="true">▼</span>
+                </button>
 
-                    <div>
-                        <label for="brandInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الماركة</label>
-                        <div class="input-group">
-                            <input type="text" name="brand" id="brandInput" value="{{ brand|escape }}" placeholder="اكتب الماركة... مثال: تويوتا" class="search-input" autocomplete="off" maxlength="100">
-                            <span class="search-icon" aria-hidden="true">🚗</span>
+                <div class="search-modes" id="searchModes">
+
+                    <!-- ===== بطاقة البحث السريع الذكي ===== -->
+                    <div class="mode-card mode-card-quick">
+                        <div class="mode-card-head">
+                            <span class="mode-card-icon">⚡</span>
+                            <div>
+                                <h3 class="mode-card-title">البحث السريع</h3>
+                                <p class="mode-card-note">اكتب ماركة وموديل سيارتك والسنة — والذكاء يفهمك ويجلب لك كل المواصفات والمحركات تلقائياً</p>
+                            </div>
                         </div>
-                        <div class="chip-wrap" id="brandChipWrap">
-                            <div class="chip-row" id="brandChips" role="list"></div>
+                        <div class="quick-search-row">
+                            <input type="text" id="quickSearchInput" class="search-input" placeholder="مثال: كورلا 2022 هايبرد" maxlength="200" autocomplete="off">
+                            <button type="button" class="btn-primary quick-search-btn" id="quickSearchBtn">🔍 بحث</button>
                         </div>
-                    </div>
-
-                    <div>
-                        <label for="modelInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الموديل</label>
-                        <div class="input-group">
-                            <input type="text" name="model" id="modelInput" value="{{ model|escape }}" placeholder="اختر الماركة أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
-                            <span class="search-icon" aria-hidden="true">📐</span>
+                        <div class="quick-hints">
+                            <span class="quick-hints-label">جرّب:</span>
+                            <button type="button" class="chip quick-hint" data-q="كورلا 2022 هايبرد">كورلا 2022 هايبرد</button>
+                            <button type="button" class="chip quick-hint" data-q="هايلكس 2020 ديزل">هايلكس 2020 ديزل</button>
+                            <button type="button" class="chip quick-hint" data-q="كامري هايبرد">كامري هايبرد</button>
                         </div>
-                        <div class="chip-wrap" id="modelChipWrap">
-                            <div class="chip-row" id="modelChips" role="list"></div>
+                        <div id="quick-results" class="quick-results"></div>
+                    </div>
+
+                    <!-- ===== بطاقة البحث المخصص (الحقول الحالية) ===== -->
+                    <div class="mode-card mode-card-detail">
+                        <div class="mode-card-head">
+                            <span class="mode-card-icon">🔬</span>
+                            <div>
+                                <h3 class="mode-card-title">البحث المخصص</h3>
+                                <p class="mode-card-note">ابحث بتفاصيل سيارتك الدقيقة</p>
+                            </div>
                         </div>
+
+                        <form hx-get="{% url 'search' %}"
+                              hx-target="#cars-container"
+                              hx-select="#cars-container"
+                              hx-push-url="true"
+                              hx-indicator="#loading-spinner"
+                              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 detail-form-grid"
+                              id="searchForm"
+                              role="search"
+                              novalidate>
+
+                            <div>
+                                <label for="brandInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الماركة</label>
+                                <div class="input-group">
+                                    <input type="text" name="brand" id="brandInput" value="{{ brand|escape }}" placeholder="اكتب الماركة... مثال: تويوتا" class="search-input" autocomplete="off" maxlength="100">
+                                    <span class="search-icon" aria-hidden="true">🚗</span>
+                                </div>
+                                <div class="chip-wrap" id="brandChipWrap">
+                                    <div class="chip-row" id="brandChips" role="list"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="modelInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الموديل</label>
+                                <div class="input-group">
+                                    <input type="text" name="model" id="modelInput" value="{{ model|escape }}" placeholder="اختر الماركة أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
+                                    <span class="search-icon" aria-hidden="true">📐</span>
+                                </div>
+                                <div class="chip-wrap" id="modelChipWrap">
+                                    <div class="chip-row" id="modelChips" role="list"></div>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="yearInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سنة الصنع</label>
+                                <input type="number" name="year" id="yearInput" value="{{ year|escape }}" placeholder="مثال: 2012" class="search-input" min="1900" max="2099" step="1">
+                                <span class="search-icon" aria-hidden="true">📅</span>
+                            </div>
+
+                            <div>
+                                <label for="engineTypeSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">نوع المحرك <span class="optional-tag">اختياري</span></label>
+                                <select name="engine_type" id="engineTypeSelect" class="search-select">
+                                    <option value="">-- الكل --</option>
+                                    {% for value, label in engine_type_choices %}<option value="{{ value|escape }}" {% if engine_type == value %}selected{% endif %}>{{ label|escape }}</option>{% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="specRegionSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">مواصفات المنطقة <span class="optional-tag">اختياري</span></label>
+                                <select name="spec_region" id="specRegionSelect" class="search-select">
+                                    <option value="">-- الكل --</option>
+                                    {% for sr in spec_region_choices %}<option value="{{ sr.value|escape }}" {% if spec_region == sr.value %}selected{% endif %}>{{ sr.label|escape }}</option>{% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="trimSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الفئة <span class="optional-tag">اختياري</span></label>
+                                <select name="trim" id="trimSelect" class="search-select" {% if not model %}disabled{% endif %}>
+                                    <option value="">-- الكل --</option>
+                                    {% for t in trim_choices %}<option value="{{ t|escape }}" {% if trim == t %}selected{% endif %}>{{ t|escape }}</option>{% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك <span class="optional-tag">اختياري</span></label>
+                                <div class="input-group">
+                                    <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="اختر الماركة والموديل أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
+                                    <span class="search-icon" aria-hidden="true">⚙️</span>
+                                </div>
+                                <div class="chip-wrap" id="engineChipWrap">
+                                    <div class="chip-row" id="engineChips" role="list"></div>
+                                </div>
+                            </div>
+
+                            <div id="suggestions-container" class="hidden" aria-hidden="true"></div>
+                            <input type="hidden" name="fuel" id="fuelInput">
+
+                            <div class="lg:col-span-3 flex flex-wrap justify-center gap-3 md:gap-4 mt-3 md:mt-4">
+                                <button type="submit" class="btn-primary px-8 md:px-12 py-3 md:py-4 text-base md:text-lg" id="searchButton">🔍 بحث</button>
+                                <a href="{% url 'search' %}" class="btn-secondary px-6 md:px-8 py-3 md:py-4 text-base md:text-lg">إعادة تعيين</a>
+                            </div>
+                        </form>
                     </div>
 
-                    <div class="input-group">
-                        <label for="yearInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سنة الصنع</label>
-                        <input type="number" name="year" id="yearInput" value="{{ year|escape }}" placeholder="مثال: 2012" class="search-input" min="1900" max="2099" step="1">
-                        <span class="search-icon" aria-hidden="true">📅</span>
-                    </div>
-
-                    <div>
-                        <label for="engineTypeSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">نوع المحرك <span class="optional-tag">اختياري</span></label>
-                        <select name="engine_type" id="engineTypeSelect" class="search-select">
-                            <option value="">-- الكل --</option>
-                            {% for value, label in engine_type_choices %}<option value="{{ value|escape }}" {% if engine_type == value %}selected{% endif %}>{{ label|escape }}</option>{% endfor %}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="specRegionSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">مواصفات المنطقة <span class="optional-tag">اختياري</span></label>
-                        <select name="spec_region" id="specRegionSelect" class="search-select">
-                            <option value="">-- الكل --</option>
-                            {% for sr in spec_region_choices %}<option value="{{ sr.value|escape }}" {% if spec_region == sr.value %}selected{% endif %}>{{ sr.label|escape }}</option>{% endfor %}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="trimSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الفئة <span class="optional-tag">اختياري</span></label>
-                        <select name="trim" id="trimSelect" class="search-select" {% if not model %}disabled{% endif %}>
-                            <option value="">-- الكل --</option>
-                            {% for t in trim_choices %}<option value="{{ t|escape }}" {% if trim == t %}selected{% endif %}>{{ t|escape }}</option>{% endfor %}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك <span class="optional-tag">اختياري</span></label>
-                        <div class="input-group">
-                            <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="اختر الماركة والموديل أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
-                            <span class="search-icon" aria-hidden="true">⚙️</span>
-                        </div>
-                        <div class="chip-wrap" id="engineChipWrap">
-                            <div class="chip-row" id="engineChips" role="list"></div>
-                        </div>
-                    </div>
-
-                    <div id="suggestions-container" class="hidden" aria-hidden="true"></div>
-                    <input type="hidden" name="fuel" id="fuelInput">
-
-                    <div class="lg:col-span-3 flex flex-wrap justify-center gap-3 md:gap-4 mt-3 md:mt-4">
-                        <button type="submit" class="btn-primary px-8 md:px-12 py-3 md:py-4 text-base md:text-lg" id="searchButton">🔍 بحث</button>
-                        <a href="{% url 'search' %}" class="btn-secondary px-6 md:px-8 py-3 md:py-4 text-base md:text-lg">إعادة تعيين</a>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
 
@@ -697,6 +743,96 @@
             if (modalClose) modalClose.addEventListener('click', function() {
                 document.getElementById('pwaModal').classList.remove('open');
             });
+
+            /* ============================================
+               البطاقة الذهبية: فتح البوابة + البحث السريع
+            ============================================ */
+            var searchGate = document.getElementById('searchGate');
+            var searchModes = document.getElementById('searchModes');
+            var quickInput = document.getElementById('quickSearchInput');
+            var quickBtn = document.getElementById('quickSearchBtn');
+            var quickResults = document.getElementById('quick-results');
+
+            function openSearchModes() {
+                if (!searchGate || !searchModes) return;
+                searchGate.classList.add('hidden');
+                searchGate.setAttribute('aria-expanded', 'true');
+                searchModes.classList.add('is-visible');
+                requestAnimationFrame(function() {
+                    searchModes.classList.add('modes-open');
+                });
+            }
+            if (searchGate) {
+                searchGate.addEventListener('click', openSearchModes);
+            }
+
+            var quickBusy = false;
+            function runQuickSearch(q) {
+                if (!quickResults || quickBusy) return;
+                q = (q || '').trim();
+                if (!q) {
+                    if (quickInput) quickInput.focus();
+                    return;
+                }
+                quickBusy = true;
+                quickResults.innerHTML = '<div class="quick-loading"><div class="spin-wheel" style="width:36px;height:36px;"></div><p class="text-slate-400 text-sm mt-2">الذكاء يفهم طلبك ويجلب لك النتائج...</p></div>';
+                if (quickBtn) quickBtn.disabled = true;
+                fetch('/search/quick/?q=' + encodeURIComponent(q), { headers: { 'Accept': 'text/html' } })
+                    .then(function(r) { return r.text(); })
+                    .then(function(html) {
+                        quickResults.classList.add('res-in');
+                        quickResults.innerHTML = html;
+                        smoothScrollToResults();
+                    })
+                    .catch(function() {
+                        quickResults.innerHTML = '<div class="quick-results-wrap"><div class="quick-results-head"><div class="quick-ai-avatar">😔</div><div><h4 class="text-slate-300 font-bold text-sm">حدث خطأ في الاتصال</h4><p class="text-slate-500 text-xs">حاول مرة أخرى بعد قليل</p></div></div></div>';
+                    })
+                    .finally(function() {
+                        quickBusy = false;
+                        if (quickBtn) quickBtn.disabled = false;
+                    });
+            }
+
+            function smoothScrollToResults() {
+                var cards = quickResults.querySelectorAll('.quick-db-card');
+                if (cards.length && window.getComputedStyle(quickResults).display !== 'none') {
+                    quickResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            if (quickBtn) {
+                quickBtn.addEventListener('click', function() {
+                    runQuickSearch(quickInput ? quickInput.value : '');
+                });
+            }
+            if (quickInput) {
+                quickInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        runQuickSearch(quickInput.value);
+                    }
+                });
+                quickInput.addEventListener('click', function(e) { e.stopPropagation(); });
+            }
+
+            var quickHints = document.querySelectorAll('.quick-hint');
+            quickHints.forEach(function(chip) {
+                chip.addEventListener('click', function() {
+                    var q = chip.getAttribute('data-q') || '';
+                    if (quickInput) quickInput.value = q;
+                    runQuickSearch(q);
+                });
+            });
+
+            /* إن كانت الصفحة محمّلة بمعاملات بحث (رابط مباشر) نفتح الوضعين تلقائياً */
+            var hasParams = '{{ has_params|yesno:"1,0" }}' === '1';
+            if (hasParams && searchModes) {
+                if (searchGate) searchGate.classList.add('hidden');
+                searchModes.classList.add('is-visible');
+                requestAnimationFrame(function() {
+                    searchModes.classList.add('modes-open');
+                });
+            }
 
         })();
     </script>

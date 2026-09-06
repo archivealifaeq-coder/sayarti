@@ -13,6 +13,7 @@ urlpatterns = [
     path('ads.txt', views.ads_txt_view, name='ads_txt'),
     path('budget/', views.budget_finder_view, name='budget_finder'),
     path('search/ai-suggest/', views.search_ai_suggest, name='search_ai_suggest'),
+    path('search/quick/', views.search_ai_quick, name='search_ai_quick'),
     path('api/promo-code/generate/', views.generate_promo_code, name='generate_promo_code'),
     path('verify/<slug:slug>/', views.verify_code_page, name='verify_code'),
     path('services/', views.services_login, name='services_login'),

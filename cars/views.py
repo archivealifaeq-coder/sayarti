@@ -207,6 +207,11 @@ def index_view(request):
 def search_view(request):
     context = _search_context(request)
     context['banners'] = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
+    context['has_params'] = bool(
+        request.GET.get('brand') or request.GET.get('model') or request.GET.get('year')
+        or request.GET.get('engine') or request.GET.get('engine_type')
+        or request.GET.get('spec_region') or request.GET.get('fuel') or request.GET.get('trim')
+    )
     return render(request, 'cars/search.html', context)
 
 
@@ -485,6 +490,35 @@ def search_ai_suggest(request):
     return render(request, 'cars/_ai_suggestions.html', context)
 
 
+def _car_base_dict(car):
+    """يولّد قاموس البيانات المشترك لأي سيارة (يُستخدم في _find_similar_in_db والبث السريع)."""
+    return {
+        'name': f"{car.brand_ar} {car.model_ar}",
+        'brand_ar': car.brand_ar,
+        'model_ar': car.model_ar,
+        'brand_en': car.brand_en,
+        'model_en': car.model_en,
+        'year': car.year,
+        'engine': car.engine,
+        'fuel': car.fuel,
+        'oil_visc': car.oil_visc,
+        'oil_visc_high_km': car.oil_visc_high_km or '',
+        'spark': car.spark,
+        'octane': car.octane,
+        'trim': car.trim or '',
+        'engine_type': car.get_engine_type_display() if car.engine_type else '',
+        'spec_region': car.get_spec_region_display() if car.spec_region else '',
+        'oil_capacity': car.oil_capacity or '',
+        'oil_brands': car.oil_brands or '',
+        'tire_size': car.tire_size or '',
+        'battery': car.battery or '',
+        'transmission_type': car.transmission_type or '',
+        'transmission_oil_spec': car.transmission_oil_spec or '',
+        'recommendations': car.recommendations or '',
+        'source': 'قاعدة البيانات',
+    }
+
+
 def _find_similar_in_db(brand, model, year, engine):
     """يبحث في قاعدة البيانات عن السيارة المطلوبة نفسها (النتيجة المهمة)
     بمعلوماتها الحقيقية والمدققة، أو أقرب تطابق للماركة/الموديل."""
@@ -512,32 +546,97 @@ def _find_similar_in_db(brand, model, year, engine):
 
     results = []
     for car in candidates[:8]:
-        results.append({
-            'name': f"{car.brand_ar} {car.model_ar}",
-            'brand_ar': car.brand_ar,
-            'model_ar': car.model_ar,
-            'brand_en': car.brand_en,
-            'model_en': car.model_en,
-            'year': car.year,
-            'engine': car.engine,
-            'fuel': car.fuel,
-            'oil_visc': car.oil_visc,
-            'oil_visc_high_km': car.oil_visc_high_km or '',
-            'spark': car.spark,
-            'octane': car.octane,
-            'trim': car.trim or '',
-            'engine_type': car.get_engine_type_display() if car.engine_type else '',
-            'spec_region': car.get_spec_region_display() if car.spec_region else '',
-            'oil_capacity': car.oil_capacity or '',
-            'oil_brands': car.oil_brands or '',
-            'tire_size': car.tire_size or '',
-            'battery': car.battery or '',
-            'transmission_type': car.transmission_type or '',
-            'transmission_oil_spec': car.transmission_oil_spec or '',
-            'recommendations': car.recommendations or '',
-            'source': 'قاعدة البيانات',
-        })
+        results.append(_car_base_dict(car))
     return results
+
+
+def _quick_db_cars(brand, model, year='', fuel=''):
+    """للبحث السريع: يجلب حتى 6 مواصفات متنوّعة من قاعدة البيانات
+    لنفس الماركة/الموديل (محركات ومواصفات مناطق مختلفة)."""
+    qs = CarSpecification.objects.all().order_by('-year', 'brand_ar', 'model_ar')
+
+    b = fold_ar(brand)
+    m = fold_ar(model)
+
+    if b:
+        bq = Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
+    else:
+        bq = Q()
+    if m:
+        mq = Q(model_norm__icontains=m) | Q(model_en__icontains=model)
+    else:
+        mq = Q()
+
+    combos = [(year, fuel), (year, ''), ('', '')]
+    seen_keys = set()
+    selected = []
+
+    for try_year, try_fuel in combos:
+        q = bq & mq
+        if try_year:
+            try:
+                q &= Q(year=int(try_year))
+            except (ValueError, TypeError):
+                pass
+        if try_fuel:
+            f = fold_ar(try_fuel)
+            q &= Q(fuel__icontains=f)
+        if q == Q():
+            continue
+        for car in qs.filter(q)[:400]:
+            if len(selected) >= 6:
+                return selected
+            key = (car.engine_norm, car.spec_region, car.year)
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            item = _car_base_dict(car)
+            item['id'] = car.id
+            selected.append(item)
+
+    return selected
+
+
+def search_ai_quick(request):
+    """البحث السريع الذكي: فهم جملة المستخدم بالذكاء ثم إرجاع نتائج متنوعة."""
+    from .services.deepseek_service import parse_free_query, suggest_cars_ai
+
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return render(request, 'cars/_quick_results.html', {
+            'error': 'اكتب ماركة أو موديل سيارتك وسنة الصنع',
+        })
+
+    interpreted = {}
+    try:
+        interpreted = parse_free_query(q) or {}
+    except Exception:
+        interpreted = {}
+
+    brand = str(interpreted.get('brand') or '').strip()
+    model = str(interpreted.get('model') or '').strip()
+    year = str(interpreted.get('year') or '').strip()
+    fuel = str(interpreted.get('fuel') or '').strip()
+
+    db_results = _quick_db_cars(brand, model, year, fuel) if (brand or model) else []
+
+    ai_result = {'success': False}
+    if not db_results:
+        try:
+            ai_result = suggest_cars_ai(brand=brand, model=model, year=year, engine='')
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error('AI quick suggest error: %s', e)
+
+    context = {
+        'q': q,
+        'interpreted': interpreted,
+        'has_parse': any((interpreted.get(k) or '') for k in ('brand', 'model', 'year', 'fuel')),
+        'db_results': db_results,
+        'ai_result': ai_result,
+        'error': None,
+    }
+    return render(request, 'cars/_quick_results.html', context)
 
 
 def _new_code(sponsor):

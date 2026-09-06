@@ -232,3 +232,50 @@ def suggest_cars_ai(brand='', model='', year='', engine=''):
             logger.warning(f'{name} not configured')
 
     return {'success': False}
+
+
+QUICK_PARSE_PROMPT = """أنت مساعد ذكي متخصص في فك رموز طلبات البحث عن السيارات.
+المستخدم كتب هذا الوصف: «{query}»
+
+مهمتك: استخرج منه المعلومات التالية وأعد JSON فقط (بدون أي نص أو تعليق قبل أو بعد):
+{{
+  "brand": "الماركة",
+  "model": "الموديل",
+  "year": "سنة الصنع (أرقام فقط أو سلسلة فارغة)",
+  "engine": "سعة المحرك مثل 1.6 أو 2.0 (أو سلسلة فارغة)",
+  "fuel": "نوع الوقود: بنزين/هايبرد/ديزل/كهرباء (أو سلسلة فارغة)",
+  "engine_type": "نوع المحرك مثل V6/Turbo (أو سلسلة فارغة)",
+  "spec_region": "مواصفات المنطقة مثل خليجي/أمريكي/صيني (أو سلسلة فارغة)"
+}}
+
+قواعد دقيقة:
+- إن لم تُذكر معلومة اجعلها سلسلة فارغة "" بالضبط ولا تخمّن أبداً.
+- الماركة والموديل بالعربية مع مراعاة الصيغ الشائعة (تويوتا، كورولا، هايلكس، كامري...).
+- أعد JSON فقط بدون أسطر إضافية أو تعليقات."""
+
+
+def parse_free_query(query):
+    """يفكّ جملة البحث الحر إلى حقول منظمة (ماركة، موديل، سنة، محرك...)
+
+    المزوّد الأساسي: Gemini، والاحتياطي: Groq. تُجرب حتى ينجح أحدهما.
+    """
+    prompt = QUICK_PARSE_PROMPT.format(query=query)
+    providers = [
+        ('Gemini', _call_gemini),
+        ('Groq', _call_groq),
+    ]
+    for name, call in providers:
+        try:
+            content = call(prompt)
+            data = json.loads(content)
+            if isinstance(data, dict):
+                return data
+        except requests.exceptions.Timeout:
+            logger.warning(f'{name} timeout (parse_free_query)')
+        except requests.exceptions.RequestException as e:
+            logger.error(f'{name} error (parse_free_query): {e}')
+        except (json.JSONDecodeError, KeyError, IndexError) as e:
+            logger.error(f'{name} parse error (parse_free_query): {e}')
+        except RuntimeError:
+            logger.warning(f'{name} not configured (parse_free_query)')
+    return {}

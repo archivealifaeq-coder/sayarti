@@ -1279,3 +1279,338 @@
             margin: 0 auto 12px;
         }
         @keyframes wheelSpin { to { transform: rotate(360deg); } }
+
+        /* ============================================ */
+        /*  GOLDEN SEARCH CARD (بطاقة البوابة الذهبية) */
+        /* ============================================ */
+        .search-gate {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 34px 24px;
+            border-radius: 20px;
+            border: 1.5px solid rgba(245, 158, 11, 0.35);
+            background:
+                linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(251, 191, 36, 0.04)),
+                linear-gradient(to bottom, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85));
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            color: #f1f5f9;
+            font-family: inherit;
+            text-align: right;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow:
+                0 10px 50px rgba(0, 0, 0, 0.35),
+                inset 0 0 60px rgba(245, 158, 11, 0.05);
+        }
+        .search-gate::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #fbbf24, #f59e0b, #fbbf24, transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3.2s linear infinite;
+        }
+        .search-gate:hover {
+            transform: translateY(-3px);
+            border-color: rgba(245, 158, 11, 0.65);
+            box-shadow:
+                0 18px 60px rgba(0, 0, 0, 0.5),
+                0 0 45px rgba(245, 158, 11, 0.1),
+                inset 0 0 80px rgba(245, 158, 11, 0.08);
+        }
+        .search-gate:active { transform: translateY(0) scale(0.99); }
+        .search-gate-icon {
+            font-size: 2.1rem;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(245, 158, 11, 0.06));
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 18px;
+            padding: 12px;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.15);
+            flex-shrink: 0;
+        }
+        .search-gate-text { text-align: center; }
+        .search-gate-title {
+            display: block;
+            font-size: 1.35rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #fde68a, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.3px;
+        }
+        .search-gate-sub {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-top: 3px;
+        }
+        .search-gate-chev {
+            color: #fbbf24;
+            font-size: 0.9rem;
+            animation: gateBounce 1.8s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes gateBounce {
+            0%, 100% { transform: translateY(0); opacity: 0.7; }
+            50% { transform: translateY(6px); opacity: 1; }
+        }
+        .search-modes { display: none; }
+        .search-modes.modes-open { animation: modesIn 0.55s cubic-bezier(0.22, 1, 0.36, 1); }
+        @keyframes modesIn {
+            from { opacity: 0; transform: translateY(-14px) scale(0.99); }
+            to { opacity: 1; transform: none; }
+        }
+
+        /* ============================================ */
+        /*  MODE CARDS - البطاقتان الذهبيتان            */
+        /* ============================================ */
+        .search-modes.is-visible {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+        @media (min-width: 1024px) {
+            .search-modes.is-visible { grid-template-columns: 1fr 1fr; align-items: start; }
+        }
+        .mode-card {
+            position: relative;
+            border-radius: 22px;
+            padding: 24px;
+            overflow: hidden;
+            transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #fbbf24, #f59e0b, #fbbf24, transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3.2s linear infinite;
+        }
+        .mode-card-quick {
+            background:
+                radial-gradient(120% 100% at 100% 0%, rgba(245, 158, 11, 0.16), transparent 55%),
+                linear-gradient(160deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.96));
+            border: 1.5px solid rgba(245, 158, 11, 0.4);
+            box-shadow:
+                0 14px 45px rgba(0, 0, 0, 0.35),
+                inset 0 0 50px rgba(245, 158, 11, 0.05);
+        }
+        .mode-card-detail {
+            background:
+                linear-gradient(160deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.96));
+            border: 1.5px solid rgba(96, 165, 250, 0.22);
+            box-shadow: 0 14px 45px rgba(0, 0, 0, 0.35);
+        }
+        .mode-card-quick:hover { border-color: rgba(245, 158, 11, 0.65); transform: translateY(-3px); }
+        .mode-card-detail:hover { border-color: rgba(96, 165, 250, 0.4); transform: translateY(-3px); }
+        .mode-card-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .mode-card-icon {
+            font-size: 1.6rem;
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            flex-shrink: 0;
+        }
+        .mode-card-quick .mode-card-icon {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+        }
+        .mode-card-detail .mode-card-icon {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.25), rgba(96, 165, 250, 0.05));
+            border: 1px solid rgba(96, 165, 250, 0.4);
+            box-shadow: 0 6px 20px rgba(96, 165, 250, 0.15);
+        }
+        .mode-card-title {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #f1f5f9;
+        }
+        .mode-card-quick .mode-card-title { color: #fbbf24; }
+        .mode-card-note {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            margin-top: 2px;
+        }
+        .quick-search-row {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+        .quick-search-btn { padding: 0 24px; border-radius: 14px; flex-shrink: 0; }
+        @media (max-width: 560px) {
+            .quick-search-row { flex-direction: column; }
+            .quick-search-btn { padding: 14px 20px; width: 100%; }
+        }
+        .quick-hints {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .quick-hints-label { color: #64748b; font-size: 0.78rem; font-weight: 700; }
+        .quick-results { margin-top: 14px; }
+
+        /* ============================================ */
+        /*  QUICK RESULTS - نتائج البحث السريع          */
+        /* ============================================ */
+        .quick-results-wrap {
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(245, 158, 11, 0.18);
+            border-radius: 18px;
+            padding: 18px;
+            animation: modesIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .quick-results-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .quick-ai-avatar {
+            width: 46px;
+            height: 46px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05));
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            box-shadow: 0 6px 18px rgba(245, 158, 11, 0.12);
+        }
+        .quick-parse-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .quick-chip {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0.08));
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            color: #fde68a;
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 6px 14px;
+            border-radius: 999px;
+            box-shadow: inset 0 0 14px rgba(245, 158, 11, 0.08);
+        }
+        .quick-db-box { animation: modesIn 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        .quick-db-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .quick-db-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        @media (min-width: 640px) { .quick-db-grid { grid-template-columns: 1fr 1fr; } }
+        .quick-db-card {
+            display: block;
+            background:
+                linear-gradient(150deg, rgba(245, 158, 11, 0.12), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(245, 158, 11, 0.28);
+            border-radius: 16px;
+            padding: 14px;
+            text-decoration: none;
+            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .quick-db-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(245, 158, 11, 0.55);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4), 0 0 30px rgba(245, 158, 11, 0.08);
+        }
+        .quick-db-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .quick-db-top h5 { font-size: 0.9rem; }
+        .quick-db-card:hover .quick-db-top h5 { color: #fbbf24; }
+        .quick-db-year {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fde68a;
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .quick-db-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+        .quick-dot {
+            background: rgba(245, 158, 11, 0.14);
+            color: #fbbf24;
+            font-size: 0.64rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .quick-db-specs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            color: #94a3b8;
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 8px 0;
+            border-top: 1px dashed rgba(148, 163, 184, 0.14);
+        }
+        .quick-db-go {
+            display: inline-block;
+            margin-top: 8px;
+            color: #fbbf24;
+            font-size: 0.72rem;
+            font-weight: 800;
+            transition: transform 0.3s ease;
+        }
+        .quick-db-card:hover .quick-db-go { transform: translateX(-4px); }
+        .quick-results-error { padding: 10px 4px; }
+        .quick-loading {
+            text-align: center;
+            padding: 22px 14px;
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px dashed rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+        }
+        @media (max-width: 640px) {
+            .search-gate { padding: 26px 16px; gap: 10px; }
+            .search-gate-title { font-size: 1.1rem; }
+            .mode-card { padding: 16px; }
+        }
