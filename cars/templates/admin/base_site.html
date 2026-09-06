@@ -3,16 +3,76 @@
 
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
+{% block extrahead %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block extrastyle %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'admin/css/sayarti_admin.css' %}">
 {% endblock %}
 
 {% block branding %}
-<div id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></div>
+<div id="site-name">
+    <a href="{% url 'admin:index' %}" class="brand-link">
+        <span class="brand-logo" aria-hidden="true">🚗</span>
+        <span class="brand-text">سيارتي · لوحة الإدارة</span>
+    </a>
+</div>
 {% if user.is_anonymous %}
   {% include "admin/color_theme_toggle.html" %}
 {% endif %}
 {% endblock %}
 
+{% block usertools %}
+{% if has_permission %}
+<div id="user-tools">
+    <span class="admin-clock" id="adminClock" title="توقيت بغداد"></span>
+    {% block welcome-msg %}
+    مرحباً، <strong>{{ user.get_username }}</strong> ✋
+    {% endblock %}
+    {% block userlinks %}
+    {% if site_url %}
+        <a href="{{ site_url }}">عرض الموقع</a>
+    {% endif %}
+    {% if user.is_active and user.is_staff %}
+        {% url 'django-admindocs-docroot' as docsroot %}
+        {% if docsroot %}
+            <a href="{{ docsroot }}">التوثيق</a>
+        {% endif %}
+    {% endif %}
+    {% if user.has_usable_password %}
+        <a href="{% url 'admin:password_change' %}">تغيير كلمة المرور</a>
+    {% endif %}
+    {% url 'admin:logout' as logout_url %}
+    <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+        {% csrf_token %}
+        <button type="submit">تسجيل الخروج</button>
+    </form>
+    {% endblock %}
+</div>
+{% endif %}
+{% endblock %}
+
 {% block nav-global %}{% endblock %}
+
+{% block footer %}
+{{ block.super }}
+<script>
+(function () {
+    var el = document.getElementById('adminClock');
+    if (!el) return;
+    function pad(n) { return n < 10 ? '0' + n : n; }
+    function tick() {
+        var now = new Date();
+        var h = pad(now.getHours()), m = pad(now.getMinutes()), s = pad(now.getSeconds());
+        el.textContent = '🕐 ' + h + ':' + m + ':' + s + ' بتوقيت بغداد';
+    }
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}
