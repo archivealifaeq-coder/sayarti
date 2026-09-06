@@ -274,6 +274,11 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SECURE_BROWSER_XSS_FILTER = True
 
 # ============================================================
 # Full HTTPS hardening - مفعّل تلقائياً عند DEBUG=False

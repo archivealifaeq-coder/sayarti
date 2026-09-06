@@ -29,8 +29,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         'trim_display', 
         'engine_type_badge', 
         'spec_region_badge', 
-        'octane_display', 
-        'tire_size_display'
+        'service_summary',
     )
     
     list_display_links = ('id', 'brand_ar_display', 'model_ar_display')
@@ -57,7 +56,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
     
     ordering = ('brand_ar', 'model_ar', '-year')
     
-    list_per_page = 25
+    list_per_page = 30
     
     actions = ['make_gcc_spec', 'make_american_spec', 'make_european_spec', 'delete_selected']
     
@@ -111,6 +110,21 @@ class CarSpecificationAdmin(admin.ModelAdmin):
     def tire_size_display(self, obj):
         return format_html('<span style="color: #1d4ed8; font-weight:600;">{}</span>', obj.tire_size or 'غير محدد')
     tire_size_display.short_description = 'حجم الإطار'
+
+    def service_summary(self, obj):
+        return format_html(
+            '<div class="admin-service-summary">'
+            '<span title="الأوكتان">⛽ {}</span>'
+            '<span title="زيت المحرك">🛢️ {}</span>'
+            '<span title="الإطار">🛞 {}</span>'
+            '<span title="البطارية">🔋 {}</span>'
+            '</div>',
+            obj.octane or '—',
+            obj.oil_visc or '—',
+            obj.tire_size or '—',
+            obj.battery or '—',
+        )
+    service_summary.short_description = 'مختصر الخدمة'
     
     def engine_type_badge(self, obj):
         colors = {
@@ -435,7 +449,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         }),
         ('🤖 الذكاء الاصطناعي (شكد فلوسك)', {
             'fields': ('groq_api_key', 'gemini_api_key', 'deepseek_api_key'),
-            'description': '<b>DeepSeek (الأساسي)</b>: من platform.deepseek.com — <b>Groq</b>: احتياطي سريع — <b>Gemini</b>: احتياطي أخير. بدون مفتاح DeepSeek ستنتقل الخدمة تلقائياً للاحتياطيات.'
+            'description': '<b>DeepSeek (الأساسي)</b>: من platform.deepseek.com — <b>Gemini</b>: الاحتياطي الثاني — <b>Groq</b>: احتياطي أخير وسريع. بدون مفتاح DeepSeek ستنتقل الخدمة تلقائياً للاحتياطيات.'
         }),
     )
 

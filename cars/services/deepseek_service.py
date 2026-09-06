@@ -27,10 +27,6 @@ PERSIAN_BRANDS = 'سايبا (ساينا، كيك، برايد)، إيكو/ای�
 BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في سوق السيارات العراقي (بغداد والبصرة وبقية المدن).
 تحدّث بالعربية الفصحى الواضحة واللطيفة (تجنّب اللهجة العامية).
 
-الميزانية: {budget} {currency_name}
-نوع السيارة المفضّل: {car_type}
-الحالة: {condition}
-
 المطلوب: أعطني بالضبط سيارتين فقط مناسبتين ومتوفرتين فعلاً في السوق العراقي وضمن الميزانية.
 
 سلم الأسعار التقريبي في العراق (مرجع فقط — تويوتا أغلى قيمة من غيرها والكوري أوسط):
@@ -43,7 +39,7 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
 - فاخرة أمريكية/ألمانية (فورد، شيفروليه، فولكس فاغن، BMW، مرسيدس، أوبل): 35 مليون وأكثر حسب العمود والسنة
 
 قواعد صارمة (مطلوبة 100%):
-1. كل سيارة يجب أن تكون ضمن الميزانية تماماً — ممنوع تجاوز {budget} {currency_name} بأي حال من الأحوال.
+1. كل سيارة يجب أن تكون ضمن الميزانية تماماً — ممنوع تجاوز ميزانية المستخدم بأي حال من الأحوال.
 2. الأسعار واقعية ومتناسقة مع سلم الأسعار أعلاه ومع عمر السيارة (الأقدم أرخص، الأحدث أغلى). لا تضخّم الأسعار ولا تخنقها.
 3. أعطني بالضبط سيارتين فقط، الأقرب سعراً للميزانية والأدق من ناحية التوفر والصيانة (ممنوع التكرار).
 4. يجب أن يكون السعر قريباً جداً من الميزانية بدون تجاوزها قدر الإمكان؛ استهدف سيارات ضمن 85% إلى 100% من الميزانية.
@@ -66,6 +62,11 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
     "pros": "مميزات مختصرة بالفصحى"
   }}
 ]
+
+بيانات المستخدم:
+الميزانية: {budget} {currency_name}
+نوع السيارة المفضّل: {car_type}
+الحالة: {condition}
 """
 
 
@@ -89,8 +90,18 @@ def _clean_json(content):
     return content
 
 
+def _normalize_for_cache(value):
+    if isinstance(value, str):
+        return re.sub(r'\s+', ' ', value.strip().lower())
+    if isinstance(value, dict):
+        return {k: _normalize_for_cache(v) for k, v in sorted(value.items())}
+    if isinstance(value, (list, tuple)):
+        return [_normalize_for_cache(v) for v in value]
+    return value
+
+
 def _cache_key(prefix, payload):
-    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    raw = json.dumps(_normalize_for_cache(payload), ensure_ascii=False, sort_keys=True, default=str)
     digest = hashlib.sha256(raw.encode('utf-8')).hexdigest()
     return f'ai:{prefix}:{digest}'
 
@@ -138,7 +149,7 @@ def _build_prompt(budget, currency, car_type, condition):
     )
 
 
-def _call_groq(prompt):
+def _call_groq(prompt, max_tokens=900, temperature=0.25):
     api_key = _get_key('groq_api_key', 'GROQ_API_KEY')
     if not api_key:
         raise RuntimeError('GROQ_API_KEY not configured')
@@ -152,8 +163,8 @@ def _call_groq(prompt):
         json={
             'model': GROQ_MODEL,
             'messages': [{'role': 'user', 'content': prompt}],
-            'temperature': 0.7,
-            'max_tokens': 2500,
+            'temperature': temperature,
+            'max_tokens': max_tokens,
         },
         timeout=TIMEOUT,
     )
@@ -162,7 +173,7 @@ def _call_groq(prompt):
     return _clean_json(data['choices'][0]['message']['content'])
 
 
-def _call_deepseek(prompt):
+def _call_deepseek(prompt, max_tokens=900, temperature=0.25):
     api_key = _get_key('deepseek_api_key', 'DEEPSEEK_API_KEY')
     if not api_key:
         raise RuntimeError('DEEPSEEK_API_KEY not configured')
@@ -176,8 +187,8 @@ def _call_deepseek(prompt):
         json={
             'model': DEEPSEEK_MODEL,
             'messages': [{'role': 'user', 'content': prompt}],
-            'temperature': 0.25,
-            'max_tokens': 1200,
+            'temperature': temperature,
+            'max_tokens': max_tokens,
         },
         timeout=TIMEOUT,
     )
@@ -186,7 +197,7 @@ def _call_deepseek(prompt):
     return _clean_json(data['choices'][0]['message']['content'])
 
 
-def _call_gemini(prompt):
+def _call_gemini(prompt, max_tokens=900, temperature=0.25):
     api_key = _get_key('gemini_api_key', 'GEMINI_API_KEY')
     if not api_key:
         raise RuntimeError('GEMINI_API_KEY not configured')
@@ -197,7 +208,7 @@ def _call_gemini(prompt):
         headers={'Content-Type': 'application/json'},
         json={
             'contents': [{'parts': [{'text': prompt}]}],
-            'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 2500},
+            'generationConfig': {'temperature': temperature, 'maxOutputTokens': max_tokens},
         },
         timeout=TIMEOUT,
     )
@@ -296,14 +307,14 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
 
     providers = [
         ('DeepSeek', _call_deepseek),
-        ('Groq', _call_groq),
         ('Gemini', _call_gemini),
+        ('Groq', _call_groq),
     ]
 
     errors = []
     for name, call in providers:
         try:
-            content = call(prompt)
+            content = call(prompt, max_tokens=650, temperature=0.2)
             cars = json.loads(content)
             if isinstance(cars, list) and cars:
                 cars = _sanitize_results(cars, budget, currency)
@@ -328,16 +339,15 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
 
 
 SEARCH_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.
-المستخدم يبحث عن سيارة بالمعلومات التالية ولم يجدها في قاعدة البيانات:
-{search_info}
-
-مهمتك: أعطني 2-4 نتيجة حقيقية وموثوقة فقط، وليس تخميناً.
+مهمتك: أعطني نتيجتين فقط حقيقيتين وموثوقتين، وليس تخميناً.
 يجب أن تكون المعلومات مستخلصة من المواقع الرسمية للشركات المصنعة فقط (Toyota, Hyundai, Kia, Nissan, MG, Chery, Geely, ...) والمواقع الرسمية المعتمدة.
 
 قاعدة ذهبية عن الدقة:
 - لا تختلق أو تخمّن أرقاماً. إن لم تتأكد من معلومة (مثل نوع شمعات الاحتراق أو لزوجة الزيت)، اترك الحقل فارغاً سلسلة نصية فارغة "" بدل إعطاء قيمة خاطئة.
 - أعطِ تفاصيل حقيقية ومدققة 100% فقط، ولو على حساب إكمال كل الحقول.
-- لزوجة الزيت الحقيقية مثال: "5W-30"، شمعات الاحتراق مثال: "NGK Iridium", "0W-20".
+- لزوجة الزيت الحقيقية مثال: "5W-30"، وشمعات الاحتراق/البلكات مثال: "NGK Iridium".
+- إن كانت السيارة هايبرد، اذكر البطارية الصغيرة 12V إن أمكن، واذكر أن بطارية الهايبرد عالية الجهد تحتاج فحصاً متخصصاً ولا تُستبدل مثل البطارية الصغيرة.
+- أعطِ ملاحظات عملية تخدم السائق: نوع البلكات، البطارية الصغيرة، مقاس الإطار، زيت الناقل، ونصيحة صيانة مختصرة.
 اكتب النتيجة بالتنسيق التالي (JSON فقط، بدون أي نص قبل أو بعد أو تعليقات):
 [
   {{
@@ -348,15 +358,23 @@ SEARCH_PROMPT = """أنت مستشار سيارات محترف ومتخصص في
     "oil_visc": "لزوجة الزيت أو فارغة",
     "oil_capacity": "سعة الزيت أو فارغة",
     "spark": "شمعات الاحتراق أو فارغة",
+    "spark_notes": "ملاحظة قصيرة عن البلكات/فترة الفحص أو فارغة",
     "octane": 91,
-    "battery": "حجم/سعة البطارية أو فارغة",
+    "battery": "البطارية الصغيرة 12V أو حجم/سعة البطارية أو فارغة",
+    "hybrid_battery": "تفاصيل بطارية الهايبرد عالية الجهد أو فارغة إن لم تكن هايبرد",
+    "battery_notes": "ملاحظة مهمة عن البطارية أو فارغة",
     "tire_size": "حجم الإطار أو فارغة",
     "transmission": "ناقل الحركة (أوتوماتيك/عادي/CVT) أو فارغة",
+    "transmission_oil_spec": "مواصفة زيت ناقل الحركة أو فارغة",
+    "driver_tip": "نصيحة عملية مختصرة للسائق",
     "specs": "تفاصيل عامة مختصرة ومدققة عن السيارة"
   }}
 ]
 
-ملاحظة: أبرز النتيجة المطابقة أو الأقرب للسيارة المطلوبة أولاً في القائمة. اجعل التفاصيل واقعية ومدققة من المصادر الرسمية فقط."""
+ملاحظة: أبرز النتيجة المطابقة أو الأقرب للسيارة المطلوبة أولاً في القائمة. اجعل التفاصيل واقعية ومدققة من المصادر الرسمية فقط.
+
+بيانات بحث المستخدم الذي لم نجده في قاعدة البيانات:
+{search_info}"""
 
 
 def _build_search_prompt(brand, model, year, engine):
@@ -382,13 +400,13 @@ def suggest_cars_ai(brand='', model='', year='', engine=''):
 
     providers = [
         ('DeepSeek', _call_deepseek),
-        ('Groq', _call_groq),
         ('Gemini', _call_gemini),
+        ('Groq', _call_groq),
     ]
 
     for name, call in providers:
         try:
-            content = call(prompt)
+            content = call(prompt, max_tokens=1000, temperature=0.2)
             cars = json.loads(content)
             if isinstance(cars, list) and cars:
                 result = {'success': True, 'cars': cars, 'provider': name}
@@ -407,9 +425,7 @@ def suggest_cars_ai(brand='', model='', year='', engine=''):
 
 
 QUICK_PARSE_PROMPT = """أنت مساعد ذكي متخصص في فك رموز طلبات البحث عن السيارات.
-المستخدم كتب هذا الوصف: «{query}»
-
-مهمتك: استخرج منه المعلومات التالية وأعد JSON فقط (بدون أي نص أو تعليق قبل أو بعد):
+مهمتك: استخرج من وصف المستخدم المعلومات التالية وأعد JSON فقط (بدون أي نص أو تعليق قبل أو بعد):
 {{
   "brand": "الماركة",
   "model": "الموديل",
@@ -423,13 +439,15 @@ QUICK_PARSE_PROMPT = """أنت مساعد ذكي متخصص في فك رموز �
 قواعد دقيقة:
 - إن لم تُذكر معلومة اجعلها سلسلة فارغة "" بالضبط ولا تخمّن أبداً.
 - الماركة والموديل بالعربية مع مراعاة الصيغ الشائعة (تويوتا، كورولا، هايلكس، كامري...).
-- أعد JSON فقط بدون أسطر إضافية أو تعليقات."""
+- أعد JSON فقط بدون أسطر إضافية أو تعليقات.
+
+وصف المستخدم: «{query}»"""
 
 
 def parse_free_query(query):
     """يفكّ جملة البحث الحر إلى حقول منظمة (ماركة، موديل، سنة، محرك...)
 
-    المزوّد الأساسي: DeepSeek، والاحتياطيات: Groq ثم Gemini. تُجرب حتى ينجح أحدها.
+    المزوّد الأساسي: DeepSeek، والاحتياطيات: Gemini ثم Groq. تُجرب حتى ينجح أحدها.
     """
     key = _cache_key('parse', {'query': query})
     cached = _cache_get(key)
@@ -439,12 +457,12 @@ def parse_free_query(query):
     prompt = QUICK_PARSE_PROMPT.format(query=query)
     providers = [
         ('DeepSeek', _call_deepseek),
-        ('Groq', _call_groq),
         ('Gemini', _call_gemini),
+        ('Groq', _call_groq),
     ]
     for name, call in providers:
         try:
-            content = call(prompt)
+            content = call(prompt, max_tokens=220, temperature=0.0)
             data = json.loads(content)
             if isinstance(data, dict):
                 _cache_set(key, data, 60 * 60 * 24 * 30)

@@ -62,9 +62,14 @@
                 {% if car.oil_visc %}<tr><td class="ai-spec-key">🧴 لزوجة الزيت</td><td>{{ car.oil_visc }}</td></tr>{% endif %}
                 {% if car.oil_capacity %}<tr><td class="ai-spec-key">⭕ سعة الزيت</td><td>{{ car.oil_capacity }}</td></tr>{% endif %}
                 {% if car.spark %}<tr><td class="ai-spec-key">⚡ شمعات الاحتراق</td><td>{{ car.spark }}</td></tr>{% endif %}
+                {% if car.spark_notes %}<tr><td class="ai-spec-key">🔎 ملاحظة البلكات</td><td>{{ car.spark_notes }}</td></tr>{% endif %}
                 {% if car.tire_size %}<tr><td class="ai-spec-key">🛞 حجم الإطار</td><td>{{ car.tire_size }}</td></tr>{% endif %}
-                {% if car.battery %}<tr><td class="ai-spec-key">🔋 البطارية</td><td>{{ car.battery }}</td></tr>{% endif %}
+                {% if car.battery %}<tr><td class="ai-spec-key">🔋 البطارية الصغيرة</td><td>{{ car.battery }}</td></tr>{% endif %}
+                {% if car.hybrid_battery %}<tr><td class="ai-spec-key">🔋 بطارية الهايبرد</td><td>{{ car.hybrid_battery }}</td></tr>{% endif %}
+                {% if car.battery_notes %}<tr><td class="ai-spec-key">🪫 ملاحظة البطارية</td><td>{{ car.battery_notes }}</td></tr>{% endif %}
+                {% if car.transmission_oil_spec %}<tr><td class="ai-spec-key">🛢️ زيت الناقل</td><td>{{ car.transmission_oil_spec }}</td></tr>{% endif %}
             </table>
+            {% if car.driver_tip %}<p class="ai-recommend">💡 {{ car.driver_tip }}</p>{% endif %}
             {% if car.specs %}<p class="ai-recommend">{{ car.specs }}</p>{% endif %}
         </div>
         {% endfor %}

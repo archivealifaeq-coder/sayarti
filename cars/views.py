@@ -1,4 +1,5 @@
 ﻿import pandas as pd
+import re
 from pathlib import Path
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
@@ -477,11 +478,12 @@ def search_ai_suggest(request):
     db_results = _find_similar_in_db(brand, model, year, engine)
 
     ai_result = {'success': False}
-    try:
-        ai_result = suggest_cars_ai(brand=brand, model=model, year=year, engine=engine)
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).error('AI suggest error: %s', e)
+    if not db_results:
+        try:
+            ai_result = suggest_cars_ai(brand=brand, model=model, year=year, engine=engine)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error('AI suggest error: %s', e)
 
     context = {
         'db_results': db_results,
@@ -597,6 +599,58 @@ def _quick_db_cars(brand, model, year='', fuel=''):
     return selected
 
 
+def _quick_parse_from_db(query):
+    q_norm = fold_ar(query)
+    q_lower = query.lower()
+    year_match = re.search(r'\b(19\d{2}|20\d{2})\b', query)
+    year = year_match.group(1) if year_match else ''
+    fuel = ''
+    if any(word in q_norm for word in ('هايبرد', 'هجين', 'hybrid')):
+        fuel = 'هايبرد'
+    elif any(word in q_norm for word in ('ديزل', 'diesel')):
+        fuel = 'ديزل'
+    elif any(word in q_norm for word in ('كهرب', 'electric', 'ev')):
+        fuel = 'كهرباء'
+
+    pairs = cache.get('quick_parse_pairs')
+    if pairs is None:
+        pairs = list(
+            CarSpecification.objects
+            .values('brand_ar', 'brand_en', 'model_ar', 'model_en')
+            .distinct()
+        )
+        cache.set('quick_parse_pairs', pairs, 3600)
+
+    best = None
+    for item in pairs:
+        brand_ar = item.get('brand_ar') or ''
+        brand_en = item.get('brand_en') or ''
+        model_ar = item.get('model_ar') or ''
+        model_en = item.get('model_en') or ''
+        brand_hit = (brand_ar and fold_ar(brand_ar) in q_norm) or (brand_en and brand_en.lower() in q_lower)
+        model_hit = (model_ar and fold_ar(model_ar) in q_norm) or (model_en and model_en.lower() in q_lower)
+        if not brand_hit and not model_hit:
+            continue
+        score = int(bool(brand_hit)) + int(bool(model_hit))
+        if best is None or score > best[0]:
+            best = (score, item)
+
+    if not best:
+        return {}
+
+    item = best[1]
+    return {
+        'brand': item.get('brand_ar') or item.get('brand_en') or '',
+        'model': item.get('model_ar') or item.get('model_en') or '',
+        'year': year,
+        'engine': '',
+        'fuel': fuel,
+        'engine_type': '',
+        'spec_region': '',
+        'source': 'local_db',
+    }
+
+
 def search_ai_quick(request):
     """البحث السريع الذكي: فهم جملة المستخدم بالذكاء ثم إرجاع نتائج متنوعة."""
     from .services.deepseek_service import parse_free_query, suggest_cars_ai
@@ -607,9 +661,10 @@ def search_ai_quick(request):
             'error': 'اكتب ماركة أو موديل سيارتك وسنة الصنع',
         })
 
-    interpreted = {}
+    interpreted = _quick_parse_from_db(q)
     try:
-        interpreted = parse_free_query(q) or {}
+        if not interpreted:
+            interpreted = parse_free_query(q) or {}
     except Exception:
         interpreted = {}
 
