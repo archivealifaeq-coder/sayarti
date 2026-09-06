@@ -1951,6 +1951,22 @@
 
             if (installBtn) installBtn.addEventListener('click', doInstall);
 
+            var fab = document.getElementById('pwaInstallFab');
+            var fabGo = document.getElementById('pwaInstallFabGo');
+            var fabClose = document.getElementById('pwaInstallFabClose');
+            if (fabGo && fabGo.addEventListener) {
+                fabGo.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    doInstall();
+                });
+            }
+            if (fabClose && fabClose.addEventListener) {
+                fabClose.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (fab) fab.style.display = 'none';
+                });
+            }
+
             window.addEventListener('beforeinstallprompt', function(e) {
                 e.preventDefault();
                 deferredPrompt = e;
@@ -1976,7 +1992,15 @@
         })();
     </script>
 
-    <button type="button" id="pwaInstallFab" class="pwa-install-fab md:hidden" aria-label="تثبيت التطبيق">📲 ثبّت التطبيق</button>
+    <button type="button" id="pwaInstallFab" class="pwa-install-fab" aria-label="تثبيت التطبيق">
+        <span class="pwa-fab-head">📲 <b>ثبّت تطبيق سيارتي</b><span class="pwa-fab-x" id="pwaInstallFabClose" role="button" tabindex="0" aria-label="إغلاق">✕</span></span>
+        <span class="pwa-fab-steps">
+            1️⃣ اضغط المشاركة <b>⬆️</b> في المتصفح<br>
+            2️⃣ اختر إضافة إلى الشاشة الرئيسية<br>
+            3️⃣ اضغط <b>إضافة</b> — يصبح تطبيق 🚗
+        </span>
+        <span class="pwa-fab-cta" id="pwaInstallFabGo">⬇️ تثبيت الآن</span>
+    </button>
 
     <div id="pwaModal">
         <div class="pwa-modal-overlay" onclick="if(event.target===this)this.parentElement.classList.remove('open')">

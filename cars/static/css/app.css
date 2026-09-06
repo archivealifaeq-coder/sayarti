@@ -139,7 +139,7 @@
         }
         
         /* ============================================ */
-        /*  SLIDER - Ø¹Ø±Ø¶ ÙƒØ§Ù…Ù„ + Ø§Ø±ØªÙØ§Ø¹ 35% Ù…Ù† Ø§Ù„Ø´Ø§Ø´Ø©   */
+        /*  SLIDER - عرض كامل + ارتفاع 35% من الشاشة   */
         /* ============================================ */
         .slider-main-container {
             position: relative;
@@ -167,7 +167,7 @@
             height: 100%;
         }
         
-        /* âœ… Ø´Ø±Ø§Ø¦Ø­ Ù…ØªØ±Ø§ÙƒØ¨Ø© - Ø§Ù†ØªÙ‚Ø§Ù„ Crossfade ÙØ®Ù… */
+        /* ✅ شرائح متراكبة - انتقال Crossfade فخم */
         .slider-main-slide {
             position: absolute;
             inset: 0;
@@ -208,12 +208,12 @@
             will-change: transform;
         }
         
-        /* âœ… ØªØ£Ø«ÙŠØ± Ken Burns - ØªÙ‚Ø±ÙŠØ¨ Ø¨Ø·ÙŠØ¡ Ø£Ù†ÙŠÙ‚ Ù„Ù„Ø´Ø±ÙŠØ­Ø© Ø§Ù„Ù†Ø´Ø·Ø© */
+        /* ✅ تأثير Ken Burns - تقريب بطيء أنيق للشريحة النشطة */
         .slider-main-slide.active .slide-image {
             transform: scale(1.1);
         }
         
-        /* âœ… Ø·Ø¨Ù‚Ø© ØªØ¸Ù„ÙŠÙ„ Ù…ØªØ¯Ø±Ø¬Ø© Ù„ÙˆØ¶ÙˆØ­ Ø§Ù„Ù†Øµ (Ø§Ø­ØªØ±Ø§ÙÙŠØ© ÙˆØºÙŠØ± Ù…Ø²Ø¹Ø¬Ø©) */
+        /* ✅ طبقة تظليل متدرجة لوضوح النص (احترافية وغير مزعجة) */
         .slide-image-wrapper::after {
             content: '';
             position: absolute;
@@ -223,7 +223,7 @@
             z-index: 1;
         }
         
-        /* âœ… Ø¯Ø¹Ù… Ø§Ù„ØµÙˆØ± Ø§Ù„Ù…Ø®ØªÙ„ÙØ© Ù„Ù„Ù‡ÙˆØ§ØªÙ */
+        /* ✅ دعم الصور المختلفة للهواتف */
         .slide-image-mobile {
             display: none;
             width: 100%;
@@ -264,7 +264,7 @@
             pointer-events: auto;
         }
         
-        /* âœ… Ø¸Ù‡ÙˆØ± Ù…ØªØ¯Ø±Ø¬ Ù†Ø§Ø¹Ù… Ù„Ø¹Ù†Ø§ØµØ± Ø§Ù„Ù†Øµ Ø¹Ù†Ø¯ ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø´Ø±ÙŠØ­Ø© */
+        /* ✅ ظهور متدرج ناعم لعناصر النص عند تفعيل الشريحة */
         .slider-main-slide .slide-content > * {
             opacity: 0;
             transform: translateY(18px);
@@ -439,7 +439,7 @@
             }
         }
         
-        /* âœ… Ø£Ø³Ù‡Ù… Ø²Ø¬Ø§Ø¬ÙŠØ© Ø£Ù†ÙŠÙ‚Ø© - ØªØ¸Ù‡Ø± Ø¹Ù†Ø¯ ØªÙ…Ø±ÙŠØ± Ø§Ù„ÙØ£Ø±Ø© ÙÙ‚Ø· */
+        /* ✅ أسهم زجاجية أنيقة - تظهر عند تمرير الفأرة فقط */
         .slider-main-btn {
             position: absolute;
             top: 50%;
@@ -484,7 +484,7 @@
             .slider-main-btn-right { right: 8px; }
         }
         
-        /* âœ… Ø¹Ø¯Ù‘Ø§Ø¯ Ø§Ù„Ø´Ø±Ø§Ø¦Ø­ Ø§Ù„Ø§Ø­ØªØ±Ø§ÙÙŠ */
+        /* ✅ عدّاد الشرائح الاحترافي */
         .slider-main-counter {
             position: absolute;
             bottom: 16px;
@@ -537,7 +537,7 @@
             box-shadow: 0 2px 14px rgba(245, 158, 11, 0.45);
         }
         
-        /* âœ… Ù…Ø¤Ø´Ø± Ø§Ù„ØªÙ‚Ø¯Ù… - ÙŠÙ…ØªÙ„Ø¦ Ø¨Ø§Ù„ØªÙ†Ø§ØºÙ… Ù…Ø¹ Ø§Ù„ØªØ´ØºÙŠÙ„ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ (5 Ø«ÙˆØ§Ù†Ù) */
+        /* ✅ مؤشر التقدم - يمتلئ بالتناغم مع التشغيل التلقائي (5 ثوانٍ) */
         .slider-main-dot.prog::after {
             content: '';
             position: absolute;
@@ -564,7 +564,7 @@
         }
         
         /* ============================================ */
-        /*  Ø¨Ø§Ù‚ÙŠ Ø§Ù„Ø£Ù†Ù…Ø§Ø·                               */
+        /*  باقي الأنماط                               */
         /* ============================================ */
         .glass-card {
             background: rgba(30, 41, 59, 0.5);
@@ -895,6 +895,96 @@
         }
         .pwa-install-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 30px rgba(245, 158, 11, 0.45); }
 
+        .pwa-install-fab {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 9995;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 230px;
+            max-width: 250px;
+            padding: 12px 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            background: rgba(10, 15, 26, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #f1f5f9;
+            cursor: pointer;
+            box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+            animation: pwaFabFloat 2.6s ease-in-out infinite;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-align: right;
+            font-family: inherit;
+        }
+        .pwa-fab-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #fbbf24;
+        }
+        .pwa-fab-steps {
+            font-size: 0.78rem;
+            line-height: 1.7;
+            color: #cbd5e1;
+            padding: 0 4px;
+        }
+        .pwa-fab-steps b { color: #fbbf24; }
+        .pwa-fab-cta {
+            margin-top: 4px;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0a0f1a;
+            font-weight: 800;
+            font-size: 0.82rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+            transition: transform 0.15s ease;
+        }
+        .pwa-fab-cta:hover { transform: translateY(-2px); }
+        .pwa-fab-x {
+            margin-right: auto;
+            border: none;
+            background: rgba(148, 163, 184, 0.15);
+            color: #cbd5e1;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.8rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pwa-fab-x:hover { background: rgba(248, 113, 113, 0.35); color: #fff; }
+        .pwa-install-fab:hover {
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+            animation-play-state: paused;
+        }
+        @keyframes pwaFabFloat {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+        .pwa-error {
+            min-height: 290px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
         .footer-glass {
             background: rgba(10, 15, 26, 0.97);
             backdrop-filter: blur(20px);
@@ -979,7 +1069,7 @@
         @media (min-width: 1024px) { .section-spacing { margin-top: 20px; margin-bottom: 20px; } }
         
         /* ============================================ */
-        /*  BANNER FRAME - Ø¥Ø·Ø§Ø± Ø²Ø¬Ø§Ø¬ÙŠ + Ø°ÙˆØ¨Ø§Ù† Ø³ÙÙ„ÙŠ     */
+        /*  BANNER FRAME - إطار زجاجي + ذوبان سفلي     */
         /* ============================================ */
         .slider-main-container {
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06),
@@ -999,7 +1089,7 @@
         }
         
         /* ============================================ */
-        /*  SCROLL REVEAL - Ø¸Ù‡ÙˆØ± Ù…ØªØ¯Ø±Ø¬ Ø¹Ù†Ø¯ Ø§Ù„ØªÙ…Ø±ÙŠØ±     */
+        /*  SCROLL REVEAL - ظهور متدرج عند التمرير     */
         /* ============================================ */
         .js .reveal {
             opacity: 0;
@@ -1013,7 +1103,7 @@
         }
         
         /* ============================================ */
-        /*  BACK TO TOP - Ø²Ø± Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ø£Ø¹Ù„Ù‰             */
+        /*  BACK TO TOP - زر العودة للأعلى             */
         /* ============================================ */
         .back-top {
             position: fixed;
@@ -1050,7 +1140,7 @@
         
 
         /* ============================================ */
-        /*  DETAILED SEARCH NOTE (Ø§Ù„Ø¨Ø­Ø« Ø¨Ø¨ÙŠØ§Ù†Ø§Øª Ø¬Ø²Ø¦ÙŠØ©)  */
+        /*  DETAILED SEARCH NOTE (البحث ببيانات جزئية)  */
         /* ============================================ */
         .detail-search-note {
             max-width: 720px;
