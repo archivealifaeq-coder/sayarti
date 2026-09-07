@@ -18,7 +18,8 @@ DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
 DEEPSEEK_MODEL = getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-v4-flash')
 GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent'
 
-MAX_BUDGET_RESULTS = 2
+AI_BUDGET_RESULTS = 1
+MARKET_BUDGET_RESULTS = 4
 MIN_YEAR = 1990
 MAX_YEAR = 2026
 PRICE_TOLERANCE = 1.03  # هامش صغير: 3%
@@ -30,7 +31,7 @@ PERSIAN_BRANDS = 'سايبا (ساينا، كيك، برايد)، إيكو/ای�
 BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في سوق السيارات العراقي (بغداد والبصرة وبقية المدن).
 تحدّث بالعربية الفصحى الواضحة واللطيفة (تجنّب اللهجة العامية).
 
-المطلوب: أعطني بالضبط سيارتين فقط مناسبتين ومتوفرتين فعلاً في السوق العراقي وضمن الميزانية.
+المطلوب: أعطني سيارة واحدة فقط مناسبة ومتوفرة فعلاً في السوق العراقي وضمن الميزانية.
 
 سلم الأسعار التقريبي في العراق (مرجع فقط — تويوتا أغلى قيمة من غيرها والكوري أوسط):
 - اقتصادية صغيرة (كيا بيكانتو، هيونداي i10، شفروليه سبارك/أوبترا، دايوس، سوزوكي): 7-15 مليون دينار
@@ -44,7 +45,7 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
 قواعد صارمة (مطلوبة 100%):
 1. كل سيارة يجب أن تكون ضمن الميزانية تماماً — ممنوع تجاوز ميزانية المستخدم بأي حال من الأحوال.
 2. الأسعار واقعية ومتناسقة مع سلم الأسعار أعلاه ومع عمر السيارة (الأقدم أرخص، الأحدث أغلى). لا تضخّم الأسعار ولا تخنقها.
-3. أعطني بالضبط سيارتين فقط، الأقرب سعراً للميزانية والأدق من ناحية التوفر والصيانة (ممنوع التكرار).
+3. أعطني سيارة واحدة فقط، الأقرب سعراً للميزانية والأدق من ناحية التوفر والصيانة.
 4. يجب أن يكون السعر قريباً جداً من الميزانية بدون تجاوزها قدر الإمكان؛ استهدف سيارات ضمن 85% إلى 100% من الميزانية.
 5. الزيادة بين price_min و price_max يجب ألا تتجاوز 30%.
 6. سنة السيارة واقعية: بين {min_year} و {max_year}.
@@ -71,43 +72,6 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
 نوع السيارة المفضّل: {car_type}
 الحالة: {condition}
 """
-
-MARKET_PRICE_PROMPT = """أنت محلل أسعار سيارات للسوق العراقي.
-المطلوب: جهّز جدول أسعار مختصر وحديث نسبياً يمكن تخزينه في قاعدة بيانات موقع سيارات.
-
-قواعد مهمة:
-1. أعطني JSON فقط بدون أي شرح خارجي.
-2. أعطني {limit} سيارة فقط.
-3. الأسعار بالدينار العراقي ويُفضّل إضافة الدولار أيضاً.
-4. اجعل الأسعار واقعية وقريبة من السوق العراقي، ولا تبالغ.
-5. لا تكرر نفس السيارة والسنة.
-6. درجة الثقة بين 0 و100.
-
-صيغة JSON المطلوبة:
-[
-  {{
-    "name": "تويوتا كورولا 2020",
-    "brand": "تويوتا",
-    "model": "كورولا",
-    "year": 2020,
-    "price_min_iqd": 22000000,
-    "price_max_iqd": 25000000,
-    "price_min_usd": 16500,
-    "price_max_usd": 19000,
-    "engine": "1.8L",
-    "fuel_economy": "جيد",
-    "maintenance": "متوسطة",
-    "pros": "مطلوبة في السوق وقطعها متوفرة",
-    "confidence": 85,
-    "source_note": "تقدير سوقي عام"
-  }}
-]
-
-بيانات الطلب:
-نوع السيارة: {car_type}
-الحالة: {condition}
-"""
-
 
 def _get_key(settings_field, env_field):
     try:
@@ -211,7 +175,7 @@ def _format_usd(lo, hi):
 
 
 def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'):
-    qs = MarketCarPrice.objects.filter(is_active=True, condition=condition)
+    qs = MarketCarPrice.objects.filter(condition=condition)
     if car_type != 'all':
         qs = qs.filter(Q(car_type=car_type) | Q(car_type='all'))
 
@@ -221,7 +185,7 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
         qs = qs.filter(price_min_iqd__lte=int(budget * PRICE_TOLERANCE))
 
     candidates = []
-    for car in qs[:500]:
+    for car in qs[:700]:
         lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
         hi = car.price_max_usd if currency == 'usd' else car.price_max_iqd
         if not lo:
@@ -230,7 +194,7 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
 
     candidates.sort(key=lambda item: item[:3])
     cars = []
-    for over_budget, _distance, _confidence, car, _hi in candidates[:MAX_BUDGET_RESULTS]:
+    for over_budget, _distance, _confidence, car, _hi in candidates[:MARKET_BUDGET_RESULTS]:
         cars.append({
             'name': car.name,
             'year': car.year,
@@ -278,82 +242,6 @@ def _build_prompt(budget, currency, car_type, condition):
         min_year=MIN_YEAR,
         max_year=MAX_YEAR,
     )
-
-
-def _label_car_type(car_type):
-    return {
-        'all': 'أي نوع',
-        'japanese': 'ياباني',
-        'korean': 'كوري',
-        'chinese': 'صيني',
-        'american': 'أمريكي',
-        'german': 'ألماني',
-        'european': 'أوروبي',
-        'iranian': 'إيراني',
-    }.get(car_type, 'أي نوع')
-
-
-def _label_condition(condition):
-    return {'used': 'مستعمل', 'new': 'جديد'}.get(condition, 'مستعمل')
-
-
-def update_market_prices_from_ai(car_type='all', condition='used', limit=20):
-    limit = max(2, min(int(limit or 20), 40))
-    prompt = MARKET_PRICE_PROMPT.format(
-        limit=limit,
-        car_type=_label_car_type(car_type),
-        condition=_label_condition(condition),
-    )
-    errors = []
-    for name, call in [('DeepSeek', _call_deepseek), ('Gemini', _call_gemini)]:
-        try:
-            content = call(prompt, max_tokens=2200, temperature=0.2)
-            rows = _json_list(content)
-            saved = 0
-            for row in rows[:limit]:
-                brand = str(row.get('brand') or '').strip()
-                model = str(row.get('model') or '').strip()
-                year = _to_int(row.get('year'))
-                pmin = _to_int(row.get('price_min_iqd'))
-                pmax = _to_int(row.get('price_max_iqd'))
-                if not (brand and model and year and pmin):
-                    continue
-                obj, _created = MarketCarPrice.objects.update_or_create(
-                    brand=brand,
-                    model=model,
-                    year=year,
-                    car_type=car_type,
-                    condition=condition,
-                    defaults={
-                        'name': str(row.get('name') or f'{brand} {model} {year}').strip(),
-                        'price_min_iqd': pmin,
-                        'price_max_iqd': _to_int(row.get('price_max_iqd')) or pmin,
-                        'price_min_usd': _to_int(row.get('price_min_usd')),
-                        'price_max_usd': _to_int(row.get('price_max_usd')),
-                        'engine': str(row.get('engine') or '').strip(),
-                        'fuel_economy': str(row.get('fuel_economy') or 'جيد').strip(),
-                        'maintenance': str(row.get('maintenance') or 'متوسطة').strip(),
-                        'pros': str(row.get('pros') or '').strip()[:240],
-                        'confidence': min(100, max(0, _to_int(row.get('confidence')) or 80)),
-                        'source': name.lower(),
-                        'source_note': str(row.get('source_note') or 'تحديث بالذكاء الاصطناعي').strip()[:220],
-                        'is_active': True,
-                    },
-                )
-                saved += 1
-            if saved:
-                return {'success': True, 'saved': saved, 'provider': name}
-            errors.append(f'{name}: لا صفوف صالحة')
-        except requests.exceptions.RequestException as e:
-            logger.error('%s market price update error: %s', name, e.__class__.__name__)
-            errors.append(f'{name}: خطأ اتصال')
-        except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as e:
-            logger.error('%s market price parse error: %s', name, e.__class__.__name__)
-            errors.append(f'{name}: تعذر تحليل النتيجة')
-        except RuntimeError as e:
-            logger.warning(str(e))
-            errors.append(f'{name}: غير مفعل')
-    return {'success': False, 'error': 'تعذر تحديث جدول الأسعار الآن', 'details': errors}
 
 
 def _call_groq(prompt, max_tokens=900, temperature=0.25):
@@ -445,7 +333,7 @@ def _sanitize_results(cars, budget, currency):
     1. يستبعد أي سيارة أدنى سعر لها يتجاوز الميزانية (مع هامش 3%).
     2. يزيل التكرار بالاسم ويرتّب من الأرخص للأغلى.
     3. يضبط مناطق الحقول المفقودة ويصحّح سنة غير منطقية.
-    4. لا يتجاوز الناتج سيارتين.
+    4. لا يتجاوز الناتج سيارة واحدة عند استخدام الذكاء الاصطناعي.
     """
     if not isinstance(cars, list):
         return []
@@ -486,7 +374,7 @@ def _sanitize_results(cars, budget, currency):
             car['price_max'] = budget
 
         clean.append(car)
-        if len(clean) >= MAX_BUDGET_RESULTS:
+        if len(clean) >= AI_BUDGET_RESULTS:
             break
 
     if clean:
@@ -495,7 +383,7 @@ def _sanitize_results(cars, budget, currency):
 
     # لا شيء ضمن الميزانية؛ أعد أقرب النتائج (فوق الميزانية) مع تنبيه واضح
     affordable.sort(key=lambda c: _to_int(c.get('price_min')) or 0)
-    return affordable[:MAX_BUDGET_RESULTS]
+    return affordable[:AI_BUDGET_RESULTS]
 
 
 def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used', client_ip=None):
@@ -509,7 +397,7 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
         'currency': currency,
         'car_type': car_type,
         'condition': condition,
-        'limit': MAX_BUDGET_RESULTS,
+        'limit': AI_BUDGET_RESULTS,
     })
     cached = _cache_get(key)
     if cached:

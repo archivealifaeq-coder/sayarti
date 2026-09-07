@@ -429,14 +429,14 @@ class FeatureCardAdmin(admin.ModelAdmin):
 @admin.register(MarketCarPrice)
 class MarketCarPriceAdmin(admin.ModelAdmin):
     change_list_template = 'admin/market_prices_changelist.html'
-    list_display = ('name_display', 'type_badge', 'condition_badge', 'price_iqd_display', 'price_usd_display', 'confidence_badge', 'source_badge', 'updated_at')
-    list_filter = ('car_type', 'condition', 'source', 'is_active', 'updated_at')
-    search_fields = ('name', 'brand', 'model', 'source_note')
+    list_display = ('name_display', 'type_badge', 'condition_badge', 'price_iqd_display', 'price_usd_display', 'confidence_badge', 'updated_at')
+    list_filter = ('car_type', 'condition', 'updated_at')
+    search_fields = ('name', 'brand', 'brand_en', 'model', 'model_en')
     list_per_page = 40
     ordering = ('price_min_iqd', '-confidence', 'brand', 'model')
     fieldsets = (
         ('🚗 السيارة', {
-            'fields': ('name', 'brand', 'model', 'year', 'car_type', 'condition', 'is_active')
+            'fields': ('name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'car_type', 'condition')
         }),
         ('💰 السعر', {
             'fields': ('price_min_iqd', 'price_max_iqd', 'price_min_usd', 'price_max_usd'),
@@ -445,31 +445,116 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         ('🔧 تفاصيل مختصرة', {
             'fields': ('engine', 'fuel_economy', 'maintenance', 'pros')
         }),
-        ('📌 المصدر والثقة', {
-            'fields': ('confidence', 'source', 'source_note')
+        ('📌 الثقة', {
+            'fields': ('confidence',)
         }),
     )
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('ai-update/', self.admin_site.admin_view(self.ai_update_view), name='market_prices_ai_update'),
+            path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='market_prices_import_excel'),
         ]
         return custom_urls + urls
 
-    def ai_update_view(self, request):
+    def import_excel_view(self, request):
         if request.method == 'POST':
-            from .services.deepseek_service import update_market_prices_from_ai
-            car_type = request.POST.get('car_type', 'all')
-            condition = request.POST.get('condition', 'used')
-            limit = request.POST.get('limit', '20')
-            result = update_market_prices_from_ai(car_type, condition, limit)
-            if result.get('success'):
-                self.message_user(request, f"تم تحديث {result['saved']} سعر عبر {result['provider']}.", messages.SUCCESS)
-            else:
-                self.message_user(request, result.get('error', 'تعذر التحديث'), messages.ERROR)
+            excel_file = request.FILES.get('excel_file')
+            if not excel_file:
+                self.message_user(request, 'لم يتم اختيار ملف.', messages.WARNING)
+                return redirect('.')
+            try:
+                df = pd.read_excel(excel_file)
+                required = {'name', 'brand_ar', 'model_ar', 'year', 'car_type', 'condition', 'price_min_iqd', 'price_max_iqd'}
+                missing = required - set(df.columns)
+                if missing:
+                    self.message_user(request, 'أعمدة ناقصة: ' + ', '.join(sorted(missing)), messages.ERROR)
+                    return redirect('.')
+
+                def to_int(value, default=None):
+                    if pd.isna(value) or value == '':
+                        return default
+                    return int(float(str(value).replace(',', '').strip()))
+
+                def car_type_value(value):
+                    value = str(value or '').strip().lower()
+                    return {
+                        'عام': 'all', 'الكل': 'all', 'all': 'all',
+                        'ياباني': 'japanese', 'japanese': 'japanese',
+                        'كوري': 'korean', 'korean': 'korean',
+                        'صيني': 'chinese', 'chinese': 'chinese',
+                        'أمريكي': 'american', 'امريكي': 'american', 'american': 'american',
+                        'ألماني': 'german', 'الماني': 'german', 'german': 'german',
+                        'أوروبي': 'european', 'اوربي': 'european', 'european': 'european',
+                        'إيراني': 'iranian', 'ايراني': 'iranian', 'iranian': 'iranian',
+                    }.get(value, 'all')
+
+                def condition_value(value):
+                    value = str(value or '').strip().lower()
+                    return {'جديد': 'new', 'new': 'new', 'مستعمل': 'used', 'used': 'used'}.get(value, 'used')
+
+                saved = 0
+                failed = 0
+                for _, row in df.iterrows():
+                    try:
+                        brand = str(row.get('brand_ar') or row.get('brand') or '').strip()
+                        brand_en = str(row.get('brand_en') or '').strip()
+                        model = str(row.get('model_ar') or row.get('model') or '').strip()
+                        model_en = str(row.get('model_en') or '').strip()
+                        year = to_int(row.get('year'))
+                        if not (brand and model and year):
+                            failed += 1
+                            continue
+                        MarketCarPrice.objects.update_or_create(
+                            brand=brand,
+                            model=model,
+                            year=year,
+                            car_type=car_type_value(row.get('car_type')),
+                            condition=condition_value(row.get('condition')),
+                            defaults={
+                                'name': str(row.get('name') or f'{brand} {model} {year}').strip(),
+                                'brand_en': brand_en,
+                                'model_en': model_en,
+                                'price_min_iqd': to_int(row.get('price_min_iqd'), 0),
+                                'price_max_iqd': to_int(row.get('price_max_iqd'), 0),
+                                'price_min_usd': to_int(row.get('price_min_usd')),
+                                'price_max_usd': to_int(row.get('price_max_usd')),
+                                'engine': str(row.get('engine') or '').strip(),
+                                'fuel_economy': str(row.get('fuel_economy') or 'جيد').strip(),
+                                'maintenance': str(row.get('maintenance') or 'متوسطة').strip(),
+                                'pros': str(row.get('pros') or '').strip()[:240],
+                                'confidence': max(0, min(100, to_int(row.get('confidence'), 80))),
+                            },
+                        )
+                        saved += 1
+                    except Exception:
+                        failed += 1
+                self.message_user(request, f'تم استيراد/تحديث {saved} سعر. فشل {failed} صف.', messages.SUCCESS if saved else messages.ERROR)
+            except Exception:
+                import logging
+                logging.getLogger('cars').exception('Market price Excel import failed')
+                self.message_user(request, 'حدث خطأ أثناء استيراد ملف الأسعار. راجع السجلات.', messages.ERROR)
             return redirect('..')
-        return redirect('..')
+
+        form = CsvImportForm()
+        html_template = """
+        {% extends "admin/base_site.html" %}
+        {% block content %}
+        <div class="section-card" style="max-width: 760px; margin: 20px auto;">
+            <h3>📥 استيراد أسعار السوق من Excel</h3>
+            <p style="color:#475569; line-height:1.9;">الأعمدة المطلوبة: name, brand_ar, model_ar, year, car_type, condition, price_min_iqd, price_max_iqd. الأعمدة الاختيارية: brand_en, model_en, price_min_usd, price_max_usd, engine, fuel_economy, maintenance, pros, confidence.</p>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary" style="border:none;">استيراد الأسعار</button>
+                <a href="../" style="color:#64748b; margin-right:10px;">إلغاء</a>
+            </form>
+        </div>
+        {% endblock %}
+        """
+        t = Template(html_template)
+        c = RequestContext(request, {'form': form, 'opts': self.model._meta})
+        return HttpResponse(t.render(c))
 
     def name_display(self, obj):
         return format_html('<b>{}</b><br><span style="color:#64748b;font-size:.78rem;">{} {} · {}</span>', obj.name, obj.brand, obj.model, obj.year)
@@ -498,11 +583,6 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         cls = 'badge-green' if obj.confidence >= 80 else 'badge-amber'
         return format_html('<span class="badge {}">{}%</span>', cls, obj.confidence)
     confidence_badge.short_description = 'الثقة'
-
-    def source_badge(self, obj):
-        return format_html('<span class="badge badge-gray">{}</span>', obj.get_source_display())
-    source_badge.short_description = 'المصدر'
-
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):

@@ -391,16 +391,11 @@ class MarketCarPrice(models.Model):
         ('used', 'مستعمل'),
         ('new', 'جديد'),
     ]
-    SOURCE_CHOICES = [
-        ('manual', 'يدوي'),
-        ('deepseek', 'DeepSeek'),
-        ('gemini', 'Gemini'),
-        ('import', 'استيراد ملف'),
-    ]
-
     name = models.CharField(max_length=180, verbose_name='اسم السيارة الكامل')
-    brand = models.CharField(max_length=100, verbose_name='الماركة')
-    model = models.CharField(max_length=100, verbose_name='الموديل')
+    brand = models.CharField(max_length=100, verbose_name='الماركة عربي')
+    brand_en = models.CharField(max_length=100, blank=True, verbose_name='الماركة إنجليزي')
+    model = models.CharField(max_length=100, verbose_name='الموديل عربي')
+    model_en = models.CharField(max_length=100, blank=True, verbose_name='الموديل إنجليزي')
     brand_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
     model_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
     year = models.IntegerField(validators=[MinValueValidator(1990), MaxValueValidator(2099)], verbose_name='السنة')
@@ -415,9 +410,6 @@ class MarketCarPrice(models.Model):
     maintenance = models.CharField(max_length=50, blank=True, default='متوسطة', verbose_name='الصيانة')
     pros = models.CharField(max_length=240, blank=True, verbose_name='سبب الترشيح')
     confidence = models.PositiveSmallIntegerField(default=80, validators=[MinValueValidator(0), MaxValueValidator(100)], verbose_name='درجة الثقة')
-    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='manual', db_index=True, verbose_name='المصدر')
-    source_note = models.CharField(max_length=220, blank=True, verbose_name='ملاحظة المصدر')
-    is_active = models.BooleanField(default=True, db_index=True, verbose_name='مفعل')
     updated_at = models.DateTimeField(auto_now=True, db_index=True, verbose_name='آخر تحديث')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإضافة')
 

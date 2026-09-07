@@ -295,9 +295,9 @@
                     {% endif %}
                 </div>
 
-                {% if result.cars|length < 2 %}
+                {% if result.from_market and result.cars|length < 4 %}
                 <p class="text-slate-400 text-xs mb-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-                    ℹ️ لم نجد خيارين كافيين ضمن ميزانيتك بدرجة عالية من الدقة، فعرضنا الأقرب فقط.
+                    ℹ️ لم نجد أربعة خيارات كافية من قاعدة أسعار السوق، فعرضنا الأقرب فقط.
                 </p>
                 {% endif %}
 
