@@ -1018,6 +1018,13 @@ fieldset.module,
     white-space: nowrap;
 }
 
+.admin-model-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+}
+
 .form-row {
     display: grid;
     grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);

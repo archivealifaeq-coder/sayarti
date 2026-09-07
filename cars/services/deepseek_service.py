@@ -5,7 +5,8 @@ import re
 import requests
 from django.conf import settings
 from django.core.cache import cache, caches
-from ..models import SiteSettings
+from django.db.models import Q
+from ..models import SiteSettings, MarketCarPrice
 
 logger = logging.getLogger('cars')
 
@@ -21,6 +22,8 @@ MAX_BUDGET_RESULTS = 2
 MIN_YEAR = 1990
 MAX_YEAR = 2026
 PRICE_TOLERANCE = 1.03  # هامش صغير: 3%
+PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
+BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
 
 PERSIAN_BRANDS = 'سايبا (ساينا، كيك، برايد)، إيكو/ایرانخودرو (سمند، بارس، دينا، رانا، تارا، رونا)'
 
@@ -66,6 +69,42 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
 بيانات المستخدم:
 الميزانية: {budget} {currency_name}
 نوع السيارة المفضّل: {car_type}
+الحالة: {condition}
+"""
+
+MARKET_PRICE_PROMPT = """أنت محلل أسعار سيارات للسوق العراقي.
+المطلوب: جهّز جدول أسعار مختصر وحديث نسبياً يمكن تخزينه في قاعدة بيانات موقع سيارات.
+
+قواعد مهمة:
+1. أعطني JSON فقط بدون أي شرح خارجي.
+2. أعطني {limit} سيارة فقط.
+3. الأسعار بالدينار العراقي ويُفضّل إضافة الدولار أيضاً.
+4. اجعل الأسعار واقعية وقريبة من السوق العراقي، ولا تبالغ.
+5. لا تكرر نفس السيارة والسنة.
+6. درجة الثقة بين 0 و100.
+
+صيغة JSON المطلوبة:
+[
+  {{
+    "name": "تويوتا كورولا 2020",
+    "brand": "تويوتا",
+    "model": "كورولا",
+    "year": 2020,
+    "price_min_iqd": 22000000,
+    "price_max_iqd": 25000000,
+    "price_min_usd": 16500,
+    "price_max_usd": 19000,
+    "engine": "1.8L",
+    "fuel_economy": "جيد",
+    "maintenance": "متوسطة",
+    "pros": "مطلوبة في السوق وقطعها متوفرة",
+    "confidence": 85,
+    "source_note": "تقدير سوقي عام"
+  }}
+]
+
+بيانات الطلب:
+نوع السيارة: {car_type}
 الحالة: {condition}
 """
 
@@ -120,6 +159,98 @@ def _cache_set(key, value, timeout):
         cache.set(key, value, timeout)
 
 
+def _rounded_budget_for_cache(budget, currency):
+    step = 1000 if currency == 'usd' else 1000000
+    return max(step, round(int(budget) / step) * step)
+
+
+def _premium_ai_allowed(client_ip):
+    if not client_ip:
+        return True
+    key = f'ai:premium_hour:{client_ip}'
+    used = _cache_get(key) or 0
+    if used >= PREMIUM_AI_PER_IP_HOURLY_LIMIT:
+        return False
+    _cache_set(key, used + 1, 3600)
+    return True
+
+
+def _provider_chain(client_ip=None):
+    if _premium_ai_allowed(client_ip):
+        return [
+            ('DeepSeek', _call_deepseek),
+            ('Gemini', _call_gemini),
+            ('Groq', _call_groq),
+        ]
+    return [('Groq', _call_groq)]
+
+
+def _json_list(content, key='cars'):
+    data = json.loads(content)
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict) and isinstance(data.get(key), list):
+        return data[key]
+    return []
+
+
+def _format_iqd(lo, hi):
+    if not lo and not hi:
+        return ''
+    if lo == hi or not hi:
+        return f'{lo:,} د.ع'
+    return f'{lo:,} - {hi:,} د.ع'
+
+
+def _format_usd(lo, hi):
+    if not lo and not hi:
+        return ''
+    if lo == hi or not hi:
+        return f'{lo:,}'
+    return f'{lo:,} - {hi:,}'
+
+
+def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'):
+    qs = MarketCarPrice.objects.filter(is_active=True, condition=condition)
+    if car_type != 'all':
+        qs = qs.filter(Q(car_type=car_type) | Q(car_type='all'))
+
+    if currency == 'usd':
+        qs = qs.exclude(price_min_usd__isnull=True).filter(price_min_usd__lte=int(budget * PRICE_TOLERANCE))
+    else:
+        qs = qs.filter(price_min_iqd__lte=int(budget * PRICE_TOLERANCE))
+
+    candidates = []
+    for car in qs[:500]:
+        lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
+        hi = car.price_max_usd if currency == 'usd' else car.price_max_iqd
+        if not lo:
+            continue
+        candidates.append((lo > budget, abs(budget - lo), -car.confidence, car, hi))
+
+    candidates.sort(key=lambda item: item[:3])
+    cars = []
+    for over_budget, _distance, _confidence, car, _hi in candidates[:MAX_BUDGET_RESULTS]:
+        cars.append({
+            'name': car.name,
+            'year': car.year,
+            'price_min': car.price_min_iqd,
+            'price_max': car.price_max_iqd,
+            'price_iq': _format_iqd(car.price_min_iqd, car.price_max_iqd),
+            'price_usd': _format_usd(car.price_min_usd, car.price_max_usd),
+            'engine': car.engine or 'غير محدد',
+            'fuel_economy': car.fuel_economy or 'جيد',
+            'maintenance': car.maintenance or 'متوسطة',
+            'pros': car.pros or 'خيار قريب من ميزانيتك حسب جدول أسعار السوق المحلي.',
+            'over_budget': over_budget,
+            'confidence': car.confidence,
+        })
+
+    if not cars:
+        return {'success': False}
+    return {'success': True, 'cars': cars, 'provider': 'قاعدة أسعار السوق', 'from_market': True}
+
+
 def _build_prompt(budget, currency, car_type, condition):
     currency_names = {
         'iqd': 'دينار عراقي',
@@ -147,6 +278,82 @@ def _build_prompt(budget, currency, car_type, condition):
         min_year=MIN_YEAR,
         max_year=MAX_YEAR,
     )
+
+
+def _label_car_type(car_type):
+    return {
+        'all': 'أي نوع',
+        'japanese': 'ياباني',
+        'korean': 'كوري',
+        'chinese': 'صيني',
+        'american': 'أمريكي',
+        'german': 'ألماني',
+        'european': 'أوروبي',
+        'iranian': 'إيراني',
+    }.get(car_type, 'أي نوع')
+
+
+def _label_condition(condition):
+    return {'used': 'مستعمل', 'new': 'جديد'}.get(condition, 'مستعمل')
+
+
+def update_market_prices_from_ai(car_type='all', condition='used', limit=20):
+    limit = max(2, min(int(limit or 20), 40))
+    prompt = MARKET_PRICE_PROMPT.format(
+        limit=limit,
+        car_type=_label_car_type(car_type),
+        condition=_label_condition(condition),
+    )
+    errors = []
+    for name, call in [('DeepSeek', _call_deepseek), ('Gemini', _call_gemini)]:
+        try:
+            content = call(prompt, max_tokens=2200, temperature=0.2)
+            rows = _json_list(content)
+            saved = 0
+            for row in rows[:limit]:
+                brand = str(row.get('brand') or '').strip()
+                model = str(row.get('model') or '').strip()
+                year = _to_int(row.get('year'))
+                pmin = _to_int(row.get('price_min_iqd'))
+                pmax = _to_int(row.get('price_max_iqd'))
+                if not (brand and model and year and pmin):
+                    continue
+                obj, _created = MarketCarPrice.objects.update_or_create(
+                    brand=brand,
+                    model=model,
+                    year=year,
+                    car_type=car_type,
+                    condition=condition,
+                    defaults={
+                        'name': str(row.get('name') or f'{brand} {model} {year}').strip(),
+                        'price_min_iqd': pmin,
+                        'price_max_iqd': _to_int(row.get('price_max_iqd')) or pmin,
+                        'price_min_usd': _to_int(row.get('price_min_usd')),
+                        'price_max_usd': _to_int(row.get('price_max_usd')),
+                        'engine': str(row.get('engine') or '').strip(),
+                        'fuel_economy': str(row.get('fuel_economy') or 'جيد').strip(),
+                        'maintenance': str(row.get('maintenance') or 'متوسطة').strip(),
+                        'pros': str(row.get('pros') or '').strip()[:240],
+                        'confidence': min(100, max(0, _to_int(row.get('confidence')) or 80)),
+                        'source': name.lower(),
+                        'source_note': str(row.get('source_note') or 'تحديث بالذكاء الاصطناعي').strip()[:220],
+                        'is_active': True,
+                    },
+                )
+                saved += 1
+            if saved:
+                return {'success': True, 'saved': saved, 'provider': name}
+            errors.append(f'{name}: لا صفوف صالحة')
+        except requests.exceptions.RequestException as e:
+            logger.error('%s market price update error: %s', name, e.__class__.__name__)
+            errors.append(f'{name}: خطأ اتصال')
+        except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as e:
+            logger.error('%s market price parse error: %s', name, e.__class__.__name__)
+            errors.append(f'{name}: تعذر تحليل النتيجة')
+        except RuntimeError as e:
+            logger.warning(str(e))
+            errors.append(f'{name}: غير مفعل')
+    return {'success': False, 'error': 'تعذر تحديث جدول الأسعار الآن', 'details': errors}
 
 
 def _call_groq(prompt, max_tokens=900, temperature=0.25):
@@ -291,9 +498,14 @@ def _sanitize_results(cars, budget, currency):
     return affordable[:MAX_BUDGET_RESULTS]
 
 
-def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'):
+def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used', client_ip=None):
+    market_result = find_market_cars_by_budget(budget, currency, car_type, condition)
+    if market_result.get('success'):
+        return market_result
+
+    cache_budget = _rounded_budget_for_cache(budget, currency)
     key = _cache_key('budget', {
-        'budget': budget,
+        'budget': cache_budget,
         'currency': currency,
         'car_type': car_type,
         'condition': condition,
@@ -304,23 +516,18 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
         return cached
 
     prompt = _build_prompt(budget, currency, car_type, condition)
-
-    providers = [
-        ('DeepSeek', _call_deepseek),
-        ('Gemini', _call_gemini),
-        ('Groq', _call_groq),
-    ]
+    providers = _provider_chain(client_ip)
 
     errors = []
     for name, call in providers:
         try:
             content = call(prompt, max_tokens=650, temperature=0.2)
-            cars = json.loads(content)
+            cars = _json_list(content)
             if isinstance(cars, list) and cars:
                 cars = _sanitize_results(cars, budget, currency)
                 if cars:
                     result = {'success': True, 'cars': cars, 'provider': name}
-                    _cache_set(key, result, 60 * 60 * 24 * 14)
+                    _cache_set(key, result, BUDGET_CACHE_TTL)
                     return result
                 errors.append(f'{name}: لا نتائج ضمن الميزانية')
         except requests.exceptions.Timeout:

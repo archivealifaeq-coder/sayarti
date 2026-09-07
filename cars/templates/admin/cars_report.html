@@ -1,0 +1,65 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}تقرير السيارات | سيارتي{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto; padding: 6px 0;">
+    <a class="back" style="display:inline-block; margin-bottom:10px; font-weight:700;" href="/admin/">← العودة للوحة التحكم</a>
+
+    <div class="report-head" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+        <h2 style="margin:0; font-size:1.4rem; color:#0f172a;">📊 تقرير السيارات</h2>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="sum-box">السيارات: {{ total_cars }}</span>
+            <span class="sum-box">الماركات: {{ total_brands }}</span>
+            <span class="sum-box">الموديلات: {{ total_models }}</span>
+            <button class="btn btn-green" onclick="window.print()">🖨️ طباعة</button>
+            <a class="btn btn-primary" href="?download=1">⬇️ تنزيل ملف نصي</a>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h3>🚗 ملخص الماركات والموديلات</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>الماركة</th>
+                    <th>الاسم الإنجليزي</th>
+                    <th>عدد السيارات</th>
+                    <th>عدد الموديلات</th>
+                    <th>أسماء الموديلات وعدد كل موديل</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for brand in brands %}
+                <tr>
+                    <td><b>{{ brand.brand_ar }}</b></td>
+                    <td class="code-cell">{{ brand.brand_en|default:"—" }}</td>
+                    <td class="num">{{ brand.total_cars }}</td>
+                    <td class="num">{{ brand.total_models }}</td>
+                    <td style="text-align:right;">
+                        <div class="admin-model-list">
+                        {% for model in brand.models %}
+                            <span class="badge badge-blue">{{ model.model_ar|default:model.model_en }}: {{ model.total }}</span>
+                        {% empty %}
+                            <span class="badge badge-gray">لا توجد موديلات</span>
+                        {% endfor %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center; color:#64748b; padding:24px;">لا توجد سيارات في قاعدة البيانات</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section-card">
+        <h3>شرح بسيط</h3>
+        <p style="color:#475569; line-height:1.9; margin:0;">
+            هذا التقرير يقرأ قاعدة البيانات فقط. لا يستخدم DeepSeek ولا Gemini ولا Groq، لذلك لا توجد أي تكلفة توكن.
+            الرقم بجانب كل موديل يعني عدد سجلات السيارات الموجودة لهذا الموديل حسب السنوات والمحركات والمواصفات.
+        </p>
+    </div>
+</div>
+{% endblock %}

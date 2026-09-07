@@ -375,6 +375,75 @@ class FeatureCard(models.Model):
         verbose_name = "بطاقة مميزات"
         verbose_name_plural = "بطاقات المميزات"
 
+
+class MarketCarPrice(models.Model):
+    CAR_TYPE_CHOICES = [
+        ('all', 'عام'),
+        ('japanese', 'ياباني'),
+        ('korean', 'كوري'),
+        ('chinese', 'صيني'),
+        ('american', 'أمريكي'),
+        ('german', 'ألماني'),
+        ('european', 'أوروبي'),
+        ('iranian', 'إيراني'),
+    ]
+    CONDITION_CHOICES = [
+        ('used', 'مستعمل'),
+        ('new', 'جديد'),
+    ]
+    SOURCE_CHOICES = [
+        ('manual', 'يدوي'),
+        ('deepseek', 'DeepSeek'),
+        ('gemini', 'Gemini'),
+        ('import', 'استيراد ملف'),
+    ]
+
+    name = models.CharField(max_length=180, verbose_name='اسم السيارة الكامل')
+    brand = models.CharField(max_length=100, verbose_name='الماركة')
+    model = models.CharField(max_length=100, verbose_name='الموديل')
+    brand_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
+    model_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
+    year = models.IntegerField(validators=[MinValueValidator(1990), MaxValueValidator(2099)], verbose_name='السنة')
+    car_type = models.CharField(max_length=20, choices=CAR_TYPE_CHOICES, default='all', db_index=True, verbose_name='نوع السيارة')
+    condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, default='used', db_index=True, verbose_name='الحالة')
+    price_min_iqd = models.PositiveBigIntegerField(verbose_name='أقل سعر بالدينار')
+    price_max_iqd = models.PositiveBigIntegerField(verbose_name='أعلى سعر بالدينار')
+    price_min_usd = models.PositiveIntegerField(null=True, blank=True, verbose_name='أقل سعر بالدولار')
+    price_max_usd = models.PositiveIntegerField(null=True, blank=True, verbose_name='أعلى سعر بالدولار')
+    engine = models.CharField(max_length=80, blank=True, verbose_name='المحرك')
+    fuel_economy = models.CharField(max_length=50, blank=True, default='جيد', verbose_name='صرف الوقود')
+    maintenance = models.CharField(max_length=50, blank=True, default='متوسطة', verbose_name='الصيانة')
+    pros = models.CharField(max_length=240, blank=True, verbose_name='سبب الترشيح')
+    confidence = models.PositiveSmallIntegerField(default=80, validators=[MinValueValidator(0), MaxValueValidator(100)], verbose_name='درجة الثقة')
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='manual', db_index=True, verbose_name='المصدر')
+    source_note = models.CharField(max_length=220, blank=True, verbose_name='ملاحظة المصدر')
+    is_active = models.BooleanField(default=True, db_index=True, verbose_name='مفعل')
+    updated_at = models.DateTimeField(auto_now=True, db_index=True, verbose_name='آخر تحديث')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإضافة')
+
+    class Meta:
+        ordering = ['price_min_iqd', '-confidence', 'brand', 'model']
+        indexes = [
+            models.Index(fields=['condition', 'car_type', 'price_min_iqd']),
+            models.Index(fields=['condition', 'car_type', 'price_min_usd']),
+            models.Index(fields=['brand_norm', 'model_norm']),
+        ]
+        verbose_name = 'سعر سيارة في السوق'
+        verbose_name_plural = 'أسعار السيارات في السوق'
+
+    def save(self, *args, **kwargs):
+        from .services.textnorm import fold_ar
+        self.brand_norm = fold_ar(self.brand)
+        self.model_norm = fold_ar(self.model)
+        if self.price_max_iqd < self.price_min_iqd:
+            self.price_max_iqd = self.price_min_iqd
+        if self.price_min_usd and self.price_max_usd and self.price_max_usd < self.price_min_usd:
+            self.price_max_usd = self.price_min_usd
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.name} ({self.year})'
+
 SITE_SETTINGS_CACHE_KEY = 'site_settings_obj'
 SITE_SETTINGS_CACHE_TTL = 60
 

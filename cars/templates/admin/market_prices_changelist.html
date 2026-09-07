@@ -1,0 +1,26 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    <li>
+        <form method="post" action="ai-update/" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; justify-content:center; background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:8px;">
+            {% csrf_token %}
+            <select name="car_type" style="padding:6px; border-radius:8px; border:1px solid #fdba74;">
+                <option value="all">كل الأنواع</option>
+                <option value="japanese">ياباني</option>
+                <option value="korean">كوري</option>
+                <option value="chinese">صيني</option>
+                <option value="american">أمريكي</option>
+                <option value="german">ألماني</option>
+                <option value="european">أوروبي</option>
+                <option value="iranian">إيراني</option>
+            </select>
+            <select name="condition" style="padding:6px; border-radius:8px; border:1px solid #fdba74;">
+                <option value="used">مستعمل</option>
+                <option value="new">جديد</option>
+            </select>
+            <input type="number" name="limit" value="20" min="2" max="40" style="width:70px; padding:6px; border-radius:8px; border:1px solid #fdba74;">
+            <button type="submit" class="button" onclick="return confirm('سيتم استدعاء الذكاء الاصطناعي الآن وقد يستهلك رصيداً بسيطاً. هل تريد المتابعة؟')">🤖 تحديث الأسعار بالذكاء</button>
+        </form>
+    </li>
+    {{ block.super }}
+{% endblock %}

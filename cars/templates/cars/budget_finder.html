@@ -286,7 +286,9 @@
                 <div class="flex flex-wrap items-center gap-2 mb-4">
                     <h2 class="text-xl font-bold text-white">🚗 خياراتك المتاحة:</h2>
                     <span class="price-badge">✨ {{ result.cars|length }} خيارات دقيقة</span>
-                    {% if result.provider == 'Gemini' %}
+                    {% if result.from_market %}
+                    <span class="tag-badge tag-green">📊 من قاعدة أسعار السوق</span>
+                    {% elif result.provider == 'Gemini' %}
                     <span class="tag-badge tag-blue">🤖 أعدّها Gemini الذكاء الاصطناعي</span>
                     {% else %}
                     <span class="tag-badge tag-blue">🤖 أعدّها {{ result.provider }}</span>

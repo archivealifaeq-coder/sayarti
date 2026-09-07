@@ -7,7 +7,8 @@ from django.test import Client, TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from cars.models import PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.models import MarketCarPrice, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.services.deepseek_service import _provider_chain, find_cars_by_budget
 from cars.views import _client_ip
 
 # الاختبارات تعمل في عملية واحدة، لذا نستبدل التخزين "المشترك" بذاكرة محلية
@@ -198,3 +199,37 @@ class PageSmokeTests(TestCase):
         for path in ['/admin/', '/admin/cars/promocode/', '/admin/report/codes/']:
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
+
+    def test_cars_report_page(self):
+        self.client.force_login(User.objects.create_superuser('boss3', 'b3@example.com', 'pw'))
+        r = self.client.get('/admin/report/cars/')
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'تقرير السيارات')
+
+
+@override_settings(CACHES=_LOCMEM_CACHES)
+class AiCostControlTests(TestCase):
+    def test_budget_ai_uses_groq_after_five_premium_requests_per_ip(self):
+        ip = '203.0.113.80'
+        caches['shared'].delete(f'ai:premium_hour:{ip}')
+        for _ in range(5):
+            self.assertEqual([name for name, _ in _provider_chain(ip)], ['DeepSeek', 'Gemini', 'Groq'])
+        self.assertEqual([name for name, _ in _provider_chain(ip)], ['Groq'])
+
+    def test_budget_uses_market_table_before_ai(self):
+        MarketCarPrice.objects.create(
+            name='تويوتا كورولا 2020',
+            brand='تويوتا',
+            model='كورولا',
+            year=2020,
+            car_type='japanese',
+            condition='used',
+            price_min_iqd=22000000,
+            price_max_iqd=25000000,
+            engine='1.8L',
+            confidence=90,
+        )
+        result = find_cars_by_budget(25000000, 'iqd', 'japanese', 'used', client_ip='203.0.113.81')
+        self.assertTrue(result['success'])
+        self.assertTrue(result['from_market'])
+        self.assertEqual(result['provider'], 'قاعدة أسعار السوق')

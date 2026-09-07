@@ -452,7 +452,7 @@ def budget_finder_view(request):
             messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0645\u0628\u0644\u063a \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631")
             return render(request, 'cars/budget_finder.html', {'show_form': True})
 
-        result = find_cars_by_budget(budget, currency, car_type, condition)
+        result = find_cars_by_budget(budget, currency, car_type, condition, client_ip=_client_ip(request))
 
         return render(request, 'cars/budget_finder.html', {
             'result': result,
@@ -919,6 +919,68 @@ _REPORT_LIMIT = 500
 
 # حد توليد أكواد لكل عنوان IP في الساعة (حماية من التخزين الآلي)
 CODE_GEN_RATE_LIMIT = 60
+
+
+@staff_member_required
+def admin_cars_report(request):
+    """تقرير إداري بسيط يلخص السيارات حسب الماركة والموديل."""
+    brands_qs = (
+        CarSpecification.objects
+        .values('brand_ar', 'brand_en')
+        .annotate(total_cars=Count('id'), total_models=Count('model_ar', distinct=True))
+        .order_by('brand_ar')
+    )
+    model_rows = (
+        CarSpecification.objects
+        .values('brand_ar', 'model_ar', 'model_en')
+        .annotate(total=Count('id'))
+        .order_by('brand_ar', 'model_ar')
+    )
+
+    models_by_brand = {}
+    for row in model_rows:
+        models_by_brand.setdefault(row['brand_ar'], []).append(row)
+
+    brands = []
+    for brand in brands_qs:
+        item = dict(brand)
+        item['models'] = models_by_brand.get(item['brand_ar'], [])
+        brands.append(item)
+
+    total_cars = CarSpecification.objects.count()
+    total_brands = len(brands)
+    total_models = CarSpecification.objects.values('brand_ar', 'model_ar').distinct().count()
+
+    if request.GET.get('download') == '1':
+        lines = [
+            '=' * 60,
+            'تقرير السيارات — سيارتي',
+            '=' * 60,
+            f'إجمالي السيارات: {total_cars}',
+            f'إجمالي الماركات: {total_brands}',
+            f'إجمالي الموديلات: {total_models}',
+            '-' * 60,
+        ]
+        for brand in brands:
+            title = brand['brand_ar']
+            if brand.get('brand_en'):
+                title += f" ({brand['brand_en']})"
+            lines.append(f"\n{title}: {brand['total_cars']} سيارة | {brand['total_models']} موديل")
+            for model in brand['models']:
+                model_name = model['model_ar'] or model['model_en'] or 'غير محدد'
+                if model.get('model_en') and model['model_en'] != model_name:
+                    model_name += f" ({model['model_en']})"
+                lines.append(f"  - {model_name}: {model['total']} سيارة")
+        response = HttpResponse('\n'.join(lines), content_type='text/plain; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="cars_report.txt"'
+        return response
+
+    return render(request, 'admin/cars_report.html', {
+        'brands': brands,
+        'total_cars': total_cars,
+        'total_brands': total_brands,
+        'total_models': total_models,
+    })
 
 
 @staff_member_required

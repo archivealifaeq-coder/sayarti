@@ -9,7 +9,7 @@ from django.utils.html import format_html, mark_safe
 from django.core.cache import cache
 from django.db.models import Count
 from django.db import models as db_models
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -424,6 +424,84 @@ class FeatureCardAdmin(admin.ModelAdmin):
         form = super().get_form(request, obj, **kwargs)
         form.base_fields['icon'].help_text = '🚗 🔧 🧮 ⭐ 💧 🛢️ ⚡ — اتركه فارغاً عند استخدام صورة'
         return form
+
+
+@admin.register(MarketCarPrice)
+class MarketCarPriceAdmin(admin.ModelAdmin):
+    change_list_template = 'admin/market_prices_changelist.html'
+    list_display = ('name_display', 'type_badge', 'condition_badge', 'price_iqd_display', 'price_usd_display', 'confidence_badge', 'source_badge', 'updated_at')
+    list_filter = ('car_type', 'condition', 'source', 'is_active', 'updated_at')
+    search_fields = ('name', 'brand', 'model', 'source_note')
+    list_per_page = 40
+    ordering = ('price_min_iqd', '-confidence', 'brand', 'model')
+    fieldsets = (
+        ('🚗 السيارة', {
+            'fields': ('name', 'brand', 'model', 'year', 'car_type', 'condition', 'is_active')
+        }),
+        ('💰 السعر', {
+            'fields': ('price_min_iqd', 'price_max_iqd', 'price_min_usd', 'price_max_usd'),
+            'description': 'هذه الأسعار هي مصدر "شكد فلوسك" الأول. إذا وُجدت نتائج هنا لا يتم استدعاء DeepSeek.'
+        }),
+        ('🔧 تفاصيل مختصرة', {
+            'fields': ('engine', 'fuel_economy', 'maintenance', 'pros')
+        }),
+        ('📌 المصدر والثقة', {
+            'fields': ('confidence', 'source', 'source_note')
+        }),
+    )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('ai-update/', self.admin_site.admin_view(self.ai_update_view), name='market_prices_ai_update'),
+        ]
+        return custom_urls + urls
+
+    def ai_update_view(self, request):
+        if request.method == 'POST':
+            from .services.deepseek_service import update_market_prices_from_ai
+            car_type = request.POST.get('car_type', 'all')
+            condition = request.POST.get('condition', 'used')
+            limit = request.POST.get('limit', '20')
+            result = update_market_prices_from_ai(car_type, condition, limit)
+            if result.get('success'):
+                self.message_user(request, f"تم تحديث {result['saved']} سعر عبر {result['provider']}.", messages.SUCCESS)
+            else:
+                self.message_user(request, result.get('error', 'تعذر التحديث'), messages.ERROR)
+            return redirect('..')
+        return redirect('..')
+
+    def name_display(self, obj):
+        return format_html('<b>{}</b><br><span style="color:#64748b;font-size:.78rem;">{} {} · {}</span>', obj.name, obj.brand, obj.model, obj.year)
+    name_display.short_description = 'السيارة'
+
+    def type_badge(self, obj):
+        return format_html('<span class="badge badge-blue">{}</span>', obj.get_car_type_display())
+    type_badge.short_description = 'النوع'
+
+    def condition_badge(self, obj):
+        cls = 'badge-green' if obj.condition == 'new' else 'badge-amber'
+        return format_html('<span class="badge {}">{}</span>', cls, obj.get_condition_display())
+    condition_badge.short_description = 'الحالة'
+
+    def price_iqd_display(self, obj):
+        return format_html('<b>{:,}</b> - <b>{:,}</b>', obj.price_min_iqd, obj.price_max_iqd)
+    price_iqd_display.short_description = 'السعر د.ع'
+
+    def price_usd_display(self, obj):
+        if not obj.price_min_usd and not obj.price_max_usd:
+            return '—'
+        return format_html('<span class="code-cell">{:,} - {:,}</span>', obj.price_min_usd or 0, obj.price_max_usd or 0)
+    price_usd_display.short_description = 'السعر $'
+
+    def confidence_badge(self, obj):
+        cls = 'badge-green' if obj.confidence >= 80 else 'badge-amber'
+        return format_html('<span class="badge {}">{}%</span>', cls, obj.confidence)
+    confidence_badge.short_description = 'الثقة'
+
+    def source_badge(self, obj):
+        return format_html('<span class="badge badge-gray">{}</span>', obj.get_source_display())
+    source_badge.short_description = 'المصدر'
 
 
 @admin.register(SiteSettings)
