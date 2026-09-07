@@ -437,7 +437,18 @@ ValueError: Cannot specify ',' with 's'
 
 ز) ترتيب نتائج الميزانية:
 كان الموقع يُرتب النتائج حسب أقل سعر فقط، مما يجعل السيارات الرخيصة جداً تظهر عند ميزانية عالية.
-الحل: الترتيب حسب متوسط السعر (midpoint) من الميزانية، مع استبعاد السيارات التي سعرها الأعلى أقل من 50% من الميزانية.
+الحل: الترتيب حسب متوسط السعر (midpoint) من الميزانية، مع استبعاد السيارات التي سعرها الأعلى أقل من 50% من الميزانية، وترتيب الأقرب للميزانية أولاً.
+
+ط) إصلاح ثوابت الترتيب:
+- MARKET_FALLBACK_RATIO = 0.50: أقل سعر أعلى يجب أن يكون 50% من الميزانية.
+- MARKET_CLOSE_THRESHOLD = 0.85: متوسط السعر أعلى من 85% من الميزانية يُعتبر "قريباً".
+- MARKET_CLOSE_BUDGET_RATIO و MARKET_MIN_BUDGET_RATIO أُزيلا لأنهما غير مستخدمين.
+
+ي) إصلاح خطأ format_html في الأدمن:
+كان هناك خطأ عند عرض أسعار السوق في لوحة الإدارة:
+ValueError: Cannot specify ',' with 's'
+السبب: استخدام {:,} داخل format_html لا يعمل مع الأرقام.
+الحل: تنسيق الأرقام قبل تمريرها إلى format_html.
 
 
 22) خطوات النشر على الخادم
@@ -476,11 +487,21 @@ python manage.py migrate
 - cars/models.py: إضافة brand_en و model_en لـ MarketCarPrice.
 - cars/admin.py: تحديث MarketCarPriceAdmin مع الحقول الجديدة واستيراد Excel.
 - cars/services/deepseek_service.py:
-  - إضافة constants: MARKET_BUDGET_RESULTS=4, MARKET_FALLBACK_RATIO=0.50
+  - إضافة constants: MARKET_BUDGET_RESULTS=4, MARKET_FALLBACK_RATIO=0.50, MARKET_CLOSE_THRESHOLD=0.85
   - تعديل find_market_cars_by_budget: ترتيب حسب متوسط السعر، استبعاد الأرخص من 50%، فوق الميزانية في النهاية
   - حذف MARKET_PRICE_PROMPT و update_market_prices_from_ai
+  - إصلاح ثوابت غير مستخدمة (MARKET_CLOSE_BUDGET_RATIO، MARKET_MIN_BUDGET_RATIO)
+- cars/services/deepseek_service.py (تحديث إضافي):
+  - إصلاح ترتيب النتائج: من (hi > budget, distance) إلى (midpoint < budget*0.85, distance)
+- cars/services/deepseek_service.py (إصلاح إضافي):
+  - إصلاح خطأ format_html في price_iqd_display و price_usd_display
 - cars/templates/admin/market_prices_changelist.html: زر استيراد Excel بدل تحديث الذكاء
 - cars/templates/cars/budget_finder.html: رسالة الخيارات الأربعة
 - cars/tests.py: إضافة اختبارات لترتيب نتائج الميزانية
 - cars/migrations/0029 و 0030: migrations الحقول الجديدة
 - documentation/10 - شرح نهائي مبسط بعد DeepSeek والأمان.txt: هذا الملف.
+
+ملاحظة:
+مجلد التوثيق محظور في .gitignore لأنه قد يحتوي أسرار .env.
+لكن هذا الملف لا يحتوي أسرار وتم رفعه بقوة (git add -f).
+السيرفر يحصل الملف تلقائياً عند git pull لأنه الآن في المستودع.
