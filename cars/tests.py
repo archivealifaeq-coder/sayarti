@@ -241,6 +241,11 @@ class AiCostControlTests(TestCase):
             price_max_iqd=14500000, confidence=99,
         )
         MarketCarPrice.objects.create(
+            name='سيارة نطاقها واسع ورخيص', brand='تجربة', model='واسع', year=2020,
+            car_type='all', condition='used', price_min_iqd=14000000,
+            price_max_iqd=25000000, confidence=99,
+        )
+        MarketCarPrice.objects.create(
             name='سيارة قريبة من الميزانية', brand='تجربة', model='قريب', year=2021,
             car_type='all', condition='used', price_min_iqd=22000000,
             price_max_iqd=25500000, confidence=80,

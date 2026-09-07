@@ -24,6 +24,7 @@ MIN_YEAR = 1990
 MAX_YEAR = 2026
 PRICE_TOLERANCE = 1.03  # هامش صغير: 3%
 MARKET_MIN_BUDGET_RATIO = 0.70
+MARKET_CLOSE_BUDGET_RATIO = 0.85
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
 
@@ -185,7 +186,7 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
     else:
         qs = qs.filter(price_min_iqd__lte=int(budget * PRICE_TOLERANCE))
 
-    candidates = []
+    close_candidates = []
     fallback = []
     for car in qs[:700]:
         lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
@@ -193,17 +194,19 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
         if not lo:
             continue
         hi = hi or lo
+        midpoint = (lo + hi) / 2
         if lo <= budget <= hi:
-            distance = 0
+            distance = abs(budget - midpoint)
         elif hi < budget:
             distance = budget - hi
         else:
             distance = lo - budget
         score = (lo > budget, distance, -car.confidence, car)
         fallback.append(score)
-        if hi >= budget * MARKET_MIN_BUDGET_RATIO:
-            candidates.append(score)
+        if midpoint >= budget * MARKET_CLOSE_BUDGET_RATIO:
+            close_candidates.append(score)
 
+    candidates = close_candidates or [item for item in fallback if (item[3].price_max_usd if currency == 'usd' else item[3].price_max_iqd) >= budget * MARKET_MIN_BUDGET_RATIO]
     if not candidates:
         candidates = fallback
     candidates.sort(key=lambda item: item[:3])
