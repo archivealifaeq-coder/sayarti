@@ -570,13 +570,13 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
     condition_badge.short_description = 'الحالة'
 
     def price_iqd_display(self, obj):
-        return format_html('<b>{:,}</b> - <b>{:,}</b>', obj.price_min_iqd, obj.price_max_iqd)
+        return format_html('<b>{}</b> - <b>{}</b>', f'{obj.price_min_iqd:,}', f'{obj.price_max_iqd:,}')
     price_iqd_display.short_description = 'السعر د.ع'
 
     def price_usd_display(self, obj):
         if not obj.price_min_usd and not obj.price_max_usd:
             return '—'
-        return format_html('<span class="code-cell">{:,} - {:,}</span>', obj.price_min_usd or 0, obj.price_max_usd or 0)
+        return format_html('<span class="code-cell">{} - {}</span>', f'{obj.price_min_usd or 0:,}', f'{obj.price_max_usd or 0:,}')
     price_usd_display.short_description = 'السعر $'
 
     def confidence_badge(self, obj):
