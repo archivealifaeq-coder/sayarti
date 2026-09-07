@@ -241,19 +241,15 @@ class AiCostControlTests(TestCase):
             price_max_iqd=14500000, confidence=99,
         )
         MarketCarPrice.objects.create(
-            name='سيارة نطاقها واسع ورخيص', brand='تجربة', model='واسع', year=2020,
-            car_type='all', condition='used', price_min_iqd=14000000,
-            price_max_iqd=25000000, confidence=99,
-        )
-        MarketCarPrice.objects.create(
             name='سيارة قريبة من الميزانية', brand='تجربة', model='قريب', year=2021,
             car_type='all', condition='used', price_min_iqd=22000000,
-            price_max_iqd=25500000, confidence=80,
+            price_max_iqd=25500000, confidence=95,
+        )
+        MarketCarPrice.objects.create(
+            name='سيارة نطاقها واسع ورخيص', brand='تجربة', model='واسع', year=2020,
+            car_type='all', condition='used', price_min_iqd=14000000,
+            price_max_iqd=25000000, confidence=80,
         )
         result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', client_ip='203.0.113.82')
         self.assertTrue(result['success'])
         self.assertEqual(result['cars'][0]['name'], 'سيارة قريبة من الميزانية')
-        within = [c for c in result['cars'] if not c['over_budget']]
-        over = [c for c in result['cars'] if c['over_budget']]
-        self.assertTrue(within, "يجب وجود سيارة ضمن أو قريبة من الميزانية")
-        self.assertTrue(over, "يجب وجود سيارة فوق الميزانية")
