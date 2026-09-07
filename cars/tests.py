@@ -233,3 +233,18 @@ class AiCostControlTests(TestCase):
         self.assertTrue(result['success'])
         self.assertTrue(result['from_market'])
         self.assertEqual(result['provider'], 'قاعدة أسعار السوق')
+
+    def test_market_budget_prefers_prices_close_to_budget(self):
+        MarketCarPrice.objects.create(
+            name='سيارة رخيصة جداً', brand='تجربة', model='رخيص', year=2020,
+            car_type='all', condition='used', price_min_iqd=13000000,
+            price_max_iqd=14500000, confidence=99,
+        )
+        MarketCarPrice.objects.create(
+            name='سيارة قريبة من الميزانية', brand='تجربة', model='قريب', year=2021,
+            car_type='all', condition='used', price_min_iqd=22000000,
+            price_max_iqd=25500000, confidence=80,
+        )
+        result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', client_ip='203.0.113.82')
+        self.assertTrue(result['success'])
+        self.assertEqual(result['cars'][0]['name'], 'سيارة قريبة من الميزانية')

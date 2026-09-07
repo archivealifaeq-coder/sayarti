@@ -23,6 +23,7 @@ MARKET_BUDGET_RESULTS = 4
 MIN_YEAR = 1990
 MAX_YEAR = 2026
 PRICE_TOLERANCE = 1.03  # هامش صغير: 3%
+MARKET_MIN_BUDGET_RATIO = 0.70
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
 
@@ -185,16 +186,29 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
         qs = qs.filter(price_min_iqd__lte=int(budget * PRICE_TOLERANCE))
 
     candidates = []
+    fallback = []
     for car in qs[:700]:
         lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
         hi = car.price_max_usd if currency == 'usd' else car.price_max_iqd
         if not lo:
             continue
-        candidates.append((lo > budget, abs(budget - lo), -car.confidence, car, hi))
+        hi = hi or lo
+        if lo <= budget <= hi:
+            distance = 0
+        elif hi < budget:
+            distance = budget - hi
+        else:
+            distance = lo - budget
+        score = (lo > budget, distance, -car.confidence, car)
+        fallback.append(score)
+        if hi >= budget * MARKET_MIN_BUDGET_RATIO:
+            candidates.append(score)
 
+    if not candidates:
+        candidates = fallback
     candidates.sort(key=lambda item: item[:3])
     cars = []
-    for over_budget, _distance, _confidence, car, _hi in candidates[:MARKET_BUDGET_RESULTS]:
+    for over_budget, _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
         cars.append({
             'name': car.name,
             'year': car.year,
