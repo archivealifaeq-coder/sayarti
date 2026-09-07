@@ -25,7 +25,7 @@ MAX_YEAR = 2026
 PRICE_TOLERANCE = 1.03  # هامش صغير: 3%
 MARKET_MIN_BUDGET_RATIO = 0.70
 MARKET_CLOSE_BUDGET_RATIO = 0.70
-MARKET_FALLBACK_RATIO = 0.85  # price_max يجب أن يكون على الأقل 85% من الميزانية
+MARKET_FALLBACK_RATIO = 0.50
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
 
@@ -198,11 +198,11 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
         if hi < budget * MARKET_FALLBACK_RATIO:
             continue
         distance = abs(midpoint - budget)
-        candidates.append((hi > budget, distance, -car.confidence, car))
+        candidates.append((midpoint < budget * 0.85, distance, -car.confidence, car))
 
     candidates.sort(key=lambda item: item[:3])
     cars = []
-    for _over_budget, _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
+    for _below_budget, _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
         lo = car.price_min_iqd
         hi = car.price_max_iqd
         cars.append({

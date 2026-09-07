@@ -8,7 +8,7 @@ from django.test.utils import override_settings
 from django.utils import timezone
 
 from cars.models import MarketCarPrice, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
-from cars.services.deepseek_service import _provider_chain, find_cars_by_budget, MARKET_FALLBACK_RATIO
+from cars.services.deepseek_service import _provider_chain, find_cars_by_budget
 from cars.views import _client_ip
 
 # الاختبارات تعمل في عملية واحدة، لذا نستبدل التخزين "المشترك" بذاكرة محلية
@@ -252,8 +252,8 @@ class AiCostControlTests(TestCase):
         )
         result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', client_ip='203.0.113.82')
         self.assertTrue(result['success'])
+        self.assertEqual(result['cars'][0]['name'], 'سيارة قريبة من الميزانية')
         within = [c for c in result['cars'] if not c['over_budget']]
         over = [c for c in result['cars'] if c['over_budget']]
-        self.assertTrue(within, "يجب وجود سيارة ضمن الميزانية")
+        self.assertTrue(within, "يجب وجود سيارة ضمن أو قريبة من الميزانية")
         self.assertTrue(over, "يجب وجود سيارة فوق الميزانية")
-        self.assertEqual(within[0]['name'], 'سيارة نطاقها واسع ورخيص')
