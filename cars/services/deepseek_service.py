@@ -24,7 +24,8 @@ MIN_YEAR = 1990
 MAX_YEAR = 2026
 PRICE_TOLERANCE = 1.03  # هامش صغير: 3%
 MARKET_MIN_BUDGET_RATIO = 0.70
-MARKET_CLOSE_BUDGET_RATIO = 0.85
+MARKET_CLOSE_BUDGET_RATIO = 0.70
+MARKET_FALLBACK_RATIO = 0.85  # price_max يجب أن يكون على الأقل 85% من الميزانية
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
 
@@ -186,8 +187,7 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
     else:
         qs = qs.filter(price_min_iqd__lte=int(budget * PRICE_TOLERANCE))
 
-    close_candidates = []
-    fallback = []
+    candidates = []
     for car in qs[:700]:
         lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
         hi = car.price_max_usd if currency == 'usd' else car.price_max_iqd
@@ -195,35 +195,28 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
             continue
         hi = hi or lo
         midpoint = (lo + hi) / 2
-        if lo <= budget <= hi:
-            distance = abs(budget - midpoint)
-        elif hi < budget:
-            distance = budget - hi
-        else:
-            distance = lo - budget
-        score = (lo > budget, distance, -car.confidence, car)
-        fallback.append(score)
-        if midpoint >= budget * MARKET_CLOSE_BUDGET_RATIO:
-            close_candidates.append(score)
+        if hi < budget * MARKET_FALLBACK_RATIO:
+            continue
+        distance = abs(midpoint - budget)
+        candidates.append((distance, -car.confidence, car))
 
-    candidates = close_candidates or [item for item in fallback if (item[3].price_max_usd if currency == 'usd' else item[3].price_max_iqd) >= budget * MARKET_MIN_BUDGET_RATIO]
-    if not candidates:
-        candidates = fallback
-    candidates.sort(key=lambda item: item[:3])
+    candidates.sort(key=lambda item: item[:2])
     cars = []
-    for over_budget, _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
+    for _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
+        lo = car.price_min_iqd
+        hi = car.price_max_iqd
         cars.append({
             'name': car.name,
             'year': car.year,
-            'price_min': car.price_min_iqd,
-            'price_max': car.price_max_iqd,
-            'price_iq': _format_iqd(car.price_min_iqd, car.price_max_iqd),
+            'price_min': lo,
+            'price_max': hi,
+            'price_iq': _format_iqd(lo, hi),
             'price_usd': _format_usd(car.price_min_usd, car.price_max_usd),
             'engine': car.engine or 'غير محدد',
             'fuel_economy': car.fuel_economy or 'جيد',
             'maintenance': car.maintenance or 'متوسطة',
             'pros': car.pros or 'خيار قريب من ميزانيتك حسب جدول أسعار السوق المحلي.',
-            'over_budget': over_budget,
+            'over_budget': hi > budget,
             'confidence': car.confidence,
         })
 
