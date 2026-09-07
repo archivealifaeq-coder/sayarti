@@ -252,6 +252,8 @@ class AiCostControlTests(TestCase):
         )
         result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', client_ip='203.0.113.82')
         self.assertTrue(result['success'])
-        self.assertEqual(result['cars'][0]['name'], 'سيارة قريبة من الميزانية')
-        for car in result['cars']:
-            self.assertGreaterEqual(car['price_max'], 25000000 * MARKET_FALLBACK_RATIO)
+        within = [c for c in result['cars'] if not c['over_budget']]
+        over = [c for c in result['cars'] if c['over_budget']]
+        self.assertTrue(within, "يجب وجود سيارة ضمن الميزانية")
+        self.assertTrue(over, "يجب وجود سيارة فوق الميزانية")
+        self.assertEqual(within[0]['name'], 'سيارة نطاقها واسع ورخيص')

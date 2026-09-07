@@ -198,11 +198,11 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
         if hi < budget * MARKET_FALLBACK_RATIO:
             continue
         distance = abs(midpoint - budget)
-        candidates.append((distance, -car.confidence, car))
+        candidates.append((hi > budget, distance, -car.confidence, car))
 
-    candidates.sort(key=lambda item: item[:2])
+    candidates.sort(key=lambda item: item[:3])
     cars = []
-    for _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
+    for _over_budget, _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
         lo = car.price_min_iqd
         hi = car.price_max_iqd
         cars.append({
