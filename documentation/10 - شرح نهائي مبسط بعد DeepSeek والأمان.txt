@@ -500,28 +500,35 @@ ValueError: Cannot specify ',' with 's'
 - تمت إضافة سعر صرف يدوي في إعدادات الموقع: exchange_rate_iqd_per_usd.
 
 منطق البحث الجديد:
-- يبحث أولاً في قاعدة البيانات فقط.
+- يبحث أولاً في قاعدة البيانات.
 - إذا كانت العملة دينار، يطابق price_iqd.
 - إذا كانت العملة دولار، يطابق price_usd.
 - هامش المطابقة أصبح 2% فقط من مبلغ المستخدم.
 - مثال: 20,000,000 دينار يعني النتائج بين 19,600,000 و20,400,000 دينار.
 - مثال: 20,000 دولار يعني النتائج بين 19,600 و20,400 دولار.
 - الترتيب: السنة الأحدث أولاً، ثم الأقرب للسعر، ثم الأعلى ثقة.
-- إذا لم توجد نتيجة من القاعدة، ينتقل بعدها فقط إلى الذكاء الاصطناعي.
+- إذا لم توجد نتيجة من القاعدة، ينتقل إلى Groq فقط كآخر احتمال.
+- لا يستخدم DeepSeek أو Gemini في «شكد فلوسك» بعد هذا القرار.
 
 سكربت تحديث الأسعار:
 - الملف: scripts/update_market_prices.py
-- يقرأ Excel أو CSV محلياً، أو رابط مباشر لملف Excel/CSV.
+- السكربت منفصل عن زر استيراد Excel في لوحة الإدارة. زر Excel يبقى موجوداً ومهماً.
+- يقرأ مصادر معتمدة فقط بصيغة منظمة: CSV أو Excel أو JSON من رابط مباشر أو ملف.
+- لا يعمل scraping عشوائي لصفحات HTML حتى لا يدخل عروض وهمية أو يسبب حظر IP.
 - لا يكتب في قاعدة البيانات افتراضياً، بل يعمل dry-run ويعرض ملخصاً.
 - للحفظ يجب استخدام --apply.
 - للحذف والبدء من ملف جديد يجب استخدام --replace مع --apply.
 - إذا كان price_iqd ناقصاً ويأتي price_usd، يحسب الدينار من سعر الصرف اليدوي.
 - إذا كان price_usd ناقصاً ويأتي price_iqd، يحسب الدولار من سعر الصرف اليدوي.
+- يرفض التغير القوي في السعر فوق 8% افتراضياً إذا كان السعر موجوداً سابقاً.
+- يمكن تغيير حد الرفض عبر --max-change-percent.
+- سعر الصرف يبقى يدوياً ولا يتغير إلا إذا مررت --exchange-rate مع --apply.
 
 أمثلة:
-python scripts/update_market_prices.py prices.xlsx --exchange-rate 1500
-python scripts/update_market_prices.py prices.xlsx --exchange-rate 1500 --apply
-python scripts/update_market_prices.py prices.xlsx --exchange-rate 1500 --replace --apply
+python scripts/update_market_prices.py --source prices.xlsx --exchange-rate 1500
+python scripts/update_market_prices.py --source prices.xlsx --exchange-rate 1500 --apply
+python scripts/update_market_prices.py --source prices.xlsx --exchange-rate 1500 --replace --apply
+python scripts/update_market_prices.py --source https://example.com/prices.csv --source-name "مصدر معتمد"
 
 ملاحظة مهمة:
 تحديث الأسعار من الإنترنت لا يعمل تلقائياً مع بحث الزائر. يتم فقط عندما يطلبه المدير بتشغيل السكربت أو استيراد Excel، حتى لا يحدث حظر IP ولا تدخل عروض وهمية بدون مراجعة.

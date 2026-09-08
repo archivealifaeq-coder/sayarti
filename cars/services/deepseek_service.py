@@ -419,7 +419,7 @@ def find_cars_by_budget(budget, currency='iqd', origin='all', condition='used', 
         return market_result
 
     cache_budget = _rounded_budget_for_cache(budget, currency)
-    key = _cache_key('budget', {
+    key = _cache_key('budget:groq_fallback', {
         'budget': cache_budget,
         'currency': currency,
         'origin': origin,
@@ -433,33 +433,27 @@ def find_cars_by_budget(budget, currency='iqd', origin='all', condition='used', 
         return cached
 
     prompt = _build_prompt(budget, currency, origin, condition, body_type)
-    providers = _provider_chain(client_ip)
+    try:
+        content = _call_groq(prompt, max_tokens=650, temperature=0.2)
+        cars = _sanitize_results(_json_list(content), budget, currency)
+        if cars:
+            result = {'success': True, 'cars': cars, 'provider': 'Groq'}
+            _cache_set(key, result, BUDGET_CACHE_TTL)
+            return result
+    except requests.exceptions.Timeout:
+        logger.warning('Groq API timeout (budget fallback)')
+    except requests.exceptions.RequestException as e:
+        logger.error('Groq API error (budget fallback): %s', e.__class__.__name__)
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        logger.error('Groq parse error (budget fallback): %s', e)
+    except RuntimeError as e:
+        logger.warning(str(e))
 
-    errors = []
-    for name, call in providers:
-        try:
-            content = call(prompt, max_tokens=650, temperature=0.2)
-            cars = _json_list(content)
-            if isinstance(cars, list) and cars:
-                cars = _sanitize_results(cars, budget, currency)
-                if cars:
-                    result = {'success': True, 'cars': cars, 'provider': name}
-                    _cache_set(key, result, BUDGET_CACHE_TTL)
-                    return result
-                errors.append(f'{name}: لا نتائج ضمن الميزانية')
-        except requests.exceptions.Timeout:
-            errors.append(f'{name}: انتهت المهلة')
-            logger.warning(f'{name} API timeout')
-        except requests.exceptions.RequestException as e:
-            errors.append(f'{name}: خطأ اتصال')
-            logger.error('%s API error: %s', name, e.__class__.__name__)
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            errors.append(f'{name}: تعذر تحليل النتيجة')
-            logger.error(f'{name} parse error: {e}')
-        except RuntimeError as e:
-            logger.warning(str(e))
-
-    return {'success': False, 'error': 'لم نعثر على سيارات ضمن هذا المبلغ بدرجة كافية من الدقة — جرّب ميزانية أعلى أو عدّل الخيارات.'}
+    return {
+        'success': False,
+        'provider': 'قاعدة أسعار السوق / Groq',
+        'error': 'لا توجد سيارة مطابقة لهذا المبلغ ضمن هامش 2% في قاعدة أسعار السوق حالياً. غيّر المبلغ أو الفلاتر أو استورد أسعاراً أحدث.',
+    }
 
 
 SEARCH_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.

@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.cache import cache, caches
@@ -215,6 +216,18 @@ class AiCostControlTests(TestCase):
         for _ in range(5):
             self.assertEqual([name for name, _ in _provider_chain(ip)], ['DeepSeek', 'Gemini', 'Groq'])
         self.assertEqual([name for name, _ in _provider_chain(ip)], ['Groq'])
+
+    @patch('cars.services.deepseek_service._call_deepseek')
+    @patch('cars.services.deepseek_service._call_gemini')
+    @patch('cars.services.deepseek_service._call_groq')
+    def test_budget_uses_only_groq_fallback_when_market_has_no_match(self, groq, gemini, deepseek):
+        groq.return_value = '[{"name":"كيا ريو 2023","year":2023,"price_min":24800000,"price_max":25200000,"price_iq":"25 مليون","price_usd":"16600","engine":"1.4L","fuel_economy":"جيد","maintenance":"متوسطة","pros":"خيار قريب عند عدم توفر سعر في القاعدة"}]'
+        result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.84')
+        self.assertTrue(result['success'])
+        self.assertEqual(result['provider'], 'Groq')
+        groq.assert_called_once()
+        gemini.assert_not_called()
+        deepseek.assert_not_called()
 
     def test_budget_uses_market_table_before_ai(self):
         MarketCarPrice.objects.create(
