@@ -22,7 +22,7 @@ AI_BUDGET_RESULTS = 1
 MARKET_BUDGET_RESULTS = 4
 MIN_YEAR = 1990
 MAX_YEAR = 2026
-BUDGET_MARGIN_IQD = 400_000
+BUDGET_MARGIN_IQD = 500_000
 BUDGET_MARGIN_USD = 300
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
@@ -212,11 +212,11 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
         distance = abs(_price_midpoint(lo, hi) - budget)
         if distance > margin:
             continue
-        candidates.append((distance, -car.confidence, car))
+        candidates.append((-car.year, distance, -car.confidence, car))
 
-    candidates.sort(key=lambda item: item[:2])
+    candidates.sort(key=lambda item: item[:3])
     cars = []
-    for _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
+    for _year, _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
         lo = car.price_min_iqd
         hi = car.price_max_iqd
         cars.append({
@@ -396,15 +396,16 @@ def _sanitize_results(cars, budget, currency):
         car['year'] = year or 2020
 
         clean.append(car)
-        if len(clean) >= AI_BUDGET_RESULTS:
-            break
 
     if clean:
-        clean.sort(key=lambda c: abs(_price_midpoint(
-            _to_int(c.get('price_min')) or 0,
-            _to_int(c.get('price_max')) or _to_int(c.get('price_min')) or 0,
-        ) - budget))
-        return clean
+        clean.sort(key=lambda c: (
+            -int(c.get('year') or 0),
+            abs(_price_midpoint(
+                _to_int(c.get('price_min')) or 0,
+                _to_int(c.get('price_max')) or _to_int(c.get('price_min')) or 0,
+            ) - budget),
+        ))
+        return clean[:AI_BUDGET_RESULTS]
 
     return []
 
