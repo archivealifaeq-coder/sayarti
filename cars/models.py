@@ -377,7 +377,7 @@ class FeatureCard(models.Model):
 
 
 class MarketCarPrice(models.Model):
-    CAR_TYPE_CHOICES = [
+    ORIGIN_CHOICES = [
         ('all', 'عام'),
         ('japanese', 'ياباني'),
         ('korean', 'كوري'),
@@ -386,6 +386,15 @@ class MarketCarPrice(models.Model):
         ('german', 'ألماني'),
         ('european', 'أوروبي'),
         ('iranian', 'إيراني'),
+    ]
+    BODY_TYPE_CHOICES = [
+        ('all', 'عام'),
+        ('sedan', 'سيدان'),
+        ('suv', 'SUV / عائلي'),
+        ('pickup', 'بيكب'),
+        ('hatchback', 'هاتشباك'),
+        ('van', 'فان'),
+        ('coupe', 'كوبيه'),
     ]
     CONDITION_CHOICES = [
         ('used', 'مستعمل'),
@@ -399,25 +408,27 @@ class MarketCarPrice(models.Model):
     brand_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
     model_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
     year = models.IntegerField(validators=[MinValueValidator(1990), MaxValueValidator(2099)], verbose_name='السنة')
-    car_type = models.CharField(max_length=20, choices=CAR_TYPE_CHOICES, default='all', db_index=True, verbose_name='نوع السيارة')
+    origin = models.CharField(max_length=20, choices=ORIGIN_CHOICES, default='all', db_index=True, verbose_name='المنشأ')
+    body_type = models.CharField(max_length=20, choices=BODY_TYPE_CHOICES, default='all', db_index=True, verbose_name='نوع الجسم')
     condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, default='used', db_index=True, verbose_name='الحالة')
-    price_min_iqd = models.PositiveBigIntegerField(verbose_name='أقل سعر بالدينار')
-    price_max_iqd = models.PositiveBigIntegerField(verbose_name='أعلى سعر بالدينار')
-    price_min_usd = models.PositiveIntegerField(null=True, blank=True, verbose_name='أقل سعر بالدولار')
-    price_max_usd = models.PositiveIntegerField(null=True, blank=True, verbose_name='أعلى سعر بالدولار')
+    price_iqd = models.PositiveBigIntegerField(db_index=True, verbose_name='السعر بالدينار')
+    price_usd = models.PositiveIntegerField(null=True, blank=True, db_index=True, verbose_name='السعر بالدولار')
     engine = models.CharField(max_length=80, blank=True, verbose_name='المحرك')
     fuel_economy = models.CharField(max_length=50, blank=True, default='جيد', verbose_name='صرف الوقود')
     maintenance = models.CharField(max_length=50, blank=True, default='متوسطة', verbose_name='الصيانة')
     pros = models.CharField(max_length=240, blank=True, verbose_name='سبب الترشيح')
+    source_name = models.CharField(max_length=120, blank=True, verbose_name='مصدر السعر')
+    source_url = models.URLField(blank=True, verbose_name='رابط المصدر')
+    is_active = models.BooleanField(default=True, db_index=True, verbose_name='مفعل')
     confidence = models.PositiveSmallIntegerField(default=80, validators=[MinValueValidator(0), MaxValueValidator(100)], verbose_name='درجة الثقة')
     updated_at = models.DateTimeField(auto_now=True, db_index=True, verbose_name='آخر تحديث')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإضافة')
 
     class Meta:
-        ordering = ['price_min_iqd', '-confidence', 'brand', 'model']
+        ordering = ['-year', 'price_iqd', '-confidence', 'brand', 'model']
         indexes = [
-            models.Index(fields=['condition', 'car_type', 'price_min_iqd']),
-            models.Index(fields=['condition', 'car_type', 'price_min_usd']),
+            models.Index(fields=['condition', 'origin', 'body_type', 'price_iqd']),
+            models.Index(fields=['condition', 'origin', 'body_type', 'price_usd']),
             models.Index(fields=['brand_norm', 'model_norm']),
         ]
         verbose_name = 'سعر سيارة في السوق'
@@ -427,10 +438,6 @@ class MarketCarPrice(models.Model):
         from .services.textnorm import fold_ar
         self.brand_norm = fold_ar(self.brand)
         self.model_norm = fold_ar(self.model)
-        if self.price_max_iqd < self.price_min_iqd:
-            self.price_max_iqd = self.price_min_iqd
-        if self.price_min_usd and self.price_max_usd and self.price_max_usd < self.price_min_usd:
-            self.price_max_usd = self.price_min_usd
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -510,6 +517,16 @@ class SiteSettings(models.Model):
         blank=True,
         verbose_name="مفتاح DeepSeek API",
         help_text="مفتاح API من platform.deepseek.com — احتياطي اختياري"
+    )
+    exchange_rate_iqd_per_usd = models.PositiveIntegerField(
+        default=1500,
+        verbose_name="سعر صرف الدولار مقابل الدينار",
+        help_text="سعر السوق الموازي: كم دينار عراقي لكل 1 دولار. يُستخدم لحساب السعر الناقص عند استيراد أسعار شكد فلوسك."
+    )
+    exchange_rate_source = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name="مصدر سعر الصرف"
     )
 
     def __str__(self):

@@ -222,10 +222,11 @@ class AiCostControlTests(TestCase):
             brand='تويوتا',
             model='كورولا',
             year=2020,
-            car_type='japanese',
+            origin='japanese',
+            body_type='sedan',
             condition='used',
-            price_min_iqd=24800000,
-            price_max_iqd=25200000,
+            price_iqd=25000000,
+            price_usd=16667,
             engine='1.8L',
             confidence=90,
         )
@@ -237,37 +238,47 @@ class AiCostControlTests(TestCase):
     def test_market_budget_prefers_newer_cars_within_budget_margin(self):
         MarketCarPrice.objects.create(
             name='سيارة خارج النطاق نزولاً', brand='تجربة', model='رخيص', year=2020,
-            car_type='all', condition='used', price_min_iqd=24000000,
-            price_max_iqd=24400000, confidence=99,
+            origin='all', body_type='sedan', condition='used', price_iqd=24000000,
+            confidence=99,
         )
         MarketCarPrice.objects.create(
             name='سيارة قريبة من الميزانية', brand='تجربة', model='قريب', year=2021,
-            car_type='all', condition='used', price_min_iqd=24900000,
-            price_max_iqd=25100000, confidence=95,
+            origin='all', body_type='sedan', condition='used', price_iqd=24900000,
+            confidence=95,
         )
         MarketCarPrice.objects.create(
             name='سيارة أحدث ضمن الهامش', brand='تجربة', model='أحدث', year=2024,
-            car_type='all', condition='used', price_min_iqd=24600000,
-            price_max_iqd=24800000, confidence=80,
+            origin='all', body_type='sedan', condition='used', price_iqd=24600000,
+            confidence=80,
         )
         MarketCarPrice.objects.create(
-            name='سيارة نطاقها واسع لكن وسطها مناسب', brand='تجربة', model='وسط', year=2021,
-            car_type='all', condition='used', price_min_iqd=23000000,
-            price_max_iqd=27000000, confidence=90,
+            name='سيارة كروس لا تظهر مع فلتر سيدان', brand='تجربة', model='كروس', year=2025,
+            origin='all', body_type='suv', condition='used', price_iqd=25000000,
+            confidence=90,
         )
         MarketCarPrice.objects.create(
             name='سيارة أبعد ضمن النطاق', brand='تجربة', model='أبعد', year=2020,
-            car_type='all', condition='used', price_min_iqd=24500000,
-            price_max_iqd=24700000, confidence=80,
+            origin='all', body_type='sedan', condition='used', price_iqd=24500000,
+            confidence=80,
         )
         MarketCarPrice.objects.create(
             name='سيارة خارج النطاق صعوداً', brand='تجربة', model='غالي', year=2022,
-            car_type='all', condition='used', price_min_iqd=25600000,
-            price_max_iqd=25800000, confidence=100,
+            origin='all', body_type='sedan', condition='used', price_iqd=25600000,
+            confidence=100,
         )
-        result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', client_ip='203.0.113.82')
+        result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.82')
         self.assertTrue(result['success'])
         self.assertEqual(result['cars'][0]['name'], 'سيارة أحدث ضمن الهامش')
-        self.assertIn('سيارة نطاقها واسع لكن وسطها مناسب', [car['name'] for car in result['cars']])
+        self.assertNotIn('سيارة كروس لا تظهر مع فلتر سيدان', [car['name'] for car in result['cars']])
         self.assertNotIn('سيارة خارج النطاق نزولاً', [car['name'] for car in result['cars']])
         self.assertNotIn('سيارة خارج النطاق صعوداً', [car['name'] for car in result['cars']])
+
+    def test_market_budget_supports_usd_price_matching(self):
+        MarketCarPrice.objects.create(
+            name='سيارة دولار قريبة', brand='تجربة', model='دولار', year=2023,
+            origin='korean', body_type='suv', condition='used', price_iqd=30000000,
+            price_usd=20000, confidence=90,
+        )
+        result = find_cars_by_budget(20000, 'usd', 'korean', 'used', 'suv', client_ip='203.0.113.83')
+        self.assertTrue(result['success'])
+        self.assertEqual(result['cars'][0]['name'], 'سيارة دولار قريبة')

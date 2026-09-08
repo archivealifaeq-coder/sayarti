@@ -429,21 +429,24 @@ class FeatureCardAdmin(admin.ModelAdmin):
 @admin.register(MarketCarPrice)
 class MarketCarPriceAdmin(admin.ModelAdmin):
     change_list_template = 'admin/market_prices_changelist.html'
-    list_display = ('name_display', 'type_badge', 'condition_badge', 'price_iqd_display', 'price_usd_display', 'confidence_badge', 'updated_at')
-    list_filter = ('car_type', 'condition', 'updated_at')
+    list_display = ('name_display', 'origin_badge', 'body_type_badge', 'condition_badge', 'price_iqd_display', 'price_usd_display', 'confidence_badge', 'updated_at')
+    list_filter = ('origin', 'body_type', 'condition', 'is_active', 'updated_at')
     search_fields = ('name', 'brand', 'brand_en', 'model', 'model_en')
     list_per_page = 40
-    ordering = ('price_min_iqd', '-confidence', 'brand', 'model')
+    ordering = ('-year', 'price_iqd', '-confidence', 'brand', 'model')
     fieldsets = (
         ('🚗 السيارة', {
-            'fields': ('name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'car_type', 'condition')
+            'fields': ('name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'origin', 'body_type', 'condition')
         }),
         ('💰 السعر', {
-            'fields': ('price_min_iqd', 'price_max_iqd', 'price_min_usd', 'price_max_usd'),
-            'description': 'هذه الأسعار هي مصدر "شكد فلوسك" الأول. إذا وُجدت نتائج هنا لا يتم استدعاء DeepSeek.'
+            'fields': ('price_iqd', 'price_usd'),
+            'description': 'سعر واحد دقيق قدر الإمكان. البحث في شكد فلوسك يطابق السعر ضمن ±2% فقط.'
         }),
         ('🔧 تفاصيل مختصرة', {
             'fields': ('engine', 'fuel_economy', 'maintenance', 'pros')
+        }),
+        ('🔎 المصدر والمراجعة', {
+            'fields': ('source_name', 'source_url', 'is_active')
         }),
         ('📌 الثقة', {
             'fields': ('confidence',)
@@ -465,7 +468,7 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                 return redirect('.')
             try:
                 df = pd.read_excel(excel_file)
-                required = {'name', 'brand_ar', 'model_ar', 'year', 'car_type', 'condition', 'price_min_iqd', 'price_max_iqd'}
+                required = {'name', 'brand_ar', 'model_ar', 'year', 'origin', 'body_type', 'condition'}
                 missing = required - set(df.columns)
                 if missing:
                     self.message_user(request, 'أعمدة ناقصة: ' + ', '.join(sorted(missing)), messages.ERROR)
@@ -476,7 +479,7 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                         return default
                     return int(float(str(value).replace(',', '').strip()))
 
-                def car_type_value(value):
+                def origin_value(value):
                     value = str(value or '').strip().lower()
                     return {
                         'عام': 'all', 'الكل': 'all', 'all': 'all',
@@ -489,12 +492,25 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                         'إيراني': 'iranian', 'ايراني': 'iranian', 'iranian': 'iranian',
                     }.get(value, 'all')
 
+                def body_type_value(value):
+                    value = str(value or '').strip().lower()
+                    return {
+                        'عام': 'all', 'الكل': 'all', 'all': 'all',
+                        'سيدان': 'sedan', 'sedan': 'sedan',
+                        'suv': 'suv', 'اس يو في': 'suv', 'عائلي': 'suv', 'عائلية': 'suv',
+                        'بيكب': 'pickup', 'بكب': 'pickup', 'pickup': 'pickup',
+                        'هاتشباك': 'hatchback', 'hatchback': 'hatchback',
+                        'فان': 'van', 'van': 'van',
+                        'كوبيه': 'coupe', 'coupe': 'coupe',
+                    }.get(value, 'all')
+
                 def condition_value(value):
                     value = str(value or '').strip().lower()
                     return {'جديد': 'new', 'new': 'new', 'مستعمل': 'used', 'used': 'used'}.get(value, 'used')
 
                 saved = 0
                 failed = 0
+                rate = SiteSettings.load().exchange_rate_iqd_per_usd or 1500
                 for _, row in df.iterrows():
                     try:
                         brand = str(row.get('brand_ar') or row.get('brand') or '').strip()
@@ -505,24 +521,35 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                         if not (brand and model and year):
                             failed += 1
                             continue
+                        price_iqd = to_int(row.get('price_iqd') or row.get('price'))
+                        price_usd = to_int(row.get('price_usd'))
+                        if not price_iqd and price_usd:
+                            price_iqd = int(price_usd * rate)
+                        if not price_usd and price_iqd:
+                            price_usd = int(price_iqd / rate)
+                        if not price_iqd:
+                            failed += 1
+                            continue
                         MarketCarPrice.objects.update_or_create(
                             brand=brand,
                             model=model,
                             year=year,
-                            car_type=car_type_value(row.get('car_type')),
+                            origin=origin_value(row.get('origin') or row.get('car_type')),
+                            body_type=body_type_value(row.get('body_type')),
                             condition=condition_value(row.get('condition')),
                             defaults={
                                 'name': str(row.get('name') or f'{brand} {model} {year}').strip(),
                                 'brand_en': brand_en,
                                 'model_en': model_en,
-                                'price_min_iqd': to_int(row.get('price_min_iqd'), 0),
-                                'price_max_iqd': to_int(row.get('price_max_iqd'), 0),
-                                'price_min_usd': to_int(row.get('price_min_usd')),
-                                'price_max_usd': to_int(row.get('price_max_usd')),
+                                'price_iqd': price_iqd,
+                                'price_usd': price_usd,
                                 'engine': str(row.get('engine') or '').strip(),
                                 'fuel_economy': str(row.get('fuel_economy') or 'جيد').strip(),
                                 'maintenance': str(row.get('maintenance') or 'متوسطة').strip(),
                                 'pros': str(row.get('pros') or '').strip()[:240],
+                                'source_name': str(row.get('source_name') or '').strip(),
+                                'source_url': str(row.get('source_url') or '').strip(),
+                                'is_active': str(row.get('is_active', '1')).strip().lower() not in ('0', 'false', 'no', 'لا'),
                                 'confidence': max(0, min(100, to_int(row.get('confidence'), 80))),
                             },
                         )
@@ -542,7 +569,7 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         {% block content %}
         <div class="section-card" style="max-width: 760px; margin: 20px auto;">
             <h3>📥 استيراد أسعار السوق من Excel</h3>
-            <p style="color:#475569; line-height:1.9;">الأعمدة المطلوبة: name, brand_ar, model_ar, year, car_type, condition, price_min_iqd, price_max_iqd. الأعمدة الاختيارية: brand_en, model_en, price_min_usd, price_max_usd, engine, fuel_economy, maintenance, pros, confidence.</p>
+            <p style="color:#475569; line-height:1.9;">الأعمدة المطلوبة: name, brand_ar, model_ar, year, origin, body_type, condition. السعر المطلوب: price_iqd أو price_usd. إذا نقص أحدهما يُحسب بسعر الصرف اليدوي من إعدادات الموقع. الأعمدة الاختيارية: brand_en, model_en, engine, fuel_economy, maintenance, pros, source_name, source_url, is_active, confidence.</p>
             <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 {{ form.as_p }}
@@ -560,9 +587,13 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         return format_html('<b>{}</b><br><span style="color:#64748b;font-size:.78rem;">{} {} · {}</span>', obj.name, obj.brand, obj.model, obj.year)
     name_display.short_description = 'السيارة'
 
-    def type_badge(self, obj):
-        return format_html('<span class="badge badge-blue">{}</span>', obj.get_car_type_display())
-    type_badge.short_description = 'النوع'
+    def origin_badge(self, obj):
+        return format_html('<span class="badge badge-blue">{}</span>', obj.get_origin_display())
+    origin_badge.short_description = 'المنشأ'
+
+    def body_type_badge(self, obj):
+        return format_html('<span class="badge badge-amber">{}</span>', obj.get_body_type_display())
+    body_type_badge.short_description = 'نوع السيارة'
 
     def condition_badge(self, obj):
         cls = 'badge-green' if obj.condition == 'new' else 'badge-amber'
@@ -570,13 +601,13 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
     condition_badge.short_description = 'الحالة'
 
     def price_iqd_display(self, obj):
-        return format_html('<b>{}</b> - <b>{}</b>', f'{obj.price_min_iqd:,}', f'{obj.price_max_iqd:,}')
+        return format_html('<b>{}</b>', f'{obj.price_iqd:,}')
     price_iqd_display.short_description = 'السعر د.ع'
 
     def price_usd_display(self, obj):
-        if not obj.price_min_usd and not obj.price_max_usd:
+        if not obj.price_usd:
             return '—'
-        return format_html('<span class="code-cell">{} - {}</span>', f'{obj.price_min_usd or 0:,}', f'{obj.price_max_usd or 0:,}')
+        return format_html('<span class="code-cell">{}</span>', f'{obj.price_usd:,}')
     price_usd_display.short_description = 'السعر $'
 
     def confidence_badge(self, obj):
@@ -608,6 +639,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         ('🤖 الذكاء الاصطناعي (شكد فلوسك)', {
             'fields': ('groq_api_key', 'gemini_api_key', 'deepseek_api_key'),
             'description': '<b>DeepSeek (الأساسي)</b>: من platform.deepseek.com — <b>Gemini</b>: الاحتياطي الثاني — <b>Groq</b>: احتياطي أخير وسريع. بدون مفتاح DeepSeek ستنتقل الخدمة تلقائياً للاحتياطيات.'
+        }),
+        ('💱 سعر الصرف اليدوي', {
+            'fields': ('exchange_rate_iqd_per_usd', 'exchange_rate_source'),
+            'description': 'هذا السعر يُستخدم لحساب السعر بالدينار أو الدولار عند استيراد أسعار شكد فلوسك إذا كان أحد السعرين ناقصاً.'
         }),
     )
 

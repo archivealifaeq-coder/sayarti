@@ -439,7 +439,8 @@ def budget_finder_view(request):
     if request.method == 'POST':
         budget_raw = request.POST.get('budget', '').strip().replace(',', '').replace(' ', '')
         currency = request.POST.get('currency', 'iqd')
-        car_type = request.POST.get('car_type', 'all')
+        origin = request.POST.get('origin', 'all')
+        body_type = request.POST.get('body_type', 'all')
         condition = request.POST.get('condition', 'used')
 
         try:
@@ -452,13 +453,14 @@ def budget_finder_view(request):
             messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0645\u0628\u0644\u063a \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631")
             return render(request, 'cars/budget_finder.html', {'show_form': True})
 
-        result = find_cars_by_budget(budget, currency, car_type, condition, client_ip=_client_ip(request))
+        result = find_cars_by_budget(budget, currency, origin, condition, body_type, client_ip=_client_ip(request))
 
         return render(request, 'cars/budget_finder.html', {
             'result': result,
             'budget': budget,
             'currency': currency,
-            'car_type': car_type,
+            'origin': origin,
+            'body_type': body_type,
             'condition': condition,
             'show_form': False,
         })

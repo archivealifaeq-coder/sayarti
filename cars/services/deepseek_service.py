@@ -22,8 +22,7 @@ AI_BUDGET_RESULTS = 1
 MARKET_BUDGET_RESULTS = 4
 MIN_YEAR = 1990
 MAX_YEAR = 2026
-BUDGET_MARGIN_IQD = 500_000
-BUDGET_MARGIN_USD = 300
+BUDGET_MARGIN_PERCENT = 0.02
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
 
@@ -47,7 +46,7 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
 1. كل سيارة يجب أن تكون ضمن الميزانية تماماً — ممنوع تجاوز ميزانية المستخدم بأي حال من الأحوال.
 2. الأسعار واقعية ومتناسقة مع سلم الأسعار أعلاه ومع عمر السيارة (الأقدم أرخص، الأحدث أغلى). لا تضخّم الأسعار ولا تخنقها.
 3. أعطني سيارة واحدة فقط، الأقرب سعراً للميزانية والأدق من ناحية التوفر والصيانة.
-4. يجب أن يكون متوسط/منتصف السعر قريباً جداً من الميزانية: ضمن هامش أقصاه {budget_margin} فوق أو تحت الميزانية.
+4. يجب أن يكون السعر قريباً جداً من الميزانية: ضمن {budget_margin} فوق أو تحت الميزانية.
 5. الزيادة بين price_min و price_max يجب ألا تتجاوز 30%.
 6. سنة السيارة واقعية: بين {min_year} و {max_year}.
 7. قيم price_min و price_max أرقام صحيحة بالـ {currency_name} (بدون فاصلة أو صيغة نصية).
@@ -70,7 +69,8 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
 
 بيانات المستخدم:
 الميزانية: {budget} {currency_name}
-نوع السيارة المفضّل: {car_type}
+المنشأ المفضّل: {origin}
+نوع جسم السيارة: {body_type}
 الحالة: {condition}
 """
 
@@ -175,8 +175,8 @@ def _format_usd(lo, hi):
     return f'{lo:,} - {hi:,}'
 
 
-def _budget_margin(currency):
-    return BUDGET_MARGIN_USD if currency == 'usd' else BUDGET_MARGIN_IQD
+def _budget_margin(budget):
+    return max(1, int(int(budget) * BUDGET_MARGIN_PERCENT))
 
 
 def _price_midpoint(lo, hi):
@@ -184,54 +184,47 @@ def _price_midpoint(lo, hi):
     return (lo + hi) / 2
 
 
-def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'):
-    qs = MarketCarPrice.objects.filter(condition=condition)
-    if car_type != 'all':
-        qs = qs.filter(Q(car_type=car_type) | Q(car_type='all'))
+def find_market_cars_by_budget(budget, currency='iqd', origin='all', condition='used', body_type='all'):
+    qs = MarketCarPrice.objects.filter(condition=condition, is_active=True)
+    if origin != 'all':
+        qs = qs.filter(Q(origin=origin) | Q(origin='all'))
+    if body_type != 'all':
+        qs = qs.filter(Q(body_type=body_type) | Q(body_type='all'))
 
-    margin = _budget_margin(currency)
+    margin = _budget_margin(budget)
     min_budget = budget - margin
     max_budget = budget + margin
     if currency == 'usd':
-        qs = qs.exclude(price_min_usd__isnull=True).filter(
-            price_max_usd__gte=min_budget,
-            price_min_usd__lte=max_budget,
-        )
+        qs = qs.exclude(price_usd__isnull=True).filter(price_usd__gte=min_budget, price_usd__lte=max_budget)
     else:
-        qs = qs.filter(
-            price_max_iqd__gte=min_budget,
-            price_min_iqd__lte=max_budget,
-        )
+        qs = qs.filter(price_iqd__gte=min_budget, price_iqd__lte=max_budget)
     candidates = []
-    for car in qs[:700]:
-        lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
-        hi = car.price_max_usd if currency == 'usd' else car.price_max_iqd
-        if not lo:
+    for car in qs[:1000]:
+        price = car.price_usd if currency == 'usd' else car.price_iqd
+        if not price:
             continue
-        hi = hi or lo
-        distance = abs(_price_midpoint(lo, hi) - budget)
-        if distance > margin:
-            continue
+        distance = abs(price - budget)
         candidates.append((-car.year, distance, -car.confidence, car))
 
     candidates.sort(key=lambda item: item[:3])
     cars = []
     for _year, _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
-        lo = car.price_min_iqd
-        hi = car.price_max_iqd
         cars.append({
             'name': car.name,
             'year': car.year,
-            'price_min': lo,
-            'price_max': hi,
-            'price_iq': _format_iqd(lo, hi),
-            'price_usd': _format_usd(car.price_min_usd, car.price_max_usd),
+            'price_min': car.price_iqd,
+            'price_max': car.price_iqd,
+            'price_iq': _format_iqd(car.price_iqd, car.price_iqd),
+            'price_usd': _format_usd(car.price_usd, car.price_usd),
             'engine': car.engine or 'غير محدد',
             'fuel_economy': car.fuel_economy or 'جيد',
             'maintenance': car.maintenance or 'متوسطة',
             'pros': car.pros or 'خيار قريب من ميزانيتك حسب جدول أسعار السوق المحلي.',
-            'over_budget': hi > budget,
+            'over_budget': (car.price_usd if currency == 'usd' else car.price_iqd) > budget,
             'confidence': car.confidence,
+            'origin': car.get_origin_display(),
+            'body_type': car.get_body_type_display(),
+            'source_name': car.source_name,
         })
 
     if not cars:
@@ -239,12 +232,12 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
     return {'success': True, 'cars': cars, 'provider': 'قاعدة أسعار السوق', 'from_market': True}
 
 
-def _build_prompt(budget, currency, car_type, condition):
+def _build_prompt(budget, currency, origin, condition, body_type):
     currency_names = {
         'iqd': 'دينار عراقي',
         'usd': 'دولار أمريكي',
     }
-    car_type_names = {
+    origin_names = {
         'all': 'أي نوع',
         'japanese': 'ياباني (تويوتا، نيسان، مازدا)',
         'korean': 'كوري (هيونداي، كيا)',
@@ -254,6 +247,15 @@ def _build_prompt(budget, currency, car_type, condition):
         'european': 'أوروبي عام (فولكس، أوبل، رينو، بيجو)',
         'iranian': f'إيراني ({PERSIAN_BRANDS})',
     }
+    body_type_names = {
+        'all': 'أي شكل',
+        'sedan': 'سيدان',
+        'suv': 'SUV / عائلي',
+        'pickup': 'بيكب',
+        'hatchback': 'هاتشباك',
+        'van': 'فان',
+        'coupe': 'كوبيه',
+    }
     condition_names = {
         'used': 'مستعمل',
         'new': 'جديد',
@@ -261,8 +263,9 @@ def _build_prompt(budget, currency, car_type, condition):
     return BUDGET_PROMPT.format(
         budget=f'{budget:,}',
         currency_name=currency_names.get(currency, 'دينار عراقي'),
-        budget_margin=f'{_budget_margin(currency):,} {currency_names.get(currency, "دينار عراقي")}',
-        car_type=car_type_names.get(car_type, 'أي نوع'),
+        budget_margin=f'{BUDGET_MARGIN_PERCENT:.0%}',
+        origin=origin_names.get(origin, 'أي منشأ'),
+        body_type=body_type_names.get(body_type, 'أي شكل'),
         condition=condition_names.get(condition, 'مستعمل'),
         min_year=MIN_YEAR,
         max_year=MAX_YEAR,
@@ -363,7 +366,7 @@ def _sanitize_results(cars, budget, currency):
     if not isinstance(cars, list):
         return []
 
-    margin = _budget_margin(currency)
+    margin = _budget_margin(budget)
     seen = set()
     clean = []
 
@@ -410,8 +413,8 @@ def _sanitize_results(cars, budget, currency):
     return []
 
 
-def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used', client_ip=None):
-    market_result = find_market_cars_by_budget(budget, currency, car_type, condition)
+def find_cars_by_budget(budget, currency='iqd', origin='all', condition='used', body_type='all', client_ip=None):
+    market_result = find_market_cars_by_budget(budget, currency, origin, condition, body_type)
     if market_result.get('success'):
         return market_result
 
@@ -419,16 +422,17 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
     key = _cache_key('budget', {
         'budget': cache_budget,
         'currency': currency,
-        'car_type': car_type,
+        'origin': origin,
+        'body_type': body_type,
         'condition': condition,
-        'margin': _budget_margin(currency),
+        'margin': _budget_margin(budget),
         'limit': AI_BUDGET_RESULTS,
     })
     cached = _cache_get(key)
     if cached:
         return cached
 
-    prompt = _build_prompt(budget, currency, car_type, condition)
+    prompt = _build_prompt(budget, currency, origin, condition, body_type)
     providers = _provider_chain(client_ip)
 
     errors = []

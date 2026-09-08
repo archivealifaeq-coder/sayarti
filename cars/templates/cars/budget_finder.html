@@ -224,18 +224,30 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div>
-                        <label class="block text-slate-300 text-sm font-semibold mb-2">🚗 نوع السيارة / المواصفات</label>
-                        <select name="car_type" class="select-custom">
-                            <option value="all" {% if car_type == 'all' %}selected{% endif %}>الكل</option>
-                            <option value="japanese" {% if car_type == 'japanese' %}selected{% endif %}>ياباني (تويوتا، نيسان، مازدا)</option>
-                            <option value="korean" {% if car_type == 'korean' %}selected{% endif %}>كوري (هيونداي، كيا)</option>
-                            <option value="chinese" {% if car_type == 'chinese' %}selected{% endif %}>صيني (شيري، MG، جيلي)</option>
-                            <option value="american" {% if car_type == 'american' %}selected{% endif %}>أمريكي (شيفروليه، فورد، دودج)</option>
-                            <option value="german" {% if car_type == 'german' %}selected{% endif %}>ألماني (فولكس فاغن، أوبل، BMW، مرسيدس)</option>
-                            <option value="european" {% if car_type == 'european' %}selected{% endif %}>أوروبي (رينو، بيجو، وغيرها)</option>
-                            <option value="iranian" {% if car_type == 'iranian' %}selected{% endif %}>إيراني (سايبا، إيران خودرو)</option>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">🌍 المنشأ</label>
+                        <select name="origin" class="select-custom">
+                            <option value="all" {% if origin == 'all' %}selected{% endif %}>الكل</option>
+                            <option value="japanese" {% if origin == 'japanese' %}selected{% endif %}>ياباني</option>
+                            <option value="korean" {% if origin == 'korean' %}selected{% endif %}>كوري</option>
+                            <option value="chinese" {% if origin == 'chinese' %}selected{% endif %}>صيني</option>
+                            <option value="american" {% if origin == 'american' %}selected{% endif %}>أمريكي</option>
+                            <option value="german" {% if origin == 'german' %}selected{% endif %}>ألماني</option>
+                            <option value="european" {% if origin == 'european' %}selected{% endif %}>أوروبي</option>
+                            <option value="iranian" {% if origin == 'iranian' %}selected{% endif %}>إيراني</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">🚗 نوع السيارة</label>
+                        <select name="body_type" class="select-custom">
+                            <option value="all" {% if body_type == 'all' %}selected{% endif %}>الكل</option>
+                            <option value="sedan" {% if body_type == 'sedan' %}selected{% endif %}>سيدان</option>
+                            <option value="suv" {% if body_type == 'suv' %}selected{% endif %}>SUV / عائلي</option>
+                            <option value="pickup" {% if body_type == 'pickup' %}selected{% endif %}>بيكب</option>
+                            <option value="hatchback" {% if body_type == 'hatchback' %}selected{% endif %}>هاتشباك</option>
+                            <option value="van" {% if body_type == 'van' %}selected{% endif %}>فان</option>
+                            <option value="coupe" {% if body_type == 'coupe' %}selected{% endif %}>كوبيه</option>
                         </select>
                     </div>
                     <div>
@@ -279,7 +291,8 @@
                     <p class="text-slate-400 text-sm">
                         💰 الميزانية: <span class="text-amber-400 font-bold">{{ budget|floatformat:0 }}</span>
                         {% if currency == 'iqd' %} د.ع{% else %} ${% endif %}
-                        {% if car_type != 'all' %} | 🚗 {{ car_type }}{% endif %}
+                        {% if origin != 'all' %} | 🌍 {{ origin }}{% endif %}
+                        {% if body_type != 'all' %} | 🚗 {{ body_type }}{% endif %}
                     </p>
                 </div>
 
@@ -315,6 +328,8 @@
                             <span class="tag-badge tag-blue">⚙️ {{ car.engine|default:"—" }}</span>
                             <span class="tag-badge tag-green">⛽ {{ car.fuel_economy|default:"جيد" }}</span>
                             <span class="tag-badge tag-amber">🔧 {{ car.maintenance|default:"متوسطة" }}</span>
+                            <span class="tag-badge tag-blue">🌍 {{ car.origin|default:"عام" }}</span>
+                            <span class="tag-badge tag-amber">🚗 {{ car.body_type|default:"عام" }}</span>
                             <span class="tag-badge tag-blue">📅 {{ car.year }}</span>
                         </div>
                         <p class="text-slate-300 text-sm">{{ car.pros }}</p>
