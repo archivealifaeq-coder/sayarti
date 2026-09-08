@@ -21,61 +21,11 @@ if DEEPSEEK_MODEL == 'deepseek-v4-flash':
 GEMINI_MODEL = getattr(settings, 'GEMINI_MODEL', 'gemini-3.6-flash')
 GEMINI_API_URL = f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent'
 
-AI_BUDGET_RESULTS = 1
 MARKET_BUDGET_RESULTS = 4
 MIN_YEAR = 1990
 MAX_YEAR = 2026
 BUDGET_MARGIN_PERCENT = 0.02
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
-BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
-
-PERSIAN_BRANDS = 'سايبا (ساينا، كيك، برايد)، إيكو/ایرانخودرو (سمند، بارس، دينا، رانا، تارا، رونا)'
-
-BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في سوق السيارات العراقي (بغداد والبصرة وبقية المدن).
-تحدّث بالعربية الفصحى الواضحة واللطيفة (تجنّب اللهجة العامية).
-
-المطلوب: أعطني سيارة واحدة فقط مناسبة ومتوفرة فعلاً في السوق العراقي وضمن الميزانية.
-
-سلم الأسعار التقريبي في العراق (مرجع فقط — تويوتا أغلى قيمة من غيرها والكوري أوسط):
-- اقتصادية صغيرة (كيا بيكانتو، هيونداي i10، شفروليه سبارك/أوبترا، دايوس، سوزوكي): 7-15 مليون دينار
-- اقتصادية إيرانية سايبا (ساينا، كيك، برايد): 8-14 مليون، إيكو/ایرانخودرو (سمند، بارس، دينا): 10-18 مليون
-- سيدان عائلية (هيونداي النترا، كيا سيراتو، مازدا 3، نيسان صني، تويوتا كورولا): 15-35 مليون (كورولا الأعلى قيمة)
-- سيدان متوسطة (تويوتا كامري، هيونداي سوناتا، مازدا 6، شيفروليه ماليبو): 30-55 مليون
-- SUV صغيرة صينية (شيري تيغو، جيلي، MG، بايك): 15-30 مليون
-- SUV متوسطة (تويوتا راف4، هيونداي توكسون، كيا سبورتاج): 35-55 مليون
-- فاخرة أمريكية/ألمانية (فورد، شيفروليه، فولكس فاغن، BMW، مرسيدس، أوبل): 35 مليون وأكثر حسب العمود والسنة
-
-قواعد صارمة (مطلوبة 100%):
-1. كل سيارة يجب أن تكون ضمن الميزانية تماماً — ممنوع تجاوز ميزانية المستخدم بأي حال من الأحوال.
-2. الأسعار واقعية ومتناسقة مع سلم الأسعار أعلاه ومع عمر السيارة (الأقدم أرخص، الأحدث أغلى). لا تضخّم الأسعار ولا تخنقها.
-3. أعطني سيارة واحدة فقط، الأقرب سعراً للميزانية والأدق من ناحية التوفر والصيانة.
-4. يجب أن يكون السعر قريباً جداً من الميزانية: ضمن {budget_margin} فوق أو تحت الميزانية.
-5. الزيادة بين price_min و price_max يجب ألا تتجاوز 30%.
-6. سنة السيارة واقعية: بين {min_year} و {max_year}.
-7. قيم price_min و price_max أرقام صحيحة بالـ {currency_name} (بدون فاصلة أو صيغة نصية).
-8. اكتب JSON فقط بدون أي نص قبله أو بعده:
-
-[
-  {{
-    "name": "اسم السيارة الكامل بالموديل",
-    "year": 2018,
-    "price_min": 18000000,
-    "price_max": 22000000,
-    "price_iq": "18-22 مليون",
-    "price_usd": "12,000-14,500",
-    "engine": "1.6L",
-    "fuel_economy": "ممتاز/جيد/مقبول",
-    "maintenance": "رخيصة/متوسطة/غالية",
-    "pros": "مميزات مختصرة بالفصحى"
-  }}
-]
-
-بيانات المستخدم:
-الميزانية: {budget} {currency_name}
-المنشأ المفضّل: {origin}
-نوع جسم السيارة: {body_type}
-الحالة: {condition}
-"""
 
 def _get_key(settings_field, env_field):
     try:
@@ -125,11 +75,6 @@ def _cache_set(key, value, timeout):
         caches['shared'].set(key, value, timeout)
     except Exception:
         cache.set(key, value, timeout)
-
-
-def _rounded_budget_for_cache(budget, currency):
-    step = 1000 if currency == 'usd' else 1000000
-    return max(step, round(int(budget) / step) * step)
 
 
 def _premium_ai_allowed(client_ip):
@@ -182,11 +127,6 @@ def _budget_margin(budget):
     return max(1, int(int(budget) * BUDGET_MARGIN_PERCENT))
 
 
-def _price_midpoint(lo, hi):
-    hi = hi or lo
-    return (lo + hi) / 2
-
-
 def find_market_cars_by_budget(budget, currency='iqd', origin='all', condition='used', body_type='all'):
     qs = MarketCarPrice.objects.filter(condition=condition, is_active=True)
     if origin != 'all':
@@ -233,46 +173,6 @@ def find_market_cars_by_budget(budget, currency='iqd', origin='all', condition='
     if not cars:
         return {'success': False}
     return {'success': True, 'cars': cars, 'provider': 'قاعدة أسعار السوق', 'from_market': True}
-
-
-def _build_prompt(budget, currency, origin, condition, body_type):
-    currency_names = {
-        'iqd': 'دينار عراقي',
-        'usd': 'دولار أمريكي',
-    }
-    origin_names = {
-        'all': 'أي نوع',
-        'japanese': 'ياباني (تويوتا، نيسان، مازدا)',
-        'korean': 'كوري (هيونداي، كيا)',
-        'chinese': 'صيني (شيري، MG، جيلي)',
-        'american': 'أمريكي (شيفروليه، فورد، دودج)',
-        'german': 'ألماني (فولكس فاغن، أوبل، BMW، مرسيدس)',
-        'european': 'أوروبي عام (فولكس، أوبل، رينو، بيجو)',
-        'iranian': f'إيراني ({PERSIAN_BRANDS})',
-    }
-    body_type_names = {
-        'all': 'أي شكل',
-        'sedan': 'سيدان',
-        'suv': 'SUV / عائلي',
-        'pickup': 'بيكب',
-        'hatchback': 'هاتشباك',
-        'van': 'فان',
-        'coupe': 'كوبيه',
-    }
-    condition_names = {
-        'used': 'مستعمل',
-        'new': 'جديد',
-    }
-    return BUDGET_PROMPT.format(
-        budget=f'{budget:,}',
-        currency_name=currency_names.get(currency, 'دينار عراقي'),
-        budget_margin=f'{BUDGET_MARGIN_PERCENT:.0%}',
-        origin=origin_names.get(origin, 'أي منشأ'),
-        body_type=body_type_names.get(body_type, 'أي شكل'),
-        condition=condition_names.get(condition, 'مستعمل'),
-        min_year=MIN_YEAR,
-        max_year=MAX_YEAR,
-    )
 
 
 def _call_groq(prompt, max_tokens=900, temperature=0.25):
@@ -358,163 +258,15 @@ def _to_int(value):
     return None
 
 
-def _sanitize_results(cars, budget, currency):
-    """تنقيح صارم لنتائج الميزانية من الذكاء الاصطناعي:
-
-    1. يستبعد أي سيارة يكون منتصف سعرها خارج هامش الميزانية المحدد.
-    2. يزيل التكرار بالاسم ويرتّب حسب الأقرب للميزانية.
-    3. يضبط مناطق الحقول المفقودة ويصحّح سنة غير منطقية.
-    4. لا يتجاوز الناتج سيارة واحدة عند استخدام الذكاء الاصطناعي.
-    """
-    if not isinstance(cars, list):
-        return []
-
-    margin = _budget_margin(budget)
-    seen = set()
-    clean = []
-
-    for car in cars:
-        if not isinstance(car, dict):
-            continue
-        name = str(car.get('name') or '').strip()
-        if not name or name.lower() in seen:
-            continue
-        seen.add(name.lower())
-
-        pmin = _to_int(car.get('price_min'))
-        pmax = _to_int(car.get('price_max'))
-        if pmin is not None and pmax is not None and pmax < pmin:
-            pmax = pmin
-            car['price_max'] = car.get('price_min')
-        fallback = pmin if pmin is not None else pmax
-        lo = fallback if fallback is not None else 0
-        hi = pmax if pmax is not None else lo
-
-        if abs(_price_midpoint(lo, hi) - budget) > margin:
-            continue
-
-        try:
-            year = int(car.get('year') or 0)
-        except (TypeError, ValueError):
-            year = 0
-        if year < MIN_YEAR or year > MAX_YEAR:
-            year = 0
-        car['year'] = year or 2020
-
-        clean.append(car)
-
-    if clean:
-        clean.sort(key=lambda c: (
-            -int(c.get('year') or 0),
-            abs(_price_midpoint(
-                _to_int(c.get('price_min')) or 0,
-                _to_int(c.get('price_max')) or _to_int(c.get('price_min')) or 0,
-            ) - budget),
-        ))
-        return clean[:AI_BUDGET_RESULTS]
-
-    return []
-
-
-def _ai_price_to_iqd(car, currency):
-    price = _to_int(car.get('price_min')) or _to_int(car.get('price_max'))
-    if not price:
-        return None, None
-    rate = SiteSettings.load().exchange_rate_iqd_per_usd or 1500
-    if currency == 'usd':
-        return int(price * rate), price
-    return price, int(price / rate)
-
-
-def _split_ai_car_name(name):
-    cleaned = re.sub(r'\b(19\d{2}|20\d{2})\b', ' ', str(name or '')).strip()
-    parts = cleaned.split()
-    brand = parts[0] if parts else ''
-    model = parts[1] if len(parts) > 1 else brand
-    return brand[:100], model[:100]
-
-
-def _save_ai_budget_rows(cars, currency, origin, condition, body_type, provider):
-    for car in cars:
-        price_iqd, price_usd = _ai_price_to_iqd(car, currency)
-        brand, model = _split_ai_car_name(car.get('name'))
-        if not (brand and model and price_iqd):
-            continue
-        year = _to_int(car.get('year')) or 2020
-        if year < MIN_YEAR or year > MAX_YEAR:
-            continue
-        lookup = {
-            'brand': brand,
-            'model': model,
-            'year': year,
-            'origin': origin if origin in dict(MarketCarPrice.ORIGIN_CHOICES) else 'all',
-            'body_type': body_type if body_type in dict(MarketCarPrice.BODY_TYPE_CHOICES) else 'all',
-            'condition': condition if condition in dict(MarketCarPrice.CONDITION_CHOICES) else 'used',
-        }
-        defaults = {
-            'name': str(car.get('name') or f'{brand} {model} {year}')[:180],
-            'price_iqd': price_iqd,
-            'price_usd': price_usd,
-            'engine': str(car.get('engine') or '')[:80],
-            'fuel_economy': str(car.get('fuel_economy') or 'جيد')[:50],
-            'maintenance': str(car.get('maintenance') or 'متوسطة')[:50],
-            'pros': str(car.get('pros') or 'نتيجة محفوظة من الذكاء الاصطناعي بعد مطابقة الميزانية.')[:240],
-            'source_name': f'{provider} - شكد فلوسك',
-            'source_url': '',
-            'is_active': True,
-            'confidence': 45,
-        }
-        existing = MarketCarPrice.objects.filter(**lookup).order_by('id').first()
-        if existing:
-            for field, value in defaults.items():
-                setattr(existing, field, value)
-            existing.save()
-        else:
-            MarketCarPrice.objects.create(**lookup, **defaults)
-
-
 def find_cars_by_budget(budget, currency='iqd', origin='all', condition='used', body_type='all', client_ip=None):
     market_result = find_market_cars_by_budget(budget, currency, origin, condition, body_type)
     if market_result.get('success'):
         return market_result
 
-    cache_budget = _rounded_budget_for_cache(budget, currency)
-    key = _cache_key('budget:deepseek_fallback', {
-        'budget': cache_budget,
-        'currency': currency,
-        'origin': origin,
-        'body_type': body_type,
-        'condition': condition,
-        'margin': _budget_margin(budget),
-        'limit': AI_BUDGET_RESULTS,
-    })
-    cached = _cache_get(key)
-    if cached:
-        return cached
-
-    prompt = _build_prompt(budget, currency, origin, condition, body_type)
-    for provider, call in (('DeepSeek', _call_deepseek), ('Gemini', _call_gemini), ('Groq', _call_groq)):
-        try:
-            content = call(prompt, max_tokens=650, temperature=0.2)
-            cars = _sanitize_results(_json_list(content), budget, currency)
-            if cars:
-                _save_ai_budget_rows(cars, currency, origin, condition, body_type, provider)
-                result = {'success': True, 'cars': cars, 'provider': provider}
-                _cache_set(key, result, BUDGET_CACHE_TTL)
-                return result
-        except requests.exceptions.Timeout:
-            logger.warning('%s API timeout (budget fallback)', provider)
-        except requests.exceptions.RequestException as e:
-            logger.error('%s API error (budget fallback): %s', provider, e.__class__.__name__)
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            logger.error('%s parse error (budget fallback): %s', provider, e)
-        except RuntimeError as e:
-            logger.warning(str(e))
-
     return {
         'success': False,
-        'provider': 'قاعدة أسعار السوق / DeepSeek',
-        'error': 'لا توجد سيارة مطابقة لهذا المبلغ ضمن هامش 2% في قاعدة أسعار السوق حالياً. غيّر المبلغ أو الفلاتر أو استورد أسعاراً أحدث.',
+        'provider': 'قاعدة أسعار السوق',
+        'error': 'عزيزي السائق المحترم انا المهندس علي النعيمي ارحب بك .. و اعتذر جدا لعدم تلبية طلبك فانا احدث قاعدة البيانات باستمرار ان شاء الله ستجد طلبك خلال ايام .. ارجو المعذرة',
     }
 
 
