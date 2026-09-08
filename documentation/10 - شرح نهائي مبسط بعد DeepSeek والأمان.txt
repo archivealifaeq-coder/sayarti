@@ -460,6 +460,7 @@ ValueError: Cannot specify ',' with 's'
 - بعد استبعاد السيارات خارج الهامش، تُرتّب السيارات حسب الأقرب للميزانية.
 - يتم حساب القرب من منتصف نطاق السعر، وليس فقط من أقل سعر.
 - سبب هذا التصحيح: على السيرفر توجد أسعار كثيرة قريبة من الميزانية لكن نطاقاتها واسعة، فاشتراط دخول كامل النطاق داخل الهامش كان يمنع نتائج قاعدة البيانات وينقل الطلب إلى الذكاء الاصطناعي.
+- سبب إضافي مهم: كانت الدالة تفحص أول 700 سجل فقط من جدول الأسعار، وبما أن الترتيب يبدأ بالأرخص فقد لا تصل أصلاً إلى سيارات ميزانيتها 25 مليون. تم تعديل QuerySet ليُضيّق البحث حول الميزانية أولاً ثم يفحص النتائج.
 
 الملفات التي تغيرت في هذا التحديث:
 - cars/services/deepseek_service.py
@@ -519,7 +520,7 @@ python manage.py migrate
   - إضافة constant: MARKET_BUDGET_RESULTS=4
   - إضافة BUDGET_MARGIN_IQD=400_000 و BUDGET_MARGIN_USD=300
   - إزالة constants غير المستخدمة: MARKET_CLOSE_BUDGET_RATIO، MARKET_FALLBACK_RATIO، MARKET_CLOSE_THRESHOLD، PRICE_TOLERANCE
-  - تعديل find_market_cars_by_budget: قبول النتائج إذا كان midpoint داخل هامش الميزانية وترتيبها حسب الأقرب
+  - تعديل find_market_cars_by_budget: تضييق QuerySet حول الميزانية أولاً، ثم قبول النتائج إذا كان midpoint داخل هامش الميزانية وترتيبها حسب الأقرب
   - تعديل _sanitize_results لتطبيق نفس شرط midpoint على نتائج الذكاء الاصطناعي
   - حذف MARKET_PRICE_PROMPT و update_market_prices_from_ai
 - cars/templates/admin/market_prices_changelist.html: زر استيراد Excel بدل تحديث الذكاء

@@ -189,9 +189,19 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
     if car_type != 'all':
         qs = qs.filter(Q(car_type=car_type) | Q(car_type='all'))
 
-    if currency == 'usd':
-        qs = qs.exclude(price_min_usd__isnull=True)
     margin = _budget_margin(currency)
+    min_budget = budget - margin
+    max_budget = budget + margin
+    if currency == 'usd':
+        qs = qs.exclude(price_min_usd__isnull=True).filter(
+            price_max_usd__gte=min_budget,
+            price_min_usd__lte=max_budget,
+        )
+    else:
+        qs = qs.filter(
+            price_max_iqd__gte=min_budget,
+            price_min_iqd__lte=max_budget,
+        )
     candidates = []
     for car in qs[:700]:
         lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
