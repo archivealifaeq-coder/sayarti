@@ -15,8 +15,11 @@ GROQ_MODEL = 'qwen/qwen3.8-27b'
 TIMEOUT = 35
 
 DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
-DEEPSEEK_MODEL = getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-v4-flash')
-GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent'
+DEEPSEEK_MODEL = getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-chat')
+if DEEPSEEK_MODEL == 'deepseek-v4-flash':
+    DEEPSEEK_MODEL = 'deepseek-chat'
+GEMINI_MODEL = getattr(settings, 'GEMINI_MODEL', 'gemini-3.6-flash')
+GEMINI_API_URL = f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent'
 
 AI_BUDGET_RESULTS = 1
 MARKET_BUDGET_RESULTS = 4
