@@ -22,7 +22,8 @@ AI_BUDGET_RESULTS = 1
 MARKET_BUDGET_RESULTS = 4
 MIN_YEAR = 1990
 MAX_YEAR = 2026
-PRICE_TOLERANCE = 1.03  # هامش صغير: 3%
+BUDGET_MARGIN_IQD = 400_000
+BUDGET_MARGIN_USD = 300
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 BUDGET_CACHE_TTL = 60 * 60 * 24 * 10
 
@@ -46,7 +47,7 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
 1. كل سيارة يجب أن تكون ضمن الميزانية تماماً — ممنوع تجاوز ميزانية المستخدم بأي حال من الأحوال.
 2. الأسعار واقعية ومتناسقة مع سلم الأسعار أعلاه ومع عمر السيارة (الأقدم أرخص، الأحدث أغلى). لا تضخّم الأسعار ولا تخنقها.
 3. أعطني سيارة واحدة فقط، الأقرب سعراً للميزانية والأدق من ناحية التوفر والصيانة.
-4. يجب أن يكون السعر قريباً جداً من الميزانية بدون تجاوزها قدر الإمكان؛ استهدف سيارات ضمن 85% إلى 100% من الميزانية.
+4. يجب أن يكون السعر قريباً جداً من الميزانية: ضمن هامش أقصاه {budget_margin} فوق أو تحت الميزانية.
 5. الزيادة بين price_min و price_max يجب ألا تتجاوز 30%.
 6. سنة السيارة واقعية: بين {min_year} و {max_year}.
 7. قيم price_min و price_max أرقام صحيحة بالـ {currency_name} (بدون فاصلة أو صيغة نصية).
@@ -174,16 +175,25 @@ def _format_usd(lo, hi):
     return f'{lo:,} - {hi:,}'
 
 
+def _budget_margin(currency):
+    return BUDGET_MARGIN_USD if currency == 'usd' else BUDGET_MARGIN_IQD
+
+
+def _price_midpoint(lo, hi):
+    hi = hi or lo
+    return (lo + hi) / 2
+
+
 def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'):
     qs = MarketCarPrice.objects.filter(condition=condition)
     if car_type != 'all':
         qs = qs.filter(Q(car_type=car_type) | Q(car_type='all'))
 
     if currency == 'usd':
-        qs = qs.exclude(price_min_usd__isnull=True).filter(price_min_usd__lte=int(budget * PRICE_TOLERANCE))
-    else:
-        qs = qs.filter(price_min_iqd__lte=int(budget * PRICE_TOLERANCE))
-
+        qs = qs.exclude(price_min_usd__isnull=True)
+    margin = _budget_margin(currency)
+    min_budget = budget - margin
+    max_budget = budget + margin
     candidates = []
     for car in qs[:700]:
         lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
@@ -191,7 +201,9 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
         if not lo:
             continue
         hi = hi or lo
-        distance = max(0, lo - budget, budget - hi)
+        if lo < min_budget or hi > max_budget:
+            continue
+        distance = abs(_price_midpoint(lo, hi) - budget)
         candidates.append((distance, -car.confidence, car))
 
     candidates.sort(key=lambda item: item[:2])
@@ -241,6 +253,7 @@ def _build_prompt(budget, currency, car_type, condition):
     return BUDGET_PROMPT.format(
         budget=f'{budget:,}',
         currency_name=currency_names.get(currency, 'دينار عراقي'),
+        budget_margin=f'{_budget_margin(currency):,} {currency_names.get(currency, "دينار عراقي")}',
         car_type=car_type_names.get(car_type, 'أي نوع'),
         condition=condition_names.get(condition, 'مستعمل'),
         min_year=MIN_YEAR,
@@ -334,17 +347,19 @@ def _to_int(value):
 def _sanitize_results(cars, budget, currency):
     """تنقيح صارم لنتائج الميزانية من الذكاء الاصطناعي:
 
-    1. يستبعد أي سيارة أدنى سعر لها يتجاوز الميزانية (مع هامش 3%).
-    2. يزيل التكرار بالاسم ويرتّب من الأرخص للأغلى.
+    1. يستبعد أي سيارة خارج هامش الميزانية المحدد.
+    2. يزيل التكرار بالاسم ويرتّب حسب الأقرب للميزانية.
     3. يضبط مناطق الحقول المفقودة ويصحّح سنة غير منطقية.
     4. لا يتجاوز الناتج سيارة واحدة عند استخدام الذكاء الاصطناعي.
     """
     if not isinstance(cars, list):
         return []
 
+    margin = _budget_margin(currency)
+    min_budget = budget - margin
+    max_budget = budget + margin
     seen = set()
     clean = []
-    affordable = []
 
     for car in cars:
         if not isinstance(car, dict):
@@ -356,12 +371,14 @@ def _sanitize_results(cars, budget, currency):
 
         pmin = _to_int(car.get('price_min'))
         pmax = _to_int(car.get('price_max'))
+        if pmin is not None and pmax is not None and pmax < pmin:
+            pmax = pmin
+            car['price_max'] = car.get('price_min')
         fallback = pmin if pmin is not None else pmax
         lo = fallback if fallback is not None else 0
+        hi = pmax if pmax is not None else lo
 
-        if lo > 0 and lo > budget * PRICE_TOLERANCE:
-            car['over_budget'] = True
-            affordable.append(car)
+        if lo < min_budget or hi > max_budget:
             continue
 
         try:
@@ -372,22 +389,18 @@ def _sanitize_results(cars, budget, currency):
             year = 0
         car['year'] = year or 2020
 
-        if pmax is not None and pmax < (pmin or 0):
-            car['price_max'] = car.get('price_min')
-        if pmax is not None and budget and pmax > budget:
-            car['price_max'] = budget
-
         clean.append(car)
         if len(clean) >= AI_BUDGET_RESULTS:
             break
 
     if clean:
-        clean.sort(key=lambda c: (_to_int(c.get('price_min')) or 0))
+        clean.sort(key=lambda c: abs(_price_midpoint(
+            _to_int(c.get('price_min')) or 0,
+            _to_int(c.get('price_max')) or _to_int(c.get('price_min')) or 0,
+        ) - budget))
         return clean
 
-    # لا شيء ضمن الميزانية؛ أعد أقرب النتائج (فوق الميزانية) مع تنبيه واضح
-    affordable.sort(key=lambda c: _to_int(c.get('price_min')) or 0)
-    return affordable[:AI_BUDGET_RESULTS]
+    return []
 
 
 def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used', client_ip=None):
@@ -401,6 +414,7 @@ def find_cars_by_budget(budget, currency='iqd', car_type='all', condition='used'
         'currency': currency,
         'car_type': car_type,
         'condition': condition,
+        'margin': _budget_margin(currency),
         'limit': AI_BUDGET_RESULTS,
     })
     cached = _cache_get(key)

@@ -224,8 +224,8 @@ class AiCostControlTests(TestCase):
             year=2020,
             car_type='japanese',
             condition='used',
-            price_min_iqd=22000000,
-            price_max_iqd=25000000,
+            price_min_iqd=24800000,
+            price_max_iqd=25200000,
             engine='1.8L',
             confidence=90,
         )
@@ -236,20 +236,27 @@ class AiCostControlTests(TestCase):
 
     def test_market_budget_prefers_prices_close_to_budget(self):
         MarketCarPrice.objects.create(
-            name='سيارة رخيصة جداً', brand='تجربة', model='رخيص', year=2020,
-            car_type='all', condition='used', price_min_iqd=13000000,
-            price_max_iqd=14500000, confidence=99,
+            name='سيارة خارج النطاق نزولاً', brand='تجربة', model='رخيص', year=2020,
+            car_type='all', condition='used', price_min_iqd=24000000,
+            price_max_iqd=24400000, confidence=99,
         )
         MarketCarPrice.objects.create(
             name='سيارة قريبة من الميزانية', brand='تجربة', model='قريب', year=2021,
-            car_type='all', condition='used', price_min_iqd=22000000,
-            price_max_iqd=25500000, confidence=95,
+            car_type='all', condition='used', price_min_iqd=24900000,
+            price_max_iqd=25100000, confidence=95,
         )
         MarketCarPrice.objects.create(
-            name='سيارة نطاقها واسع ورخيص', brand='تجربة', model='واسع', year=2020,
-            car_type='all', condition='used', price_min_iqd=14000000,
-            price_max_iqd=25000000, confidence=80,
+            name='سيارة أبعد ضمن النطاق', brand='تجربة', model='أبعد', year=2020,
+            car_type='all', condition='used', price_min_iqd=24600000,
+            price_max_iqd=24800000, confidence=80,
+        )
+        MarketCarPrice.objects.create(
+            name='سيارة خارج النطاق صعوداً', brand='تجربة', model='غالي', year=2022,
+            car_type='all', condition='used', price_min_iqd=25400001,
+            price_max_iqd=25600000, confidence=100,
         )
         result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', client_ip='203.0.113.82')
         self.assertTrue(result['success'])
         self.assertEqual(result['cars'][0]['name'], 'سيارة قريبة من الميزانية')
+        self.assertNotIn('سيارة خارج النطاق نزولاً', [car['name'] for car in result['cars']])
+        self.assertNotIn('سيارة خارج النطاق صعوداً', [car['name'] for car in result['cars']])
