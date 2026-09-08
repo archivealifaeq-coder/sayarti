@@ -439,12 +439,45 @@ ValueError: Cannot specify ',' with 's'
 
 ز) تبسيط فرز نتائج الميزانية:
 كان الموقع يستخدم midpoint ومتغيرات معقدة (MARKET_CLOSE_BUDGET_RATIO، MARKET_FALLBACK_RATIO).
-الحل: المسافة = max(0, price_min - budget, budget - price_max).
-هذا يضع السيارات التي نطاق سعرها يشمل الميزانية أولاً، ثم الأقرب.
+كان الحل في مرحلة سابقة: المسافة = max(0, price_min - budget, budget - price_max).
+هذا الحل لم يعد هو المنطق النهائي بعد تحديث 2026-09-08.
 
 ي) إصلاح ثوابت الترتيب:
-أُزيلت الثوابت غير المستخدمة (MARKET_CLOSE_BUDGET_RATIO، MARKET_FALLBACK_RATIO، MARKET_CLOSE_THRESHOLD).
-ثابت واحد فقط: PRICE_TOLERANCE = 1.03 (هامش 3% للسماح بالنطاق).
+أُزيلت الثوابت القديمة غير المستخدمة (MARKET_CLOSE_BUDGET_RATIO، MARKET_FALLBACK_RATIO، MARKET_CLOSE_THRESHOLD).
+ثم أُزيل أيضاً PRICE_TOLERANCE بعد اعتماد هامش ثابت للدينار والدولار.
+
+ك) تحديث 2026-09-08 — حصر نتائج «شكد فلوسك» ضمن هامش قريب:
+تم تغيير المنطق مرة أخرى لأن النتائج كانت تظهر بعيدة عن ميزانية المستخدم.
+
+المنطق الجديد:
+- لأن جدول أسعار السوق يخزن السعر كنطاق price_min/price_max، فالفلترة تعتمد على منتصف نطاق السعر.
+- إذا اختار المستخدم الدينار العراقي، يجب أن يكون منتصف السعر ضمن 400,000 دينار فوق أو تحت الميزانية.
+- مثال: ميزانية 25,000,000 دينار تقبل السيارة إذا كان منتصف سعرها بين 24,600,000 و25,400,000 دينار.
+- إذا اختار المستخدم الدولار، يجب أن يكون منتصف السعر ضمن 300 دولار فوق أو تحت الميزانية.
+- مثال: ميزانية 20,000 دولار تقبل السيارة إذا كان منتصف سعرها بين 19,700 و20,300 دولار.
+
+طريقة الترتيب الجديدة:
+- بعد استبعاد السيارات خارج الهامش، تُرتّب السيارات حسب الأقرب للميزانية.
+- يتم حساب القرب من منتصف نطاق السعر، وليس فقط من أقل سعر.
+- سبب هذا التصحيح: على السيرفر توجد أسعار كثيرة قريبة من الميزانية لكن نطاقاتها واسعة، فاشتراط دخول كامل النطاق داخل الهامش كان يمنع نتائج قاعدة البيانات وينقل الطلب إلى الذكاء الاصطناعي.
+
+الملفات التي تغيرت في هذا التحديث:
+- cars/services/deepseek_service.py
+- cars/tests.py
+
+الثوابت الحالية المهمة:
+- BUDGET_MARGIN_IQD = 400_000
+- BUDGET_MARGIN_USD = 300
+
+التحقق:
+- تم تشغيل python manage.py test cars
+- النتيجة: Ran 25 tests — OK
+
+النشر:
+- تم رفع commit إلى GitHub برقم 59a5b18.
+- تم تشغيل النشر على الخادم في /var/www/sayarti.
+- خدمة gunicorn أصبحت active.
+- صفحة https://sayarti.org/budget/ تعمل بعد النشر.
 
 
 22) خطوات النشر على الخادم
@@ -484,11 +517,13 @@ python manage.py migrate
 - cars/admin.py: تحديث MarketCarPriceAdmin مع الحقول الجديدة واستيراد Excel.
 - cars/services/deepseek_service.py:
   - إضافة constant: MARKET_BUDGET_RESULTS=4
-  - إزالة constants غير المستخدمة: MARKET_CLOSE_BUDGET_RATIO، MARKET_FALLBACK_RATIO، MARKET_CLOSE_THRESHOLD
-  - تعديل find_market_cars_by_budget: المسافة = max(0, price_min - budget, budget - price_max)
+  - إضافة BUDGET_MARGIN_IQD=400_000 و BUDGET_MARGIN_USD=300
+  - إزالة constants غير المستخدمة: MARKET_CLOSE_BUDGET_RATIO، MARKET_FALLBACK_RATIO، MARKET_CLOSE_THRESHOLD، PRICE_TOLERANCE
+  - تعديل find_market_cars_by_budget: قبول النتائج إذا كان midpoint داخل هامش الميزانية وترتيبها حسب الأقرب
+  - تعديل _sanitize_results لتطبيق نفس شرط midpoint على نتائج الذكاء الاصطناعي
   - حذف MARKET_PRICE_PROMPT و update_market_prices_from_ai
 - cars/templates/admin/market_prices_changelist.html: زر استيراد Excel بدل تحديث الذكاء
 - cars/templates/cars/budget_finder.html: رسالة الخيارات الأربعة
-- cars/tests.py: إضافة اختبارات لترتيب نتائج الميزانية
+- cars/tests.py: إضافة وتحديث اختبارات لترتيب نتائج الميزانية ومنع النتائج خارج الهامش
 - cars/migrations/0029 و 0030: migrations الحقول الجديدة
 - documentation/10 - شرح نهائي مبسط بعد DeepSeek والأمان.txt: هذا الملف.

@@ -246,6 +246,11 @@ class AiCostControlTests(TestCase):
             price_max_iqd=25100000, confidence=95,
         )
         MarketCarPrice.objects.create(
+            name='سيارة نطاقها واسع لكن وسطها مناسب', brand='تجربة', model='وسط', year=2021,
+            car_type='all', condition='used', price_min_iqd=23000000,
+            price_max_iqd=27000000, confidence=90,
+        )
+        MarketCarPrice.objects.create(
             name='سيارة أبعد ضمن النطاق', brand='تجربة', model='أبعد', year=2020,
             car_type='all', condition='used', price_min_iqd=24600000,
             price_max_iqd=24800000, confidence=80,
@@ -258,5 +263,6 @@ class AiCostControlTests(TestCase):
         result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', client_ip='203.0.113.82')
         self.assertTrue(result['success'])
         self.assertEqual(result['cars'][0]['name'], 'سيارة قريبة من الميزانية')
+        self.assertIn('سيارة نطاقها واسع لكن وسطها مناسب', [car['name'] for car in result['cars']])
         self.assertNotIn('سيارة خارج النطاق نزولاً', [car['name'] for car in result['cars']])
         self.assertNotIn('سيارة خارج النطاق صعوداً', [car['name'] for car in result['cars']])

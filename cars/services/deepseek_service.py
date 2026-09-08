@@ -47,7 +47,7 @@ BUDGET_PROMPT = """أنت مستشار سيارات محترف متخصص في �
 1. كل سيارة يجب أن تكون ضمن الميزانية تماماً — ممنوع تجاوز ميزانية المستخدم بأي حال من الأحوال.
 2. الأسعار واقعية ومتناسقة مع سلم الأسعار أعلاه ومع عمر السيارة (الأقدم أرخص، الأحدث أغلى). لا تضخّم الأسعار ولا تخنقها.
 3. أعطني سيارة واحدة فقط، الأقرب سعراً للميزانية والأدق من ناحية التوفر والصيانة.
-4. يجب أن يكون السعر قريباً جداً من الميزانية: ضمن هامش أقصاه {budget_margin} فوق أو تحت الميزانية.
+4. يجب أن يكون متوسط/منتصف السعر قريباً جداً من الميزانية: ضمن هامش أقصاه {budget_margin} فوق أو تحت الميزانية.
 5. الزيادة بين price_min و price_max يجب ألا تتجاوز 30%.
 6. سنة السيارة واقعية: بين {min_year} و {max_year}.
 7. قيم price_min و price_max أرقام صحيحة بالـ {currency_name} (بدون فاصلة أو صيغة نصية).
@@ -192,8 +192,6 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
     if currency == 'usd':
         qs = qs.exclude(price_min_usd__isnull=True)
     margin = _budget_margin(currency)
-    min_budget = budget - margin
-    max_budget = budget + margin
     candidates = []
     for car in qs[:700]:
         lo = car.price_min_usd if currency == 'usd' else car.price_min_iqd
@@ -201,9 +199,9 @@ def find_market_cars_by_budget(budget, currency='iqd', car_type='all', condition
         if not lo:
             continue
         hi = hi or lo
-        if lo < min_budget or hi > max_budget:
-            continue
         distance = abs(_price_midpoint(lo, hi) - budget)
+        if distance > margin:
+            continue
         candidates.append((distance, -car.confidence, car))
 
     candidates.sort(key=lambda item: item[:2])
@@ -347,7 +345,7 @@ def _to_int(value):
 def _sanitize_results(cars, budget, currency):
     """تنقيح صارم لنتائج الميزانية من الذكاء الاصطناعي:
 
-    1. يستبعد أي سيارة خارج هامش الميزانية المحدد.
+    1. يستبعد أي سيارة يكون منتصف سعرها خارج هامش الميزانية المحدد.
     2. يزيل التكرار بالاسم ويرتّب حسب الأقرب للميزانية.
     3. يضبط مناطق الحقول المفقودة ويصحّح سنة غير منطقية.
     4. لا يتجاوز الناتج سيارة واحدة عند استخدام الذكاء الاصطناعي.
@@ -356,8 +354,6 @@ def _sanitize_results(cars, budget, currency):
         return []
 
     margin = _budget_margin(currency)
-    min_budget = budget - margin
-    max_budget = budget + margin
     seen = set()
     clean = []
 
@@ -378,7 +374,7 @@ def _sanitize_results(cars, budget, currency):
         lo = fallback if fallback is not None else 0
         hi = pmax if pmax is not None else lo
 
-        if lo < min_budget or hi > max_budget:
+        if abs(_price_midpoint(lo, hi) - budget) > margin:
             continue
 
         try:
