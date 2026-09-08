@@ -413,13 +413,70 @@ def _sanitize_results(cars, budget, currency):
     return []
 
 
+def _ai_price_to_iqd(car, currency):
+    price = _to_int(car.get('price_min')) or _to_int(car.get('price_max'))
+    if not price:
+        return None, None
+    rate = SiteSettings.load().exchange_rate_iqd_per_usd or 1500
+    if currency == 'usd':
+        return int(price * rate), price
+    return price, int(price / rate)
+
+
+def _split_ai_car_name(name):
+    cleaned = re.sub(r'\b(19\d{2}|20\d{2})\b', ' ', str(name or '')).strip()
+    parts = cleaned.split()
+    brand = parts[0] if parts else ''
+    model = parts[1] if len(parts) > 1 else brand
+    return brand[:100], model[:100]
+
+
+def _save_ai_budget_rows(cars, currency, origin, condition, body_type, provider):
+    for car in cars:
+        price_iqd, price_usd = _ai_price_to_iqd(car, currency)
+        brand, model = _split_ai_car_name(car.get('name'))
+        if not (brand and model and price_iqd):
+            continue
+        year = _to_int(car.get('year')) or 2020
+        if year < MIN_YEAR or year > MAX_YEAR:
+            continue
+        lookup = {
+            'brand': brand,
+            'model': model,
+            'year': year,
+            'origin': origin if origin in dict(MarketCarPrice.ORIGIN_CHOICES) else 'all',
+            'body_type': body_type if body_type in dict(MarketCarPrice.BODY_TYPE_CHOICES) else 'all',
+            'condition': condition if condition in dict(MarketCarPrice.CONDITION_CHOICES) else 'used',
+        }
+        defaults = {
+            'name': str(car.get('name') or f'{brand} {model} {year}')[:180],
+            'price_iqd': price_iqd,
+            'price_usd': price_usd,
+            'engine': str(car.get('engine') or '')[:80],
+            'fuel_economy': str(car.get('fuel_economy') or 'جيد')[:50],
+            'maintenance': str(car.get('maintenance') or 'متوسطة')[:50],
+            'pros': str(car.get('pros') or 'نتيجة محفوظة من الذكاء الاصطناعي بعد مطابقة الميزانية.')[:240],
+            'source_name': f'{provider} - شكد فلوسك',
+            'source_url': '',
+            'is_active': True,
+            'confidence': 45,
+        }
+        existing = MarketCarPrice.objects.filter(**lookup).order_by('id').first()
+        if existing:
+            for field, value in defaults.items():
+                setattr(existing, field, value)
+            existing.save()
+        else:
+            MarketCarPrice.objects.create(**lookup, **defaults)
+
+
 def find_cars_by_budget(budget, currency='iqd', origin='all', condition='used', body_type='all', client_ip=None):
     market_result = find_market_cars_by_budget(budget, currency, origin, condition, body_type)
     if market_result.get('success'):
         return market_result
 
     cache_budget = _rounded_budget_for_cache(budget, currency)
-    key = _cache_key('budget:groq_fallback', {
+    key = _cache_key('budget:deepseek_fallback', {
         'budget': cache_budget,
         'currency': currency,
         'origin': origin,
@@ -433,25 +490,27 @@ def find_cars_by_budget(budget, currency='iqd', origin='all', condition='used', 
         return cached
 
     prompt = _build_prompt(budget, currency, origin, condition, body_type)
-    try:
-        content = _call_groq(prompt, max_tokens=650, temperature=0.2)
-        cars = _sanitize_results(_json_list(content), budget, currency)
-        if cars:
-            result = {'success': True, 'cars': cars, 'provider': 'Groq'}
-            _cache_set(key, result, BUDGET_CACHE_TTL)
-            return result
-    except requests.exceptions.Timeout:
-        logger.warning('Groq API timeout (budget fallback)')
-    except requests.exceptions.RequestException as e:
-        logger.error('Groq API error (budget fallback): %s', e.__class__.__name__)
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
-        logger.error('Groq parse error (budget fallback): %s', e)
-    except RuntimeError as e:
-        logger.warning(str(e))
+    for provider, call in (('DeepSeek', _call_deepseek), ('Gemini', _call_gemini), ('Groq', _call_groq)):
+        try:
+            content = call(prompt, max_tokens=650, temperature=0.2)
+            cars = _sanitize_results(_json_list(content), budget, currency)
+            if cars:
+                _save_ai_budget_rows(cars, currency, origin, condition, body_type, provider)
+                result = {'success': True, 'cars': cars, 'provider': provider}
+                _cache_set(key, result, BUDGET_CACHE_TTL)
+                return result
+        except requests.exceptions.Timeout:
+            logger.warning('%s API timeout (budget fallback)', provider)
+        except requests.exceptions.RequestException as e:
+            logger.error('%s API error (budget fallback): %s', provider, e.__class__.__name__)
+        except (json.JSONDecodeError, KeyError, IndexError) as e:
+            logger.error('%s parse error (budget fallback): %s', provider, e)
+        except RuntimeError as e:
+            logger.warning(str(e))
 
     return {
         'success': False,
-        'provider': 'قاعدة أسعار السوق / Groq',
+        'provider': 'قاعدة أسعار السوق / DeepSeek',
         'error': 'لا توجد سيارة مطابقة لهذا المبلغ ضمن هامش 2% في قاعدة أسعار السوق حالياً. غيّر المبلغ أو الفلاتر أو استورد أسعاراً أحدث.',
     }
 

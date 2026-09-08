@@ -400,6 +400,7 @@ class MarketCarPrice(models.Model):
         ('used', 'مستعمل'),
         ('new', 'جديد'),
     ]
+    id1 = models.PositiveBigIntegerField(null=True, blank=True, unique=True, db_index=True, verbose_name='ID خارجي')
     name = models.CharField(max_length=180, verbose_name='اسم السيارة الكامل')
     brand = models.CharField(max_length=100, verbose_name='الماركة عربي')
     brand_en = models.CharField(max_length=100, blank=True, verbose_name='الماركة إنجليزي')
@@ -503,20 +504,20 @@ class SiteSettings(models.Model):
     groq_api_key = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name="مفتاح Groq (الأساسي)",
-        help_text="من console.groq.com — الأساسي لميزة شكد فلوسك (مجاني بدون بطاقة)"
+        verbose_name="مفتاح Groq (حائط صد أخير)",
+        help_text="من console.groq.com — يستخدم في شكد فلوسك فقط إذا فشل DeepSeek وGemini"
     )
     gemini_api_key = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name="مفتاح Gemini (الاحتياطي)",
-        help_text="من aistudio.google.com — احتياطي تلقائي إذا تعطل Groq"
+        verbose_name="مفتاح Gemini (احتياطي)",
+        help_text="من aistudio.google.com — احتياطي إذا تعطل DeepSeek"
     )
     deepseek_api_key = models.CharField(
         max_length=100,
         blank=True,
-        verbose_name="مفتاح DeepSeek API",
-        help_text="مفتاح API من platform.deepseek.com — احتياطي اختياري"
+        verbose_name="مفتاح DeepSeek API (الأساسي)",
+        help_text="مفتاح API من platform.deepseek.com — المزود الأساسي لميزة شكد فلوسك"
     )
     exchange_rate_iqd_per_usd = models.PositiveIntegerField(
         default=1500,

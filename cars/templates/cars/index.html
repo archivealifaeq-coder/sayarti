@@ -2002,9 +2002,8 @@
 
     <script>
     (function() {
-        /* تعريف آمن لرمز CSRF (يُستعمل في ترويسة الطلب). لا سبتمبر هذا الطلب
-           منذ @csrf_exempt، لكنه يضمن السلامة إن تغيّرت الإعدادات مستقبلاً. */
-        if (!window.csrfToken) {
+        window.csrfToken = '{{ csrf_token }}';
+        if (!window.csrfToken || window.csrfToken === 'NOTPROVIDED') {
             try {
                 var cb = document.cookie.match(/csrftoken=([\w-]+)/);
                 window.csrfToken = cb ? cb[1] : '';

@@ -429,14 +429,14 @@ class FeatureCardAdmin(admin.ModelAdmin):
 @admin.register(MarketCarPrice)
 class MarketCarPriceAdmin(admin.ModelAdmin):
     change_list_template = 'admin/market_prices_changelist.html'
-    list_display = ('name_display', 'origin_badge', 'body_type_badge', 'condition_badge', 'price_iqd_display', 'price_usd_display', 'confidence_badge', 'updated_at')
+    list_display = ('id1', 'name_display', 'origin_badge', 'body_type_badge', 'condition_badge', 'price_iqd_display', 'price_usd_display', 'confidence_badge', 'updated_at')
     list_filter = ('origin', 'body_type', 'condition', 'is_active', 'updated_at')
     search_fields = ('name', 'brand', 'brand_en', 'model', 'model_en')
     list_per_page = 40
     ordering = ('-year', 'price_iqd', '-confidence', 'brand', 'model')
     fieldsets = (
         ('🚗 السيارة', {
-            'fields': ('name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'origin', 'body_type', 'condition')
+            'fields': ('id1', 'name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'origin', 'body_type', 'condition')
         }),
         ('💰 السعر', {
             'fields': ('price_iqd', 'price_usd'),
@@ -465,6 +465,12 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
             excel_file = request.FILES.get('excel_file')
             if not excel_file:
                 self.message_user(request, 'لم يتم اختيار ملف.', messages.WARNING)
+                return redirect('.')
+            if excel_file.size > 10 * 1024 * 1024:
+                self.message_user(request, 'الملف كبير جداً. الحد الأقصى 10 ميجابايت.', messages.ERROR)
+                return redirect('.')
+            if not excel_file.name.lower().endswith(('.xlsx', '.xls')):
+                self.message_user(request, 'يجب أن يكون الملف بصيغة Excel (.xlsx أو .xls).', messages.ERROR)
                 return redirect('.')
             try:
                 df = pd.read_excel(excel_file)
@@ -510,9 +516,16 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
 
                 saved = 0
                 failed = 0
+                seen_id1 = set()
                 rate = SiteSettings.load().exchange_rate_iqd_per_usd or 1500
                 for _, row in df.iterrows():
                     try:
+                        id1 = to_int(row.get('id1')) if 'id1' in df.columns else None
+                        if id1:
+                            if id1 in seen_id1:
+                                failed += 1
+                                continue
+                            seen_id1.add(id1)
                         brand = str(row.get('brand_ar') or row.get('brand') or '').strip()
                         brand_en = str(row.get('brand_en') or '').strip()
                         model = str(row.get('model_ar') or row.get('model') or '').strip()
@@ -530,29 +543,38 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                         if not price_iqd:
                             failed += 1
                             continue
-                        MarketCarPrice.objects.update_or_create(
-                            brand=brand,
-                            model=model,
-                            year=year,
-                            origin=origin_value(row.get('origin') or row.get('car_type')),
-                            body_type=body_type_value(row.get('body_type')),
-                            condition=condition_value(row.get('condition')),
-                            defaults={
-                                'name': str(row.get('name') or f'{brand} {model} {year}').strip(),
-                                'brand_en': brand_en,
-                                'model_en': model_en,
-                                'price_iqd': price_iqd,
-                                'price_usd': price_usd,
-                                'engine': str(row.get('engine') or '').strip(),
-                                'fuel_economy': str(row.get('fuel_economy') or 'جيد').strip(),
-                                'maintenance': str(row.get('maintenance') or 'متوسطة').strip(),
-                                'pros': str(row.get('pros') or '').strip()[:240],
-                                'source_name': str(row.get('source_name') or '').strip(),
-                                'source_url': str(row.get('source_url') or '').strip(),
-                                'is_active': str(row.get('is_active', '1')).strip().lower() not in ('0', 'false', 'no', 'لا'),
-                                'confidence': max(0, min(100, to_int(row.get('confidence'), 80))),
-                            },
-                        )
+                        lookup = {'id1': id1} if id1 else {
+                            'brand': brand,
+                            'model': model,
+                            'year': year,
+                            'origin': origin_value(row.get('origin') or row.get('car_type')),
+                            'body_type': body_type_value(row.get('body_type')),
+                            'condition': condition_value(row.get('condition')),
+                        }
+                        defaults = {
+                            'name': str(row.get('name') or f'{brand} {model} {year}').strip(),
+                            'brand': brand,
+                            'brand_en': brand_en,
+                            'model': model,
+                            'model_en': model_en,
+                            'year': year,
+                            'origin': origin_value(row.get('origin') or row.get('car_type')),
+                            'body_type': body_type_value(row.get('body_type')),
+                            'condition': condition_value(row.get('condition')),
+                            'price_iqd': price_iqd,
+                            'price_usd': price_usd,
+                            'engine': str(row.get('engine') or '').strip(),
+                            'fuel_economy': str(row.get('fuel_economy') or 'جيد').strip(),
+                            'maintenance': str(row.get('maintenance') or 'متوسطة').strip(),
+                            'pros': str(row.get('pros') or '').strip()[:240],
+                            'source_name': str(row.get('source_name') or '').strip(),
+                            'source_url': str(row.get('source_url') or '').strip(),
+                            'is_active': str(row.get('is_active', '1')).strip().lower() not in ('0', 'false', 'no', 'لا'),
+                            'confidence': max(0, min(100, to_int(row.get('confidence'), 80))),
+                        }
+                        if id1:
+                            defaults.pop('id1', None)
+                        MarketCarPrice.objects.update_or_create(**lookup, defaults=defaults)
                         saved += 1
                     except Exception:
                         failed += 1
@@ -569,7 +591,7 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         {% block content %}
         <div class="section-card" style="max-width: 760px; margin: 20px auto;">
             <h3>📥 استيراد أسعار السوق من Excel</h3>
-            <p style="color:#475569; line-height:1.9;">الأعمدة المطلوبة: name, brand_ar, model_ar, year, origin, body_type, condition. السعر المطلوب: price_iqd أو price_usd. إذا نقص أحدهما يُحسب بسعر الصرف اليدوي من إعدادات الموقع. الأعمدة الاختيارية: brand_en, model_en, engine, fuel_economy, maintenance, pros, source_name, source_url, is_active, confidence.</p>
+            <p style="color:#475569; line-height:1.9;">الأعمدة المطلوبة: name, brand_ar, model_ar, year, origin, body_type, condition. السعر المطلوب: price_iqd أو price_usd. العمود الاختياري id1 رقم خارجي فريد لا يتكرر؛ إذا موجود يتم التحديث عليه بدل إنشاء تكرار. الأعمدة الاختيارية الأخرى: brand_en, model_en, engine, fuel_economy, maintenance, pros, source_name, source_url, is_active, confidence.</p>
             <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 {{ form.as_p }}
@@ -637,8 +659,8 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'description': 'GA4 ID: من analytics.google.com (Data Streams). Property ID وفاتح الخدمة: فعّل Analytics Data API في Google Cloud واصنع Service Account بحق Viewer على الخاصية ثم الصق ملف JSON هنا — لعرض عدد الزوار في لوحة الإدارة'
         }),
         ('🤖 الذكاء الاصطناعي (شكد فلوسك)', {
-            'fields': ('groq_api_key', 'gemini_api_key', 'deepseek_api_key'),
-            'description': '<b>DeepSeek (الأساسي)</b>: من platform.deepseek.com — <b>Gemini</b>: الاحتياطي الثاني — <b>Groq</b>: احتياطي أخير وسريع. بدون مفتاح DeepSeek ستنتقل الخدمة تلقائياً للاحتياطيات.'
+            'fields': ('deepseek_api_key', 'gemini_api_key', 'groq_api_key'),
+            'description': '<b>DeepSeek هو الأساسي لشكد فلوسك</b>. إذا تعطل يستخدم Gemini. إذا فشل الاثنان يستخدم Groq كحائط صد أخير.'
         }),
         ('💱 سعر الصرف اليدوي', {
             'fields': ('exchange_rate_iqd_per_usd', 'exchange_rate_source'),

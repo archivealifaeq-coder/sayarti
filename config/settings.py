@@ -233,7 +233,7 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@sayarti.org')
 DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', '')
 DEEPSEEK_MODEL = os.getenv('DEEPSEEK_MODEL', 'deepseek-v4-flash')
 
-# Groq AI - primary provider (free, no card)
+# Groq AI - optional provider for non-budget AI features
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 
 # Gemini AI - fallback provider

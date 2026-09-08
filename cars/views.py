@@ -2,15 +2,17 @@
 import re
 from pathlib import Path
 from django.shortcuts import render, redirect
-from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q, Count
 from django.http import JsonResponse, HttpResponse
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from django import forms
 from django.core.cache import cache, caches
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice
 from .services.excel_importer import import_cars_from_excel
 from .services.textnorm import fold_ar, fold_engine
 
@@ -442,6 +444,14 @@ def budget_finder_view(request):
         origin = request.POST.get('origin', 'all')
         body_type = request.POST.get('body_type', 'all')
         condition = request.POST.get('condition', 'used')
+        if currency not in ('iqd', 'usd'):
+            currency = 'iqd'
+        if origin not in dict(MarketCarPrice.ORIGIN_CHOICES):
+            origin = 'all'
+        if body_type not in dict(MarketCarPrice.BODY_TYPE_CHOICES):
+            body_type = 'all'
+        if condition not in dict(MarketCarPrice.CONDITION_CHOICES):
+            condition = 'used'
 
         try:
             budget = int(float(budget_raw))
@@ -451,6 +461,10 @@ def budget_finder_view(request):
 
         if budget <= 0:
             messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0645\u0628\u0644\u063a \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631")
+            return render(request, 'cars/budget_finder.html', {'show_form': True})
+
+        if (currency == 'iqd' and budget > 300_000_000) or (currency == 'usd' and budget > 200_000):
+            messages.error(request, "⚠️ أدخل ميزانية ضمن نطاق سيارات السوق المحلي")
             return render(request, 'cars/budget_finder.html', {'show_form': True})
 
         result = find_cars_by_budget(budget, currency, origin, condition, body_type, client_ip=_client_ip(request))
@@ -470,10 +484,13 @@ def budget_finder_view(request):
 
 def search_ai_suggest(request):
     from .services.deepseek_service import suggest_cars_ai
+    if not _rate_limit(request, 'ai_suggest', 30, 3600):
+        return HttpResponse('حاول مرة أخرى لاحقاً', status=429)
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
     year = request.GET.get('year', '').strip()
     engine = request.GET.get('engine', '').strip()
+    brand, model, year, engine = brand[:80], model[:80], year[:10], engine[:40]
     if not (brand or model or year or engine):
         return render(request, 'cars/_ai_suggestions.html', {'ai_result': {'success': False}})
 
@@ -662,6 +679,9 @@ def search_ai_quick(request):
         return render(request, 'cars/_quick_results.html', {
             'error': 'اكتب ماركة أو موديل سيارتك وسنة الصنع',
         })
+    q = q[:120]
+    if not _rate_limit(request, 'ai_quick', 60, 3600):
+        return HttpResponse('حاول مرة أخرى لاحقاً', status=429)
 
     interpreted = _quick_parse_from_db(q)
     try:
@@ -728,7 +748,6 @@ def _new_code(sponsor):
     return None
 
 
-@csrf_exempt
 def generate_promo_code(request):
     """يولّد كود خصم فريداً لزائر لدى شركة راعية (يُستدعى من زر «احصل على خصم»).
 
@@ -792,6 +811,10 @@ def verify_code_page(request, slug):
     sponsor = Sponsor.objects.filter(slug=slug, is_active=True).first()
     if not sponsor:
         return render(request, 'cars/code_verify.html', {'sponsor': None})
+    current = _current_sponsor(request)
+    if not current or current.id != sponsor.id:
+        login_url = reverse('services_login') + '?next=' + request.path
+        return redirect(login_url)
 
     result = None
     code_input = request.POST.get('code', '').strip().upper()
@@ -827,12 +850,24 @@ def _client_ip(request):
     return request.META.get('REMOTE_ADDR', '127.0.0.1')
 
 
+def _rate_limit(request, prefix, limit, window_seconds):
+    shared = caches['shared']
+    key = f'{prefix}:{_client_ip(request)}'
+    used = shared.get(key, 0)
+    if used >= limit:
+        return False
+    shared.set(key, used + 1, window_seconds)
+    return True
+
+
 def services_login(request):
     """صفحة «نافذة الخدمات» — تسجيل دخول موحّد للرعاة/المعلنين.
 
     يدخل بها من يملك حساباً (راعي) ليرى قسمه ويتحقق من الأكواد.
     """
-    next_url = request.GET.get('next') or 'services_dashboard'
+    next_url = request.GET.get('next') or reverse('services_dashboard')
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        next_url = reverse('services_dashboard')
     error = None
 
     if request.method == 'POST':
@@ -904,6 +939,7 @@ def services_dashboard(request):
     })
 
 
+@require_POST
 def services_logout(request):
     request.session.flush()
     return redirect('services_login')

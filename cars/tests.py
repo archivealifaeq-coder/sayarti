@@ -210,24 +210,54 @@ class PageSmokeTests(TestCase):
 
 @override_settings(CACHES=_LOCMEM_CACHES)
 class AiCostControlTests(TestCase):
-    def test_budget_ai_uses_groq_after_five_premium_requests_per_ip(self):
+    def test_general_provider_chain_limits_premium_after_five_requests_per_ip(self):
         ip = '203.0.113.80'
         caches['shared'].delete(f'ai:premium_hour:{ip}')
         for _ in range(5):
             self.assertEqual([name for name, _ in _provider_chain(ip)], ['DeepSeek', 'Gemini', 'Groq'])
         self.assertEqual([name for name, _ in _provider_chain(ip)], ['Groq'])
 
-    @patch('cars.services.deepseek_service._call_deepseek')
-    @patch('cars.services.deepseek_service._call_gemini')
     @patch('cars.services.deepseek_service._call_groq')
-    def test_budget_uses_only_groq_fallback_when_market_has_no_match(self, groq, gemini, deepseek):
-        groq.return_value = '[{"name":"كيا ريو 2023","year":2023,"price_min":24800000,"price_max":25200000,"price_iq":"25 مليون","price_usd":"16600","engine":"1.4L","fuel_economy":"جيد","maintenance":"متوسطة","pros":"خيار قريب عند عدم توفر سعر في القاعدة"}]'
+    @patch('cars.services.deepseek_service._call_gemini')
+    @patch('cars.services.deepseek_service._call_deepseek')
+    def test_budget_uses_deepseek_and_saves_result_when_market_has_no_match(self, deepseek, gemini, groq):
+        deepseek.return_value = '[{"name":"كيا ريو 2023","year":2023,"price_min":25000000,"price_max":25000000,"price_iq":"25 مليون","price_usd":"16600","engine":"1.4L","fuel_economy":"جيد","maintenance":"متوسطة","pros":"خيار قريب عند عدم توفر سعر في القاعدة"}]'
         result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.84')
         self.assertTrue(result['success'])
-        self.assertEqual(result['provider'], 'Groq')
-        groq.assert_called_once()
+        self.assertEqual(result['provider'], 'DeepSeek')
+        self.assertTrue(MarketCarPrice.objects.filter(brand='كيا', model='ريو', source_name='DeepSeek - شكد فلوسك').exists())
+        deepseek.assert_called_once()
         gemini.assert_not_called()
-        deepseek.assert_not_called()
+        groq.assert_not_called()
+
+    @patch('cars.services.deepseek_service._call_groq')
+    @patch('cars.services.deepseek_service._call_gemini')
+    @patch('cars.services.deepseek_service._call_deepseek')
+    def test_budget_uses_gemini_if_deepseek_fails_without_groq(self, deepseek, gemini, groq):
+        deepseek.side_effect = RuntimeError('DEEPSEEK_API_KEY not configured')
+        gemini.return_value = '[{"name":"هيونداي النترا 2022","year":2022,"price_min":24000000,"price_max":24000000,"price_iq":"24 مليون","price_usd":"16000","engine":"1.6L","fuel_economy":"جيد","maintenance":"متوسطة","pros":"سيدان اقتصادية"}]'
+        result = find_cars_by_budget(24000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.85')
+        self.assertTrue(result['success'])
+        self.assertEqual(result['provider'], 'Gemini')
+        self.assertTrue(MarketCarPrice.objects.filter(brand='هيونداي', model='النترا', source_name='Gemini - شكد فلوسك').exists())
+        deepseek.assert_called_once()
+        gemini.assert_called_once()
+        groq.assert_not_called()
+
+    @patch('cars.services.deepseek_service._call_groq')
+    @patch('cars.services.deepseek_service._call_gemini')
+    @patch('cars.services.deepseek_service._call_deepseek')
+    def test_budget_uses_groq_only_after_deepseek_and_gemini_fail(self, deepseek, gemini, groq):
+        deepseek.side_effect = RuntimeError('DEEPSEEK_API_KEY not configured')
+        gemini.side_effect = RuntimeError('GEMINI_API_KEY not configured')
+        groq.return_value = '[{"name":"نيسان صني 2021","year":2021,"price_min":18000000,"price_max":18000000,"price_iq":"18 مليون","price_usd":"12000","engine":"1.5L","fuel_economy":"ممتاز","maintenance":"رخيصة","pros":"اقتصادية ومناسبة للمدينة"}]'
+        result = find_cars_by_budget(18000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.86')
+        self.assertTrue(result['success'])
+        self.assertEqual(result['provider'], 'Groq')
+        self.assertTrue(MarketCarPrice.objects.filter(brand='نيسان', model='صني', source_name='Groq - شكد فلوسك').exists())
+        deepseek.assert_called_once()
+        gemini.assert_called_once()
+        groq.assert_called_once()
 
     def test_budget_uses_market_table_before_ai(self):
         MarketCarPrice.objects.create(

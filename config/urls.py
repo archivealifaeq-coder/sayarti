@@ -1,7 +1,7 @@
 from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import path, include
 from django.conf import settings
-from django.views.static import serve as media_serve
+from django.conf.urls.static import static
 from cars.views import manifest_view, sw_view, robots_view, sitemap_view, admin_codes_report, admin_cars_report
 import os
 
@@ -23,7 +23,5 @@ urlpatterns = [
     path('', include('cars.urls')),
 ]
 
-# Serve uploaded media directly (works even when DEBUG=False; WhiteNoise handles /static/)
-urlpatterns += [
-    re_path(r'^media/(?P<path>.*)$', media_serve, {'document_root': settings.MEDIA_ROOT}),
-]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

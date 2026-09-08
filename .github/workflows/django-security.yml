@@ -1,0 +1,40 @@
+name: Django Security Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEBUG: 'False'
+      SECRET_KEY: github-actions-test-secret-key-not-for-production
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Django deploy checks
+        run: python manage.py check --deploy
+
+      - name: Run tests
+        run: python manage.py test cars
