@@ -10,7 +10,7 @@ class Command(BaseCommand):
         parser.add_argument('--source', default='opensooq', choices=['opensooq'])
         parser.add_argument('--brands', nargs='*', default=['toyota', 'hyundai', 'kia', 'nissan', 'chevrolet'])
         parser.add_argument('--max-pages', type=int, default=2)
-        parser.add_argument('--optional-fields', nargs='*', default=['price_usd', 'body_type', 'pros'])
+        parser.add_argument('--optional-fields', nargs='*', default=['trim', 'engine', 'price_usd', 'body_type', 'pros'])
 
     def handle(self, *args, **options):
         unknown = [brand for brand in options['brands'] if brand not in BRANDS]

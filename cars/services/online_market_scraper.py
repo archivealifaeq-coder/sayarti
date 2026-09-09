@@ -41,6 +41,11 @@ BODY_KEYWORDS = {
     'coupe': ('كوبيه', 'coupe'),
 }
 
+TRIM_KEYWORDS = (
+    'gl', 'gli', 'glx', 'se', 'le', 'xle', 'limited', 'sport', 'full', 'فل كامل',
+    'نص فل', 'ستاندر', 'هايبرد', 'hybrid', 'توربو', 'turbo', 'بلاتينيوم', 'platinum',
+)
+
 
 @dataclass
 class ScrapeSummary:
@@ -105,6 +110,26 @@ def extract_model(title, brand_ar):
     return parts[0][:100]
 
 
+def extract_engine(title):
+    text = str(title or '').lower()
+    match = re.search(r'\b([1-6](?:\.\d)?)\s*(?:l|لتر|سي سي)?\b', text)
+    if match:
+        return f'{match.group(1)}L'
+    if 'هايبرد' in text or 'hybrid' in text:
+        return 'Hybrid'
+    if 'كهرباء' in text or 'electric' in text:
+        return 'Electric'
+    return ''
+
+
+def extract_trim(title):
+    text = str(title or '').lower()
+    for keyword in TRIM_KEYWORDS:
+        if keyword in text:
+            return keyword[:80]
+    return ''
+
+
 def stable_external_id(source_url):
     if not source_url:
         return None
@@ -150,12 +175,13 @@ def parse_opensooq_html(html, brand_key, optional_fields=None):
             'model': model,
             'model_en': '',
             'year': year,
+            'trim': extract_trim(card_text) if 'trim' in optional_fields else '',
             'origin': brand['origin'],
             'body_type': detect_body_type(card_text) if 'body_type' in optional_fields else 'all',
             'condition': 'used',
             'price_iqd': price_iqd,
             'price_usd': int(price_iqd / (SiteSettings.load().exchange_rate_iqd_per_usd or 1500)) if 'price_usd' in optional_fields else None,
-            'engine': '',
+            'engine': extract_engine(card_text) if 'engine' in optional_fields else '',
             'fuel_economy': '',
             'maintenance': '',
             'pros': f'مقترح من إعلان: {card_text[:180]}' if 'pros' in optional_fields else '',
