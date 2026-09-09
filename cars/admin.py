@@ -436,17 +436,19 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
     ordering = ('-year', 'price_iqd', '-confidence', 'brand', 'model')
     fieldsets = (
         ('🚗 السيارة', {
-            'fields': ('id1', 'name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'origin', 'body_type', 'condition')
+            'fields': ('id1', 'name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'trim', 'engine', 'origin', 'body_type', 'condition')
         }),
         ('💰 السعر', {
             'fields': ('price_iqd', 'price_usd'),
             'description': 'سعر واحد دقيق قدر الإمكان. البحث في شكد فلوسك يطابق السعر ضمن ±2% فقط.'
         }),
-        ('🔧 تفاصيل مختصرة', {
-            'fields': ('engine', 'fuel_economy', 'maintenance', 'pros')
+        ('📝 الوصف المختصر', {
+            'fields': ('pros',),
+            'description': 'وصف قصير يساعدك في مراجعة السعر، مثل: وارد أمريكي، فئة LE، ماشي 20-30 ألف كم.'
         }),
-        ('🔎 المصدر والمراجعة', {
-            'fields': ('source_name', 'source_url', 'is_active')
+        ('🔎 حقول اختيارية غير ضرورية للجدول المبسط', {
+            'fields': ('fuel_economy', 'maintenance', 'source_name', 'source_url', 'is_active'),
+            'classes': ('collapse',),
         }),
         ('📌 الثقة', {
             'fields': ('confidence',)
@@ -543,14 +545,19 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                         if not price_iqd:
                             failed += 1
                             continue
+                        trim = str(row.get('trim') or '').strip()
+                        engine = str(row.get('engine') or '').strip()
                         lookup = {'id1': id1} if id1 else {
                             'brand': brand,
                             'model': model,
                             'year': year,
+                            'trim': trim,
                             'origin': origin_value(row.get('origin') or row.get('car_type')),
                             'body_type': body_type_value(row.get('body_type')),
                             'condition': condition_value(row.get('condition')),
                         }
+                        if not id1 and engine:
+                            lookup['engine'] = engine
                         defaults = {
                             'name': str(row.get('name') or f'{brand} {model} {year}').strip(),
                             'brand': brand,
@@ -558,12 +565,13 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                             'model': model,
                             'model_en': model_en,
                             'year': year,
+                            'trim': trim,
                             'origin': origin_value(row.get('origin') or row.get('car_type')),
                             'body_type': body_type_value(row.get('body_type')),
                             'condition': condition_value(row.get('condition')),
                             'price_iqd': price_iqd,
                             'price_usd': price_usd,
-                            'engine': str(row.get('engine') or '').strip(),
+                            'engine': engine,
                             'fuel_economy': str(row.get('fuel_economy') or 'جيد').strip(),
                             'maintenance': str(row.get('maintenance') or 'متوسطة').strip(),
                             'pros': str(row.get('pros') or '').strip()[:240],
@@ -591,7 +599,7 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         {% block content %}
         <div class="section-card" style="max-width: 760px; margin: 20px auto;">
             <h3>📥 استيراد أسعار السوق من Excel</h3>
-            <p style="color:#475569; line-height:1.9;">الأعمدة المطلوبة: name, brand_ar, model_ar, year, origin, body_type, condition. السعر المطلوب: price_iqd أو price_usd. العمود الاختياري id1 رقم خارجي فريد لا يتكرر؛ إذا موجود يتم التحديث عليه بدل إنشاء تكرار. الأعمدة الاختيارية الأخرى: brand_en, model_en, engine, fuel_economy, maintenance, pros, source_name, source_url, is_active, confidence.</p>
+            <p style="color:#475569; line-height:1.9;">الجدول المبسط المطلوب: id1, name, brand_ar, brand_en, model_ar, model_en, year, trim, engine, origin, body_type, condition, price_iqd, price_usd, pros. الأعمدة الإلزامية: name, brand_ar, model_ar, year, origin, body_type, condition, price_iqd. باقي الحقول اختيارية، و id1 مهم لمنع التكرار وتحديث نفس السجل.</p>
             <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 {{ form.as_p }}

@@ -409,6 +409,7 @@ class MarketCarPrice(models.Model):
     brand_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
     model_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
     year = models.IntegerField(validators=[MinValueValidator(1990), MaxValueValidator(2099)], verbose_name='السنة')
+    trim = models.CharField(max_length=80, blank=True, verbose_name='الفئة / الكلاس')
     origin = models.CharField(max_length=20, choices=ORIGIN_CHOICES, default='all', db_index=True, verbose_name='المنشأ')
     body_type = models.CharField(max_length=20, choices=BODY_TYPE_CHOICES, default='all', db_index=True, verbose_name='نوع الجسم')
     condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, default='used', db_index=True, verbose_name='الحالة')

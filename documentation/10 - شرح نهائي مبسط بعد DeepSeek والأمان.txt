@@ -64,29 +64,32 @@
 
 هذا الجدول هو المصدر الوحيد لـ "شكد فلوسك".
 
-الأعمدة المطلوبة:
-- name: اسم السيارة الكامل (مثال: تويوتا كورولا 2020)
-- brand: الماركة بالعربي (مثال: تويوتا)
-- model: الموديل بالعربي (مثال: كورولا)
-- year: السنة (مثال: 2020)
-- price_iqd: السعر بالدينار العراقي (إلزامي)
+الجدول المبسط النهائي في Excel:
+- id1: رقم خارجي فريد يمنع التكرار ويحدث نفس السجل.
+- name: اسم السيارة الكامل.
+- brand_ar: الماركة بالعربي.
+- brand_en: الماركة بالإنجليزي.
+- model_ar: الموديل بالعربي.
+- model_en: الموديل بالإنجليزي.
+- year: السنة.
+- trim: الفئة / الكلاس / التيرم.
+- engine: المحرك.
+- origin: المنشأ.
+- body_type: نوع الجسم.
+- condition: الحالة.
+- price_iqd: السعر بالدينار العراقي.
+- price_usd: السعر بالدولار الأمريكي.
+- pros: وصف مختصر مهم.
 
-الأعمدة الاختيارية المهمة:
-- id1: رقم خارجي فريد (يستخدم في استيراد Excel ومنع التكرار)
-- brand_en: الماركة بالإنجليزي (مثال: Toyota)
-- model_en: الموديل بالإنجليزي (مثال: Corolla)
-- price_usd: السعر بالدولار الأمريكي
-- origin: المنشأ (عام/ياباني/كوري/صيني/أمريكي/ألماني/أوروبي/إيراني)
-- body_type: نوع الجسم (عام/سيدان/SUV/بيكب/هاتشباك/فان/كوبيه)
-- condition: الحالة (مستعمل/جديد)
-- engine: المحرك (مثال: 1.6L)
-- fuel_economy: صرف الوقود (مثال: جيد)
-- maintenance: الصيانة (مثال: متوسطة)
-- pros: سبب الترشيح / ملاحظات
-- source_name: مصدر السعر
-- source_url: رابط المصدر
-- is_active: مفعل (الافتراضي: True)
-- confidence: درجة الثقة (0-100، الافتراضي: 80)
+تم إلغاء الحقول غير المهمة من جدول Excel المبسط:
+- fuel_economy
+- maintenance
+- source_name
+- source_url
+- is_active
+- confidence
+
+هذه الحقول لا تزال موجودة داخلياً في قاعدة البيانات بقيم افتراضية، لكن لا تحتاجها في ملف Excel اليومي.
 
 الأعمدة التلقائية:
 - brand_norm: ماركة موحّدة للبحث (تلقائي)
@@ -162,13 +165,16 @@ admin > أسعار السيارات في السوق > استيراد أسعار 
 شكل ملف Excel المطلوب:
 
 الأعمدة بالترتيب:
-name | brand | brand_en | model | model_en | year | origin | condition | price_iqd | price_usd | engine | fuel_economy | maintenance | pros | confidence | id1
+id1 | name | brand_ar | brand_en | model_ar | model_en | year | trim | engine | origin | body_type | condition | price_iqd | price_usd | pros
 
 مثال:
-تويوتا كورولا 2020 | تويوتا | Toyota | كورولا | Corolla | 2020 | japanese | used | 25000000 | 16667 | 1.8L | جيد | متوسطة | رمز الاعتمادية | 90 | 1001
+1001 | تويوتا كورولا 2020 فل كامل 1.8 | تويوتا | Toyota | كورولا | Corolla | 2020 | فل كامل | 1.8L | japanese | sedan | used | 25000000 | 16667 | اعتمادية عالية وطلب قوي في السوق العراقي
 
 الأعمدة المطلوبة فقط:
-name | brand | model | year | origin | condition | price_iqd
+name | brand_ar | model_ar | year | origin | body_type | condition | price_iqd
+
+الأعمدة التي ننصح بها للدقة:
+id1 | trim | engine | price_usd | pros
 
 ملاحظات مهمة:
 - id1 اختياري وفريد. إذا وُجد في Excel يستخدم لمنع التكرار وتحديث السجل نفسه.
