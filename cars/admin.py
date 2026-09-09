@@ -44,8 +44,6 @@ class OnlineMarketUpdateForm(forms.Form):
     )
     max_pages = forms.IntegerField(label='عدد الصفحات لكل ماركة', min_value=1, max_value=10, initial=2)
     OPTIONAL_FIELD_CHOICES = [
-        ('trim', 'محاولة تحديد الفئة / الكلاس'),
-        ('engine', 'محاولة استخراج نوع/حجم المحرك'),
         ('price_usd', 'حساب السعر بالدولار'),
         ('body_type', 'محاولة تحديد نوع الجسم'),
         ('pros', 'حفظ عنوان الإعلان كملاحظة/سبب ترشيح'),
@@ -55,7 +53,7 @@ class OnlineMarketUpdateForm(forms.Form):
         choices=OPTIONAL_FIELD_CHOICES,
         widget=forms.CheckboxSelectMultiple,
         required=False,
-        initial=['trim', 'engine', 'price_usd', 'body_type', 'pros'],
+        initial=['price_usd', 'body_type', 'pros'],
     )
     review_only = forms.BooleanField(
         label='حفظ النتائج للمراجعة فقط وعدم عرضها للزائر مباشرة',
@@ -484,7 +482,7 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
     ordering = ('-year', 'price_iqd', '-confidence', 'brand', 'model')
     fieldsets = (
         ('🚗 السيارة', {
-            'fields': ('id1', 'name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'trim', 'origin', 'body_type', 'condition')
+            'fields': ('id1', 'name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'origin', 'body_type', 'condition')
         }),
         ('💰 السعر', {
             'fields': ('price_iqd', 'price_usd'),
@@ -720,13 +718,6 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                             'body_type': body_type_value(row.get('body_type')),
                             'condition': condition_value(row.get('condition')),
                         }
-                        trim = str(row.get('trim') or '').strip()
-                        engine = str(row.get('engine') or '').strip()
-                        if not id1:
-                            if trim:
-                                lookup['trim'] = trim
-                            if engine:
-                                lookup['engine'] = engine
                         defaults = {
                             'name': str(row.get('name') or f'{brand} {model} {year}').strip(),
                             'brand': brand,
@@ -734,13 +725,12 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                             'model': model,
                             'model_en': model_en,
                             'year': year,
-                            'trim': trim,
                             'origin': origin_value(row.get('origin') or row.get('car_type')),
                             'body_type': body_type_value(row.get('body_type')),
                             'condition': condition_value(row.get('condition')),
                             'price_iqd': price_iqd,
                             'price_usd': price_usd,
-                            'engine': engine,
+                            'engine': str(row.get('engine') or '').strip(),
                             'fuel_economy': str(row.get('fuel_economy') or 'جيد').strip(),
                             'maintenance': str(row.get('maintenance') or 'متوسطة').strip(),
                             'pros': str(row.get('pros') or '').strip()[:240],
@@ -768,7 +758,7 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         {% block content %}
         <div class="section-card" style="max-width: 760px; margin: 20px auto;">
             <h3>📥 استيراد أسعار السوق من Excel</h3>
-            <p style="color:#475569; line-height:1.9;">الأعمدة المطلوبة: name, brand_ar, model_ar, year, origin, body_type, condition. السعر المطلوب: price_iqd أو price_usd. العمود الاختياري id1 رقم خارجي فريد لا يتكرر؛ إذا موجود يتم التحديث عليه بدل إنشاء تكرار. الأعمدة الاختيارية الأخرى: brand_en, model_en, trim, engine, fuel_economy, maintenance, pros, source_name, source_url, is_active, confidence.</p>
+            <p style="color:#475569; line-height:1.9;">الأعمدة المطلوبة: name, brand_ar, model_ar, year, origin, body_type, condition. السعر المطلوب: price_iqd أو price_usd. العمود الاختياري id1 رقم خارجي فريد لا يتكرر؛ إذا موجود يتم التحديث عليه بدل إنشاء تكرار. الأعمدة الاختيارية الأخرى: brand_en, model_en, engine, fuel_economy, maintenance, pros, source_name, source_url, is_active, confidence.</p>
             <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 {{ form.as_p }}
@@ -825,7 +815,7 @@ class MarketCarPriceCandidateAdmin(admin.ModelAdmin):
     actions = ['approve_candidates', 'reject_candidates']
     fieldsets = (
         ('بيانات الإعلان', {
-            'fields': ('id1', 'raw_title', 'name', 'brand', 'brand_en', 'model', 'model_en', 'year', 'trim')
+            'fields': ('id1', 'raw_title', 'name', 'brand', 'brand_en', 'model', 'model_en', 'year')
         }),
         ('التصنيف والسعر', {
             'fields': ('origin', 'body_type', 'condition', 'price_iqd', 'price_usd', 'confidence')
@@ -851,13 +841,10 @@ class MarketCarPriceCandidateAdmin(admin.ModelAdmin):
                 'brand': candidate.brand,
                 'model': candidate.model,
                 'year': candidate.year,
-                'trim': candidate.trim,
                 'origin': candidate.origin,
                 'body_type': candidate.body_type,
                 'condition': candidate.condition,
             }
-            if not candidate.id1 and candidate.engine:
-                lookup['engine'] = candidate.engine
             defaults = {
                 'name': candidate.name,
                 'brand': candidate.brand,
@@ -865,7 +852,6 @@ class MarketCarPriceCandidateAdmin(admin.ModelAdmin):
                 'model': candidate.model,
                 'model_en': candidate.model_en,
                 'year': candidate.year,
-                'trim': candidate.trim,
                 'origin': candidate.origin,
                 'body_type': candidate.body_type,
                 'condition': candidate.condition,
