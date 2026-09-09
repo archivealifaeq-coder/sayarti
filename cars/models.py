@@ -444,47 +444,6 @@ class MarketCarPrice(models.Model):
     def __str__(self):
         return f'{self.name} ({self.year})'
 
-
-class MarketCarPriceCandidate(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'بانتظار المراجعة'),
-        ('approved', 'معتمد'),
-        ('rejected', 'مرفوض'),
-    ]
-
-    id1 = models.PositiveBigIntegerField(null=True, blank=True, db_index=True, verbose_name='ID خارجي')
-    raw_title = models.CharField(max_length=240, blank=True, verbose_name='عنوان الإعلان الأصلي')
-    name = models.CharField(max_length=180, verbose_name='اسم السيارة الكامل')
-    brand = models.CharField(max_length=100, verbose_name='الماركة عربي')
-    brand_en = models.CharField(max_length=100, blank=True, verbose_name='الماركة إنجليزي')
-    model = models.CharField(max_length=100, verbose_name='الموديل عربي')
-    model_en = models.CharField(max_length=100, blank=True, verbose_name='الموديل إنجليزي')
-    year = models.IntegerField(validators=[MinValueValidator(1990), MaxValueValidator(2099)], verbose_name='السنة')
-    origin = models.CharField(max_length=20, choices=MarketCarPrice.ORIGIN_CHOICES, default='all', db_index=True, verbose_name='المنشأ')
-    body_type = models.CharField(max_length=20, choices=MarketCarPrice.BODY_TYPE_CHOICES, default='all', db_index=True, verbose_name='نوع الجسم')
-    condition = models.CharField(max_length=10, choices=MarketCarPrice.CONDITION_CHOICES, default='used', db_index=True, verbose_name='الحالة')
-    price_iqd = models.PositiveBigIntegerField(db_index=True, verbose_name='السعر بالدينار')
-    price_usd = models.PositiveIntegerField(null=True, blank=True, db_index=True, verbose_name='السعر بالدولار')
-    source_name = models.CharField(max_length=120, blank=True, verbose_name='مصدر السعر')
-    source_url = models.URLField(blank=True, db_index=True, verbose_name='رابط المصدر')
-    confidence = models.PositiveSmallIntegerField(default=60, validators=[MinValueValidator(0), MaxValueValidator(100)], verbose_name='درجة الثقة')
-    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='pending', db_index=True, verbose_name='الحالة')
-    notes = models.CharField(max_length=240, blank=True, verbose_name='ملاحظات المراجعة')
-    updated_at = models.DateTimeField(auto_now=True, db_index=True, verbose_name='آخر تحديث')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإضافة')
-
-    class Meta:
-        ordering = ['status', '-updated_at', '-year', 'price_iqd']
-        indexes = [
-            models.Index(fields=['status', 'condition', 'origin', 'body_type']),
-            models.Index(fields=['brand', 'model', 'year']),
-        ]
-        verbose_name = 'سعر مقترح من الإنترنت'
-        verbose_name_plural = 'أسعار مقترحة من الإنترنت'
-
-    def __str__(self):
-        return f'{self.name} ({self.year}) - {self.get_status_display()}'
-
 SITE_SETTINGS_CACHE_KEY = 'site_settings_obj'
 SITE_SETTINGS_CACHE_TTL = 60
 

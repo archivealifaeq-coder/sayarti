@@ -9,47 +9,12 @@ from django.utils.html import format_html, mark_safe
 from django.core.cache import cache
 from django.db.models import Count
 from django.db import models as db_models
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice, MarketCarPriceCandidate
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice
 from .services.excel_importer import import_cars_from_excel
 
 
 class CsvImportForm(forms.Form):
     excel_file = forms.FileField(label="اختر ملف الأكسل")
-
-
-class OnlineMarketUpdateForm(forms.Form):
-    SOURCE_CHOICES = [
-        ('opensooq', 'السوق المفتوح العراق'),
-        ('carsale', 'Carsale Iraq'),
-        ('ifeed', 'iFeed / Motory'),
-    ]
-    BRAND_CHOICES = [
-        ('toyota', 'تويوتا'),
-        ('hyundai', 'هيونداي'),
-        ('kia', 'كيا'),
-        ('nissan', 'نيسان'),
-        ('chevrolet', 'شيفروليه'),
-        ('mg', 'MG'),
-        ('chery', 'شيري'),
-        ('geely', 'جيلي'),
-        ('saipa', 'سايبا'),
-        ('samand', 'سمند'),
-    ]
-
-    source = forms.ChoiceField(label='مصدر الأسعار', choices=SOURCE_CHOICES)
-    brands = forms.MultipleChoiceField(
-        label='الماركات المستهدفة',
-        choices=BRAND_CHOICES,
-        widget=forms.CheckboxSelectMultiple,
-        initial=['toyota', 'hyundai', 'kia', 'nissan', 'chevrolet'],
-    )
-    max_pages = forms.IntegerField(label='عدد الصفحات لكل ماركة', min_value=1, max_value=10, initial=2)
-    review_only = forms.BooleanField(
-        label='حفظ النتائج للمراجعة فقط وعدم عرضها للزائر مباشرة',
-        required=False,
-        initial=True,
-        disabled=True,
-    )
 
 
 @admin.register(CarSpecification)
@@ -492,119 +457,8 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='market_prices_import_excel'),
-            path('online-update/', self.admin_site.admin_view(self.online_update_view), name='market_prices_online_update'),
         ]
         return custom_urls + urls
-
-    def online_update_view(self, request):
-        existing_prices = MarketCarPrice.objects.count()
-        active_prices = MarketCarPrice.objects.filter(is_active=True).count()
-        pending_candidates = MarketCarPriceCandidate.objects.filter(status='pending').count()
-        form = OnlineMarketUpdateForm(request.POST or None)
-        preview = None
-
-        if request.method == 'POST' and form.is_valid():
-            selected_brands = [dict(form.fields['brands'].choices).get(v, v) for v in form.cleaned_data['brands']]
-            preview = {
-                'source': dict(form.fields['source'].choices).get(form.cleaned_data['source']),
-                'brands': selected_brands,
-                'max_pages': form.cleaned_data['max_pages'],
-                'estimated_requests': len(selected_brands) * form.cleaned_data['max_pages'],
-            }
-            self.message_user(
-                request,
-                'تم تجهيز خطة التشغيل التجريبي فقط. لم يتم جلب أو حفظ أسعار بعد، حتى لا تدخل بيانات غير مراجعة إلى شكد فلوسك.',
-                messages.INFO,
-            )
-
-        html_template = """
-        {% extends "admin/base_site.html" %}
-        {% block content %}
-        <style>
-            .online-wrap{max-width:1050px;margin:22px auto;direction:rtl}
-            .online-hero{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;border-radius:24px;padding:26px;box-shadow:0 20px 50px rgba(15,23,42,.18)}
-            .online-hero h1{margin:0 0 10px;font-size:28px;color:#fff}
-            .online-hero p{margin:0;line-height:1.9;color:#dbeafe;font-size:15px}
-            .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
-            .card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(15,23,42,.06)}
-            .card h3{margin:0 0 10px;color:#0f172a;font-size:18px}
-            .metric{font-size:30px;font-weight:800;color:#1d4ed8}
-            .muted{color:#64748b;line-height:1.8}
-            .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
-            .step{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:14px;text-align:center;color:#334155;font-weight:700}
-            .step strong{display:block;color:#0f172a;margin-bottom:6px}
-            .form-box{margin-top:16px;background:#fff;border-radius:20px;border:1px solid #dbeafe;padding:20px}
-            .form-box label{font-weight:700;color:#1e293b}
-            .form-box select,.form-box input[type=number]{width:100%;max-width:320px;border:1px solid #cbd5e1;border-radius:10px;padding:8px}
-            .form-box ul{list-style:none;margin:8px 0 16px;padding:0;columns:2}
-            .form-box li{break-inside:avoid;margin:7px 0;color:#334155}
-            .safe{background:#ecfdf5;border-color:#bbf7d0;color:#166534}
-            .warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
-            .actions{display:flex;gap:10px;align-items:center;margin-top:15px;flex-wrap:wrap}
-            .btn-main{background:#1d4ed8;color:#fff!important;border-radius:12px;padding:10px 18px;text-decoration:none;border:0;font-weight:800;cursor:pointer}
-            .btn-muted{color:#475569!important;text-decoration:none}
-            @media(max-width:900px){.grid,.flow{grid-template-columns:1fr}.form-box ul{columns:1}}
-        </style>
-        <div class="online-wrap">
-            <div class="online-hero">
-                <h1>التحديث الأونلاين لأسعار شكد فلوسك</h1>
-                <p>هذا القسم مخصص للسكربت القادم. الهدف أن يجلب أسعاراً من مواقع الإعلانات، يحللها، ثم يضعها في جدول مراجعة قبل اعتمادها. لا يتم عرض أي سعر للزائر إلا بعد موافقتك.</p>
-            </div>
-
-            <div class="grid">
-                <div class="card"><h3>إجمالي الأسعار الحالية</h3><div class="metric">{{ existing_prices }}</div><p class="muted">كل سجلات MarketCarPrice.</p></div>
-                <div class="card"><h3>الأسعار المفعلة</h3><div class="metric">{{ active_prices }}</div><p class="muted">هذه فقط تظهر في شكد فلوسك.</p></div>
-                <div class="card"><h3>بانتظار المراجعة</h3><div class="metric">{{ pending_candidates }}</div><p class="muted">أسعار جلبها السكربت ولم تعتمد بعد.</p></div>
-            </div>
-
-            <div class="card" style="margin-top:16px;">
-                <h3>المسار الآمن المقترح</h3>
-                <div class="flow">
-                    <div class="step"><strong>1</strong>جلب من الإنترنت</div>
-                    <div class="step"><strong>2</strong>تنظيف واستبعاد الشاذ</div>
-                    <div class="step"><strong>3</strong>جدول مراجعة</div>
-                    <div class="step"><strong>4</strong>اعتماد يدوي ثم ظهور للزائر</div>
-                </div>
-                <p class="muted">هذا يمنع ظهور الأسعار الوهمية أو المكررة أمام الزائر، ويجعل السكربت مساعداً لك وليس بديلاً عن مراجعتك.</p>
-                <p><a class="btn-main" href="../../marketcarpricecandidate/">فتح جدول مراجعة الأسعار</a></p>
-            </div>
-
-            <div class="form-box">
-                <h3>خطة تشغيل السكربت</h3>
-                <p class="muted">استخدم هذا النموذج لتحديد نطاق التشغيل قبل بناء الجلب الفعلي. عند الضغط الآن ستظهر خطة تجريبية فقط ولا يتم حفظ أسعار.</p>
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <div class="actions">
-                        <button type="submit" class="btn-main">تحضير خطة تشغيل تجريبية</button>
-                        <a href="../" class="btn-muted">رجوع إلى أسعار السيارات</a>
-                    </div>
-                </form>
-            </div>
-
-            {% if preview %}
-            <div class="card safe" style="margin-top:16px;">
-                <h3>نتيجة الخطة التجريبية</h3>
-                <p>المصدر: <b>{{ preview.source }}</b></p>
-                <p>الماركات: <b>{{ preview.brands|join:", " }}</b></p>
-                <p>عدد الصفحات لكل ماركة: <b>{{ preview.max_pages }}</b></p>
-                <p>عدد طلبات الجلب المتوقع: <b>{{ preview.estimated_requests }}</b></p>
-                <p>الحفظ النهائي سيكون في جدول مراجعة أولاً، وليس في أسعار شكد فلوسك مباشرة.</p>
-            </div>
-            {% endif %}
-        </div>
-        {% endblock %}
-        """
-        t = Template(html_template)
-        c = RequestContext(request, {
-            'form': form,
-            'preview': preview,
-            'existing_prices': existing_prices,
-            'active_prices': active_prices,
-            'pending_candidates': pending_candidates,
-            'opts': self.model._meta,
-        })
-        return HttpResponse(t.render(c))
 
     def import_excel_view(self, request):
         if request.method == 'POST':
@@ -783,114 +637,6 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
         return format_html('<span class="badge {}">{}%</span>', cls, obj.confidence)
     confidence_badge.short_description = 'الثقة'
 
-
-@admin.register(MarketCarPriceCandidate)
-class MarketCarPriceCandidateAdmin(admin.ModelAdmin):
-    list_display = ('name_display', 'status_badge', 'origin_badge', 'body_type_badge', 'condition_badge', 'price_iqd_display', 'confidence_badge', 'source_link', 'updated_at')
-    list_filter = ('status', 'origin', 'body_type', 'condition', 'source_name', 'updated_at')
-    search_fields = ('name', 'brand', 'brand_en', 'model', 'model_en', 'raw_title', 'source_url')
-    list_per_page = 40
-    ordering = ('status', '-updated_at', '-year', 'price_iqd')
-    actions = ['approve_candidates', 'reject_candidates']
-    fieldsets = (
-        ('بيانات الإعلان', {
-            'fields': ('id1', 'raw_title', 'name', 'brand', 'brand_en', 'model', 'model_en', 'year')
-        }),
-        ('التصنيف والسعر', {
-            'fields': ('origin', 'body_type', 'condition', 'price_iqd', 'price_usd', 'confidence')
-        }),
-        ('المصدر والمراجعة', {
-            'fields': ('source_name', 'source_url', 'status', 'notes')
-        }),
-    )
-
-    @admin.action(description='اعتماد الأسعار المحددة ونقلها إلى شكد فلوسك')
-    def approve_candidates(self, request, queryset):
-        approved = 0
-        skipped = 0
-        for candidate in queryset:
-            if candidate.status == 'approved':
-                skipped += 1
-                continue
-            lookup = {'id1': candidate.id1} if candidate.id1 else {
-                'brand': candidate.brand,
-                'model': candidate.model,
-                'year': candidate.year,
-                'origin': candidate.origin,
-                'body_type': candidate.body_type,
-                'condition': candidate.condition,
-            }
-            defaults = {
-                'name': candidate.name,
-                'brand': candidate.brand,
-                'brand_en': candidate.brand_en,
-                'model': candidate.model,
-                'model_en': candidate.model_en,
-                'year': candidate.year,
-                'origin': candidate.origin,
-                'body_type': candidate.body_type,
-                'condition': candidate.condition,
-                'price_iqd': candidate.price_iqd,
-                'price_usd': candidate.price_usd,
-                'source_name': candidate.source_name or 'تحديث أونلاين بعد مراجعة',
-                'source_url': candidate.source_url,
-                'is_active': True,
-                'confidence': max(candidate.confidence, 70),
-            }
-            if candidate.id1:
-                defaults.pop('id1', None)
-            MarketCarPrice.objects.update_or_create(**lookup, defaults=defaults)
-            candidate.status = 'approved'
-            candidate.notes = (candidate.notes + ' | ' if candidate.notes else '') + 'تم الاعتماد ونقله إلى شكد فلوسك.'
-            candidate.save(update_fields=['status', 'notes', 'updated_at'])
-            approved += 1
-        self.message_user(request, f'تم اعتماد {approved} سعر. تم تخطي {skipped}.', messages.SUCCESS)
-
-    @admin.action(description='رفض الأسعار المحددة')
-    def reject_candidates(self, request, queryset):
-        updated = queryset.exclude(status='approved').update(status='rejected')
-        self.message_user(request, f'تم رفض {updated} سعر مقترح.', messages.WARNING)
-
-    def name_display(self, obj):
-        return format_html('<b>{}</b><br><span style="color:#64748b;font-size:.78rem;">{} {} · {}</span>', obj.name, obj.brand, obj.model, obj.year)
-    name_display.short_description = 'السيارة'
-
-    def status_badge(self, obj):
-        colors = {
-            'pending': ('#fef3c7', '#92400e'),
-            'approved': ('#dcfce7', '#166534'),
-            'rejected': ('#fee2e2', '#991b1b'),
-        }
-        bg, color = colors.get(obj.status, ('#e2e8f0', '#334155'))
-        return format_html('<span style="background:{};color:{};padding:3px 10px;border-radius:999px;font-weight:700;">{}</span>', bg, color, obj.get_status_display())
-    status_badge.short_description = 'الحالة'
-
-    def origin_badge(self, obj):
-        return format_html('<span class="badge badge-blue">{}</span>', obj.get_origin_display())
-    origin_badge.short_description = 'المنشأ'
-
-    def body_type_badge(self, obj):
-        return format_html('<span class="badge badge-amber">{}</span>', obj.get_body_type_display())
-    body_type_badge.short_description = 'نوع السيارة'
-
-    def condition_badge(self, obj):
-        return format_html('<span class="badge badge-green">{}</span>', obj.get_condition_display())
-    condition_badge.short_description = 'الحالة'
-
-    def price_iqd_display(self, obj):
-        return format_html('<b>{}</b>', f'{obj.price_iqd:,}')
-    price_iqd_display.short_description = 'السعر د.ع'
-
-    def confidence_badge(self, obj):
-        return format_html('<span class="badge badge-blue">{}%</span>', obj.confidence)
-    confidence_badge.short_description = 'الثقة'
-
-    def source_link(self, obj):
-        if not obj.source_url:
-            return obj.source_name or '—'
-        return format_html('<a href="{}" target="_blank" rel="noopener">{}</a>', obj.source_url, obj.source_name or 'فتح المصدر')
-    source_link.short_description = 'المصدر'
-
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     list_display = ('settings_summary',)
@@ -912,9 +658,9 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('ga4_id', 'ga4_property_id', 'ga_service_account_json'),
             'description': 'GA4 ID: من analytics.google.com (Data Streams). Property ID وفاتح الخدمة: فعّل Analytics Data API في Google Cloud واصنع Service Account بحق Viewer على الخاصية ثم الصق ملف JSON هنا — لعرض عدد الزوار في لوحة الإدارة'
         }),
-        ('🤖 الذكاء الاصطناعي (ميزات البحث الأخرى)', {
+        ('🤖 الذكاء الاصطناعي (شكد فلوسك)', {
             'fields': ('deepseek_api_key', 'gemini_api_key', 'groq_api_key'),
-            'description': '<b>شكد فلوسك لا يستخدم الذكاء الاصطناعي حالياً</b> ويعتمد فقط على جدول أسعار السوق. هذه المفاتيح تُستخدم لميزات البحث والمواصفات الأخرى: DeepSeek ثم Gemini ثم Groq كحائط صد أخير.'
+            'description': '<b>DeepSeek هو الأساسي لشكد فلوسك</b>. إذا تعطل يستخدم Gemini. إذا فشل الاثنان يستخدم Groq كحائط صد أخير.'
         }),
         ('💱 سعر الصرف اليدوي', {
             'fields': ('exchange_rate_iqd_per_usd', 'exchange_rate_source'),
