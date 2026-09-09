@@ -523,3 +523,75 @@ MarketCarPriceCandidate
 التحقق:
 - python manage.py check: OK
 - python manage.py test cars: 27 tests OK
+
+
+==========================================================================
+25) السكربت الفعلي للتحديث الأونلاين
+==========================================================================
+
+تمت إضافة خدمة فعلية لجلب أسعار من الإنترنت:
+
+cars/services/online_market_scraper.py
+
+المصدر المدعوم حالياً:
+- السوق المفتوح العراق: iq.opensooq.com
+
+طريقة العمل:
+1. يدخل على صفحات البحث لكل ماركة.
+2. يقرأ عناوين الإعلانات والأسعار والروابط.
+3. يستخرج السنة من العنوان.
+4. يستخرج السعر ويتجاهل السنوات والأرقام الصغيرة.
+5. يرفض السعر إذا كان خارج نطاق منطقي: أقل من 3 مليون أو أكثر من 300 مليون دينار.
+6. يحول السعر بالدولار إلى دينار إذا ظهر أنه دولار.
+7. يحفظ النتائج في MarketCarPriceCandidate فقط.
+8. لا يضيف أي سعر مباشرة إلى MarketCarPrice.
+
+الحقول الاختيارية التي يمكن اختيارها من صفحة التحديث:
+- حساب السعر بالدولار price_usd.
+- محاولة تحديد نوع الجسم body_type.
+- حفظ عنوان الإعلان كملاحظة في pros.
+
+إذا لم تختر حقلاً اختيارياً، يبقى فارغاً أو عاماً، وتستطيع تعديله بنفسك قبل الاعتماد.
+
+
+==========================================================================
+26) أمر تشغيل السكربت من السيرفر
+==========================================================================
+
+تمت إضافة أمر Django:
+
+python manage.py update_market_price_candidates
+
+مثال تشغيل يدوي:
+
+cd /var/www/sayarti
+source venv/bin/activate
+python manage.py update_market_price_candidates --brands toyota hyundai kia nissan --max-pages 2
+
+مثال مع الحقول الاختيارية:
+
+python manage.py update_market_price_candidates --brands toyota kia --max-pages 2 --optional-fields price_usd body_type pros
+
+هذا الأمر يحفظ النتائج في جدول المراجعة فقط.
+
+تشغيل أسبوعي عبر cron لاحقاً:
+
+0 3 * * 0 cd /var/www/sayarti && . venv/bin/activate && python manage.py update_market_price_candidates --brands toyota hyundai kia nissan chevrolet --max-pages 2 >> /var/log/sayarti-price-update.log 2>&1
+
+
+==========================================================================
+27) تحديث 2026-09-09 — ربط السكربت بالواجهة
+==========================================================================
+
+تم إنجاز التالي:
+- إضافة beautifulsoup4 و requests إلى requirements.txt.
+- إضافة سكربت جلب فعلي من السوق المفتوح.
+- ربط صفحة التحديث الأونلاين بزر تشغيل يحفظ في جدول المراجعة فقط.
+- إضافة الحقول الاختيارية إلى MarketCarPriceCandidate: engine, fuel_economy, maintenance, pros.
+- إضافة migration: 0037_marketcarpricecandidate_details.py.
+- إضافة command: update_market_price_candidates.
+- إضافة اختبارات لاستخراج السعر والسنة والحفظ في جدول المراجعة.
+
+التحقق:
+- python manage.py check: OK
+- python manage.py test cars: 29 tests OK
