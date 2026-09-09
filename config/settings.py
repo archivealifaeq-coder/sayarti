@@ -40,7 +40,10 @@ else:
         'SECRET_KEY must be set in the environment during production.'
     )
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
+if not DEBUG and ('*' in ALLOWED_HOSTS or not ALLOWED_HOSTS):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('ALLOWED_HOSTS must be explicit in production; wildcard is not allowed.')
 
 LOGIN_URL = 'admin:login'
 
@@ -59,6 +62,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'cars.security.SecurityHeadersMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -263,10 +267,10 @@ CACHES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ============================================================
-# Upload limits (defense against oversized payloads) - 50 MB
+# Upload limits (defense against oversized payloads) - 10 MB
 # ============================================================
-DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
-FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('DATA_UPLOAD_MAX_MEMORY_SIZE', str(10 * 1024 * 1024)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('FILE_UPLOAD_MAX_MEMORY_SIZE', str(10 * 1024 * 1024)))
 
 
 # ============================================================
@@ -279,6 +283,8 @@ SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', str(60 * 60 * 6)))
+SESSION_SAVE_EVERY_REQUEST = True
 SECURE_BROWSER_XSS_FILTER = True
 
 # ============================================================

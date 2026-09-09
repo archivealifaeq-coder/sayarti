@@ -195,6 +195,13 @@ class PageSmokeTests(TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
 
+    def test_security_headers_are_present(self):
+        response = self.client.get('/')
+        self.assertEqual(response['X-Frame-Options'], 'DENY')
+        self.assertIn("default-src 'self'", response['Content-Security-Policy'])
+        self.assertIn('camera=()', response['Permissions-Policy'])
+        self.assertEqual(response['X-Permitted-Cross-Domain-Policies'], 'none')
+
     def test_admin_pages(self):
         self.client.force_login(User.objects.create_superuser('boss2', 'b2@example.com', 'pw'))
         for path in ['/admin/', '/admin/cars/promocode/', '/admin/report/codes/']:

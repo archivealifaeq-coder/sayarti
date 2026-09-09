@@ -469,3 +469,165 @@ curl -I https://sayarti.org
 
 عرض السجلات:
 journalctl -u gunicorn --no-pager -n 50
+
+
+==========================================================================
+22) تحديث أمان قوي — 2026-09-09
+==========================================================================
+
+ملاحظة مهمة:
+لا يوجد موقع في العالم آمن "مليار بالمئة" أو 100% حرفياً. الأمان الحقيقي هو طبقات حماية متعددة مع تحديثات ومراقبة. التحديث الحالي يرفع حماية Django والواجهة إلى مستوى أقوى عملياً ضد الهجمات الشائعة.
+
+ما تمت إضافته:
+
+1. Middleware أمان جديد:
+cars/security.py
+
+اسمه:
+SecurityHeadersMiddleware
+
+وظيفته إضافة headers دفاعية على كل استجابة من الموقع.
+
+
+2. Content Security Policy - CSP
+
+تمت إضافة header:
+Content-Security-Policy
+
+وظيفته:
+- تقليل خطر XSS.
+- منع تحميل سكربتات من مصادر غير معروفة.
+- منع تشغيل object/embed.
+- منع وضع الموقع داخل iframe عبر frame-ancestors 'none'.
+
+المصادر المسموحة حالياً فقط:
+- الموقع نفسه 'self'.
+- cdn.tailwindcss.com لتصميم Tailwind.
+- unpkg.com لمكتبة htmx.
+- fonts.googleapis.com و fonts.gstatic.com للخطوط.
+- googletagmanager.com و google-analytics.com للإحصاءات.
+- pagead2.googlesyndication.com و googleads.g.doubleclick.net للإعلانات.
+
+
+3. Permissions Policy
+
+تم منع صلاحيات المتصفح غير المطلوبة:
+- camera=()
+- microphone=()
+- geolocation=()
+- payment=()
+- usb=()
+- gyroscope=()
+- accelerometer=()
+- magnetometer=()
+- browsing-topics=()
+
+معنى هذا:
+حتى لو ظهر كود خبيث في صفحة، لا يستطيع طلب الكاميرا أو المايكروفون أو الموقع الجغرافي من المتصفح.
+
+
+4. Headers إضافية
+
+تمت إضافة:
+- X-Permitted-Cross-Domain-Policies: none
+- X-Download-Options: noopen
+- Cross-Origin-Resource-Policy: same-origin
+
+الهدف:
+- تقليل مشاركة موارد الموقع مع مواقع خارجية.
+- تقليل مخاطر فتح ملفات أو موارد بطريقة غير آمنة.
+
+
+5. منع تخزين صفحات الإدارة
+
+أي صفحة داخل لوحة الإدارة تأخذ headers:
+- Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+- Pragma: no-cache
+- Expires: 0
+
+الهدف:
+منع المتصفح أو proxy من حفظ صفحات الإدارة الحساسة.
+
+
+6. تشديد ALLOWED_HOSTS
+
+تم تعديل ALLOWED_HOSTS بحيث:
+- يتم تنظيف الفراغات والقيم الفارغة.
+- في الإنتاج لا يُسمح بـ wildcard مثل *.
+- إذا كان DEBUG=False و ALLOWED_HOSTS فارغاً أو يحتوي *، يرفض Django الإقلاع.
+
+الهدف:
+منع Host Header attacks.
+
+
+7. تقليل حدود الرفع العامة
+
+تم تقليل الحدود العامة من 50MB إلى 10MB:
+- DATA_UPLOAD_MAX_MEMORY_SIZE
+- FILE_UPLOAD_MAX_MEMORY_SIZE
+
+ويمكن التحكم بها من .env إذا احتجت:
+DATA_UPLOAD_MAX_MEMORY_SIZE=10485760
+FILE_UPLOAD_MAX_MEMORY_SIZE=10485760
+
+الهدف:
+تقليل خطر الضغط على الذاكرة أو رفع payload كبير.
+
+
+8. تقليل مدة الجلسة
+
+تم ضبط:
+SESSION_COOKIE_AGE = 6 ساعات
+SESSION_SAVE_EVERY_REQUEST = True
+
+الهدف:
+- جلسات الإدارة والخدمات لا تبقى مفتوحة لمدة طويلة جداً.
+- كل طلب نشط يمدد الجلسة بطريقة منظمة.
+
+
+9. اختبار أمان تلقائي
+
+تمت إضافة اختبار جديد في cars/tests.py يتحقق من وجود:
+- X-Frame-Options = DENY
+- Content-Security-Policy
+- Permissions-Policy
+- X-Permitted-Cross-Domain-Policies = none
+
+الهدف:
+إذا حذف أحد هذه headers بالخطأ في المستقبل، الاختبارات تفشل وتكشف المشكلة.
+
+
+الحماية الموجودة مسبقاً وما زالت فعالة:
+- DEBUG=False في الإنتاج.
+- SECRET_KEY من .env وليس من الكود.
+- HTTPS redirect في الإنتاج.
+- HSTS لمدة سنة مع includeSubDomains و preload.
+- SESSION_COOKIE_SECURE=True.
+- CSRF_COOKIE_SECURE=True.
+- SESSION_COOKIE_HTTPONLY=True.
+- CSRF_COOKIE_HTTPONLY=True.
+- SameSite=Lax للجلسة و CSRF.
+- X_FRAME_OPTIONS='DENY'.
+- SECURE_CONTENT_TYPE_NOSNIFF=True.
+- SECURE_REFERRER_POLICY='same-origin'.
+- CSRF_TRUSTED_ORIGINS مضبوط للنطاق sayarti.org.
+- خدمة media من Django مغلقة في الإنتاج.
+- csrf_exempt غير مستخدم للمسارات الحساسة.
+- تسجيل خروج الرعاة POST فقط.
+- تحقق أكواد الرعاة يحتاج جلسة صحيحة.
+- rate limit لواجهات الذكاء وتوليد الأكواد.
+- فحص حجم وامتداد Excel.
+
+
+التحقق بعد التحديث:
+- python manage.py check --deploy: OK
+- python manage.py test cars: 29 tests OK
+
+
+ما يبقى خارج الكود ويجب عمله من السيرفر/GitHub:
+- تدوير أي مفاتيح ظهرت في المحادثة.
+- جعل GitHub Private إن رغبت.
+- تفعيل Secret Scanning و Push Protection.
+- تحديث Ubuntu دورياً.
+- إبقاء Nginx و Gunicorn محدثين.
+- استخدام كلمات مرور قوية لحسابات الإدارة.
