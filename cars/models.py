@@ -506,19 +506,19 @@ class SiteSettings(models.Model):
         max_length=200,
         blank=True,
         verbose_name="مفتاح Groq (حائط صد أخير)",
-        help_text="من console.groq.com — يستخدم في شكد فلوسك فقط إذا فشل DeepSeek وGemini"
+        help_text="من console.groq.com — يستخدم في ميزات البحث الأخرى، وليس fallback شكد فلوسك الحالي"
     )
     gemini_api_key = models.CharField(
         max_length=200,
         blank=True,
         verbose_name="مفتاح Gemini (احتياطي)",
-        help_text="من aistudio.google.com — احتياطي إذا تعطل DeepSeek"
+        help_text="من aistudio.google.com — احتياطي في شكد فلوسك إذا لم تجد القاعدة نتيجة وتعطل DeepSeek"
     )
     deepseek_api_key = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="مفتاح DeepSeek API (الأساسي)",
-        help_text="مفتاح API من platform.deepseek.com — المزود الأساسي لميزة شكد فلوسك"
+        help_text="مفتاح API من platform.deepseek.com — يستخدم كخيار ثانٍ في شكد فلوسك بعد قاعدة الأسعار"
     )
     exchange_rate_iqd_per_usd = models.PositiveIntegerField(
         default=1500,

@@ -668,7 +668,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         }),
         ('🤖 الذكاء الاصطناعي (شكد فلوسك)', {
             'fields': ('deepseek_api_key', 'gemini_api_key', 'groq_api_key'),
-            'description': '<b>DeepSeek هو الأساسي لشكد فلوسك</b>. إذا تعطل يستخدم Gemini. إذا فشل الاثنان يستخدم Groq كحائط صد أخير.'
+            'description': '<b>شكد فلوسك يبحث في قاعدة الأسعار أولاً</b>. إذا لم توجد نتيجة مطابقة، يستخدم DeepSeek ثم Gemini فقط كخيار ثانٍ مؤقت، ولا يحفظ نتيجة الذكاء في جدول الأسعار.'
         }),
         ('💱 سعر الصرف اليدوي', {
             'fields': ('exchange_rate_iqd_per_usd', 'exchange_rate_source'),

@@ -220,14 +220,29 @@ class AiCostControlTests(TestCase):
     @patch('cars.services.deepseek_service._call_groq')
     @patch('cars.services.deepseek_service._call_gemini')
     @patch('cars.services.deepseek_service._call_deepseek')
-    def test_budget_does_not_use_ai_when_market_has_no_match(self, deepseek, gemini, groq):
+    def test_budget_uses_deepseek_when_market_has_no_match_without_saving(self, deepseek, gemini, groq):
+        deepseek.return_value = '[{"name":"نيسان صني 2021","year":2021,"price_min":18000000,"price_max":18000000,"price_iq":"18,000,000 د.ع","price_usd":"12,000","engine":"1.5L","fuel_economy":"ممتاز","maintenance":"رخيصة","pros":"اقتراح قريب من الميزانية"}]'
         result = find_cars_by_budget(18000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.86')
-        self.assertFalse(result['success'])
-        self.assertEqual(result['provider'], 'قاعدة أسعار السوق')
-        self.assertIn('عزيزي السائق المحترم', result['error'])
+        self.assertTrue(result['success'])
+        self.assertEqual(result['provider'], 'DeepSeek')
+        self.assertTrue(result['ai_fallback'])
         self.assertEqual(MarketCarPrice.objects.count(), 0)
-        deepseek.assert_not_called()
+        deepseek.assert_called_once()
         gemini.assert_not_called()
+        groq.assert_not_called()
+
+    @patch('cars.services.deepseek_service._call_groq')
+    @patch('cars.services.deepseek_service._call_gemini')
+    @patch('cars.services.deepseek_service._call_deepseek')
+    def test_budget_uses_gemini_after_deepseek_fails_without_groq(self, deepseek, gemini, groq):
+        deepseek.side_effect = RuntimeError('DEEPSEEK_API_KEY not configured')
+        gemini.return_value = '[{"name":"كيا ريو 2022","year":2022,"price_min":19000000,"price_max":19000000,"price_iq":"19,000,000 د.ع","price_usd":"12,667","engine":"1.4L","fuel_economy":"جيد","maintenance":"متوسطة","pros":"اقتراح احتياطي من Gemini"}]'
+        result = find_cars_by_budget(19000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.87')
+        self.assertTrue(result['success'])
+        self.assertEqual(result['provider'], 'Gemini')
+        self.assertEqual(MarketCarPrice.objects.count(), 0)
+        deepseek.assert_called_once()
+        gemini.assert_called_once()
         groq.assert_not_called()
 
     def test_budget_uses_market_table_before_ai(self):

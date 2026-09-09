@@ -22,10 +22,45 @@ GEMINI_MODEL = getattr(settings, 'GEMINI_MODEL', 'gemini-3.6-flash')
 GEMINI_API_URL = f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent'
 
 MARKET_BUDGET_RESULTS = 4
+AI_BUDGET_RESULTS = 1
 MIN_YEAR = 1990
 MAX_YEAR = 2026
 BUDGET_MARGIN_PERCENT = 0.02
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
+BUDGET_CACHE_TTL = 60 * 60 * 24 * 3
+
+BUDGET_PROMPT = """أنت مساعد سيارات للسوق العراقي.
+المطلوب: اقترح سيارة واحدة فقط تناسب ميزانية المستخدم إذا لم توجد نتيجة في قاعدة بيانات الموقع.
+
+قواعد صارمة:
+1. لا تذكر أن النتيجة مؤكدة أو من قاعدة السوق.
+2. لا تتجاوز الميزانية إلا ضمن هامش {budget_margin} فقط.
+3. السعر يجب أن يكون واقعياً في العراق، وليس تخميناً عشوائياً.
+4. اكتب JSON فقط بدون شرح خارجي.
+5. إذا لم تستطع إعطاء اقتراح منطقي، اكتب قائمة فارغة [].
+
+صيغة JSON المطلوبة:
+[
+  {{
+    "name": "اسم السيارة الكامل",
+    "year": 2020,
+    "price_min": 25000000,
+    "price_max": 25000000,
+    "price_iq": "25,000,000 د.ع",
+    "price_usd": "16,667",
+    "engine": "1.8L",
+    "fuel_economy": "جيد",
+    "maintenance": "متوسطة",
+    "pros": "سبب مختصر للترشيح"
+  }}
+]
+
+بيانات المستخدم:
+الميزانية: {budget} {currency_name}
+المنشأ: {origin}
+نوع الجسم: {body_type}
+الحالة: {condition}
+"""
 
 def _get_key(settings_field, env_field):
     try:
@@ -175,6 +210,83 @@ def find_market_cars_by_budget(budget, currency='iqd', origin='all', condition='
     return {'success': True, 'cars': cars, 'provider': 'قاعدة أسعار السوق', 'from_market': True}
 
 
+def _build_budget_prompt(budget, currency, origin, condition, body_type):
+    currency_names = {'iqd': 'دينار عراقي', 'usd': 'دولار أمريكي'}
+    origin_names = {
+        'all': 'أي منشأ',
+        'japanese': 'ياباني',
+        'korean': 'كوري',
+        'chinese': 'صيني',
+        'american': 'أمريكي',
+        'german': 'ألماني',
+        'european': 'أوروبي',
+        'iranian': 'إيراني',
+    }
+    body_type_names = {
+        'all': 'أي نوع',
+        'sedan': 'سيدان',
+        'suv': 'SUV / عائلي',
+        'pickup': 'بيكب',
+        'hatchback': 'هاتشباك',
+        'van': 'فان',
+        'coupe': 'كوبيه',
+    }
+    condition_names = {'used': 'مستعمل', 'new': 'جديد'}
+    return BUDGET_PROMPT.format(
+        budget=f'{budget:,}',
+        currency_name=currency_names.get(currency, 'دينار عراقي'),
+        budget_margin=f'{BUDGET_MARGIN_PERCENT:.0%}',
+        origin=origin_names.get(origin, 'أي منشأ'),
+        body_type=body_type_names.get(body_type, 'أي نوع'),
+        condition=condition_names.get(condition, 'مستعمل'),
+    )
+
+
+def _sanitize_ai_budget_results(cars, budget, currency):
+    if not isinstance(cars, list):
+        return []
+    margin = _budget_margin(budget)
+    clean = []
+    seen = set()
+    for car in cars:
+        if not isinstance(car, dict):
+            continue
+        name = str(car.get('name') or '').strip()
+        if not name or name.lower() in seen:
+            continue
+        seen.add(name.lower())
+        price_min = _to_int(car.get('price_min')) or _to_int(car.get('price_max'))
+        price_max = _to_int(car.get('price_max')) or price_min
+        if not price_min:
+            continue
+        if price_max < price_min:
+            price_max = price_min
+        midpoint = (price_min + price_max) / 2
+        if abs(midpoint - budget) > margin:
+            continue
+        try:
+            year = int(car.get('year') or 0)
+        except (TypeError, ValueError):
+            year = 0
+        if year < MIN_YEAR or year > MAX_YEAR:
+            continue
+        car['year'] = year
+        car['price_min'] = price_min
+        car['price_max'] = price_max
+        if not car.get('price_iq'):
+            car['price_iq'] = _format_iqd(price_min, price_max) if currency == 'iqd' else ''
+        if not car.get('price_usd'):
+            car['price_usd'] = _format_usd(price_min, price_max) if currency == 'usd' else ''
+        car['engine'] = str(car.get('engine') or 'غير محدد')[:80]
+        car['fuel_economy'] = str(car.get('fuel_economy') or 'جيد')[:50]
+        car['maintenance'] = str(car.get('maintenance') or 'متوسطة')[:50]
+        car['pros'] = str(car.get('pros') or 'اقتراح مؤقت من الذكاء الاصطناعي عند عدم توفر نتيجة في قاعدة الأسعار.')[:240]
+        car['over_budget'] = midpoint > budget
+        clean.append(car)
+    clean.sort(key=lambda c: (-int(c.get('year') or 0), abs((c['price_min'] + c['price_max']) / 2 - budget)))
+    return clean[:AI_BUDGET_RESULTS]
+
+
 def _call_groq(prompt, max_tokens=900, temperature=0.25):
     api_key = _get_key('groq_api_key', 'GROQ_API_KEY')
     if not api_key:
@@ -263,9 +375,40 @@ def find_cars_by_budget(budget, currency='iqd', origin='all', condition='used', 
     if market_result.get('success'):
         return market_result
 
+    key = _cache_key('budget:ai_fallback', {
+        'budget': budget,
+        'currency': currency,
+        'origin': origin,
+        'body_type': body_type,
+        'condition': condition,
+        'margin': _budget_margin(budget),
+        'limit': AI_BUDGET_RESULTS,
+    })
+    cached = _cache_get(key)
+    if cached:
+        return cached
+
+    prompt = _build_budget_prompt(budget, currency, origin, condition, body_type)
+    for provider, call in (('DeepSeek', _call_deepseek), ('Gemini', _call_gemini)):
+        try:
+            content = call(prompt, max_tokens=550, temperature=0.15)
+            cars = _sanitize_ai_budget_results(_json_list(content), budget, currency)
+            if cars:
+                result = {'success': True, 'cars': cars, 'provider': provider, 'from_market': False, 'ai_fallback': True}
+                _cache_set(key, result, BUDGET_CACHE_TTL)
+                return result
+        except requests.exceptions.Timeout:
+            logger.warning('%s API timeout (budget fallback)', provider)
+        except requests.exceptions.RequestException as e:
+            logger.error('%s API error (budget fallback): %s', provider, e.__class__.__name__)
+        except (json.JSONDecodeError, KeyError, IndexError) as e:
+            logger.error('%s parse error (budget fallback): %s', provider, e)
+        except RuntimeError as e:
+            logger.warning(str(e))
+
     return {
         'success': False,
-        'provider': 'قاعدة أسعار السوق',
+        'provider': 'قاعدة أسعار السوق / DeepSeek / Gemini',
         'error': 'عزيزي السائق المحترم انا المهندس علي النعيمي ارحب بك .. و اعتذر جدا لعدم تلبية طلبك فانا احدث قاعدة البيانات باستمرار ان شاء الله ستجد طلبك خلال ايام .. ارجو المعذرة',
     }
 
