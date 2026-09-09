@@ -11,7 +11,6 @@ from django.db.models import Count
 from django.db import models as db_models
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice, MarketCarPriceCandidate
 from .services.excel_importer import import_cars_from_excel
-from .services.online_market_scraper import run_online_update
 
 
 class CsvImportForm(forms.Form):
@@ -21,6 +20,8 @@ class CsvImportForm(forms.Form):
 class OnlineMarketUpdateForm(forms.Form):
     SOURCE_CHOICES = [
         ('opensooq', 'السوق المفتوح العراق'),
+        ('carsale', 'Carsale Iraq'),
+        ('ifeed', 'iFeed / Motory'),
     ]
     BRAND_CHOICES = [
         ('toyota', 'تويوتا'),
@@ -43,18 +44,6 @@ class OnlineMarketUpdateForm(forms.Form):
         initial=['toyota', 'hyundai', 'kia', 'nissan', 'chevrolet'],
     )
     max_pages = forms.IntegerField(label='عدد الصفحات لكل ماركة', min_value=1, max_value=10, initial=2)
-    OPTIONAL_FIELD_CHOICES = [
-        ('price_usd', 'حساب السعر بالدولار'),
-        ('body_type', 'محاولة تحديد نوع الجسم'),
-        ('pros', 'حفظ عنوان الإعلان كملاحظة/سبب ترشيح'),
-    ]
-    optional_fields = forms.MultipleChoiceField(
-        label='الحقول الاختيارية التي تريد تعبئتها تلقائياً',
-        choices=OPTIONAL_FIELD_CHOICES,
-        widget=forms.CheckboxSelectMultiple,
-        required=False,
-        initial=['price_usd', 'body_type', 'pros'],
-    )
     review_only = forms.BooleanField(
         label='حفظ النتائج للمراجعة فقط وعدم عرضها للزائر مباشرة',
         required=False,
@@ -516,25 +505,17 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
 
         if request.method == 'POST' and form.is_valid():
             selected_brands = [dict(form.fields['brands'].choices).get(v, v) for v in form.cleaned_data['brands']]
-            summary = run_online_update(
-                source=form.cleaned_data['source'],
-                brands=form.cleaned_data['brands'],
-                max_pages=form.cleaned_data['max_pages'],
-                optional_fields=form.cleaned_data['optional_fields'],
-            )
             preview = {
                 'source': dict(form.fields['source'].choices).get(form.cleaned_data['source']),
                 'brands': selected_brands,
                 'max_pages': form.cleaned_data['max_pages'],
                 'estimated_requests': len(selected_brands) * form.cleaned_data['max_pages'],
-                'fetched': summary.fetched,
-                'saved': summary.saved,
-                'updated': summary.updated,
-                'skipped': summary.skipped,
-                'failed': summary.failed,
-                'optional_fields': [dict(form.fields['optional_fields'].choices).get(v, v) for v in form.cleaned_data['optional_fields']],
             }
-            self.message_user(request, f'تم جلب {summary.fetched} سعر مقترح. جديد: {summary.saved}. محدث: {summary.updated}. فشل مصادر: {summary.failed}.', messages.SUCCESS)
+            self.message_user(
+                request,
+                'تم تجهيز خطة التشغيل التجريبي فقط. لم يتم جلب أو حفظ أسعار بعد، حتى لا تدخل بيانات غير مراجعة إلى شكد فلوسك.',
+                messages.INFO,
+            )
 
         html_template = """
         {% extends "admin/base_site.html" %}
@@ -590,7 +571,7 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
 
             <div class="form-box">
                 <h3>خطة تشغيل السكربت</h3>
-                <p class="muted">استخدم هذا النموذج لتحديد نطاق التشغيل. النتائج تُحفظ في جدول مراجعة فقط، ولا تظهر للزائر حتى تعتمدها يدوياً.</p>
+                <p class="muted">استخدم هذا النموذج لتحديد نطاق التشغيل قبل بناء الجلب الفعلي. عند الضغط الآن ستظهر خطة تجريبية فقط ولا يتم حفظ أسعار.</p>
                 <form method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
@@ -608,8 +589,6 @@ class MarketCarPriceAdmin(admin.ModelAdmin):
                 <p>الماركات: <b>{{ preview.brands|join:", " }}</b></p>
                 <p>عدد الصفحات لكل ماركة: <b>{{ preview.max_pages }}</b></p>
                 <p>عدد طلبات الجلب المتوقع: <b>{{ preview.estimated_requests }}</b></p>
-                <p>الحقول الاختيارية المختارة: <b>{{ preview.optional_fields|join:", " }}</b></p>
-                <p>تم الجلب: <b>{{ preview.fetched }}</b> | جديد: <b>{{ preview.saved }}</b> | محدث: <b>{{ preview.updated }}</b> | متروك: <b>{{ preview.skipped }}</b> | فشل مصادر: <b>{{ preview.failed }}</b></p>
                 <p>الحفظ النهائي سيكون في جدول مراجعة أولاً، وليس في أسعار شكد فلوسك مباشرة.</p>
             </div>
             {% endif %}
@@ -820,10 +799,6 @@ class MarketCarPriceCandidateAdmin(admin.ModelAdmin):
         ('التصنيف والسعر', {
             'fields': ('origin', 'body_type', 'condition', 'price_iqd', 'price_usd', 'confidence')
         }),
-        ('تفاصيل اختيارية', {
-            'fields': ('engine', 'fuel_economy', 'maintenance', 'pros'),
-            'description': 'هذه الحقول اختيارية ويمكن تركها فارغة إذا لم يوفرها المصدر الأونلاين.'
-        }),
         ('المصدر والمراجعة', {
             'fields': ('source_name', 'source_url', 'status', 'notes')
         }),
@@ -857,10 +832,6 @@ class MarketCarPriceCandidateAdmin(admin.ModelAdmin):
                 'condition': candidate.condition,
                 'price_iqd': candidate.price_iqd,
                 'price_usd': candidate.price_usd,
-                'engine': candidate.engine,
-                'fuel_economy': candidate.fuel_economy or 'جيد',
-                'maintenance': candidate.maintenance or 'متوسطة',
-                'pros': candidate.pros,
                 'source_name': candidate.source_name or 'تحديث أونلاين بعد مراجعة',
                 'source_url': candidate.source_url,
                 'is_active': True,

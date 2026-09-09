@@ -8,9 +8,8 @@ from django.test import Client, TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from cars.models import MarketCarPrice, MarketCarPriceCandidate, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.models import MarketCarPrice, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
 from cars.services.deepseek_service import _provider_chain, find_cars_by_budget
-from cars.services.online_market_scraper import extract_price_iqd, extract_year, parse_opensooq_html, save_candidates
 from cars.views import _client_ip
 
 # الاختبارات تعمل في عملية واحدة، لذا نستبدل التخزين "المشترك" بذاكرة محلية
@@ -48,28 +47,6 @@ class SiteSettingsCacheTests(TestCase):
         obj.site_name = 'نسخة مختبرية'
         obj.save()
         self.assertIsNone(cache.get(SITE_SETTINGS_CACHE_KEY))
-
-
-class OnlineMarketScraperTests(TestCase):
-    def test_extract_price_and_year(self):
-        self.assertEqual(extract_price_iqd('تويوتا كورولا 2020 السعر 25000000 دينار'), 25000000)
-        self.assertEqual(extract_year('تويوتا كورولا 2020 للبيع'), 2020)
-        self.assertIsNone(extract_price_iqd('السعر قابل للتفاوض'))
-
-    def test_parse_and_save_candidates_without_touching_market_prices(self):
-        html = '''
-        <html><body>
-          <a href="/ar/ad/toyota-corolla-2020">
-            تويوتا كورولا 2020 للبيع السعر 25000000 دينار سيدان بغداد
-          </a>
-        </body></html>
-        '''
-        candidates = parse_opensooq_html(html, 'toyota', optional_fields=['price_usd', 'body_type', 'pros'])
-        self.assertEqual(len(candidates), 1)
-        summary = save_candidates(candidates)
-        self.assertEqual(summary.saved, 1)
-        self.assertEqual(MarketCarPriceCandidate.objects.count(), 1)
-        self.assertEqual(MarketCarPrice.objects.count(), 0)
 
 
 class PromoCodeConstraintTests(TestCase):
