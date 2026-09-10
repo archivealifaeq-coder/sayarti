@@ -440,18 +440,14 @@ def budget_finder_view(request):
 
     if request.method == 'POST':
         budget_raw = request.POST.get('budget', '').strip().replace(',', '').replace(' ', '')
-        currency = request.POST.get('currency', 'iqd')
-        origin = request.POST.get('origin', 'all')
+        currency = 'iqd'
+        spec_region = request.POST.get('spec_region', 'all')
         body_type = request.POST.get('body_type', 'all')
-        condition = request.POST.get('condition', 'used')
-        if currency not in ('iqd', 'usd'):
-            currency = 'iqd'
-        if origin not in dict(MarketCarPrice.ORIGIN_CHOICES):
-            origin = 'all'
+        condition = 'used'
+        if spec_region not in dict(MarketCarPrice.SPEC_REGION_CHOICES):
+            spec_region = 'all'
         if body_type not in dict(MarketCarPrice.BODY_TYPE_CHOICES):
             body_type = 'all'
-        if condition not in dict(MarketCarPrice.CONDITION_CHOICES):
-            condition = 'used'
 
         try:
             budget = int(float(budget_raw))
@@ -463,17 +459,17 @@ def budget_finder_view(request):
             messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0645\u0628\u0644\u063a \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631")
             return render(request, 'cars/budget_finder.html', {'show_form': True})
 
-        if (currency == 'iqd' and budget > 300_000_000) or (currency == 'usd' and budget > 200_000):
+        if budget > 300_000_000:
             messages.error(request, "⚠️ أدخل ميزانية ضمن نطاق سيارات السوق المحلي")
             return render(request, 'cars/budget_finder.html', {'show_form': True})
 
-        result = find_cars_by_budget(budget, currency, origin, condition, body_type, client_ip=_client_ip(request))
+        result = find_cars_by_budget(budget, currency, spec_region, condition, body_type, client_ip=_client_ip(request))
 
         return render(request, 'cars/budget_finder.html', {
             'result': result,
             'budget': budget,
             'currency': currency,
-            'origin': origin,
+            'spec_region': spec_region,
             'body_type': body_type,
             'condition': condition,
             'show_form': False,

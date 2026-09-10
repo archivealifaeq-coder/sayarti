@@ -210,32 +210,21 @@
                   class="space-y-5">
                 {% csrf_token %}
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label class="block text-slate-300 text-sm font-semibold mb-2">💰 الميزانية</label>
-                        <input type="number" name="budget" class="input-custom" placeholder="مثال: 25000000" required min="1">
-                    </div>
-                    <div>
-                        <label class="block text-slate-300 text-sm font-semibold mb-2">💱 العملة</label>
-                        <select name="currency" class="select-custom">
-                            <option value="iqd">دينار عراقي (د.ع)</option>
-                            <option value="usd">دولار أمريكي ($)</option>
-                        </select>
-                    </div>
+                <div>
+                    <label class="block text-slate-300 text-sm font-semibold mb-2">💰 الميزانية بالدينار العراقي</label>
+                    <input type="number" name="budget" class="input-custom" placeholder="مثال: 25000000" required min="1">
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                        <label class="block text-slate-300 text-sm font-semibold mb-2">🌍 المنشأ</label>
-                        <select name="origin" class="select-custom">
-                            <option value="all" {% if origin == 'all' %}selected{% endif %}>الكل</option>
-                            <option value="japanese" {% if origin == 'japanese' %}selected{% endif %}>ياباني</option>
-                            <option value="korean" {% if origin == 'korean' %}selected{% endif %}>كوري</option>
-                            <option value="chinese" {% if origin == 'chinese' %}selected{% endif %}>صيني</option>
-                            <option value="american" {% if origin == 'american' %}selected{% endif %}>أمريكي</option>
-                            <option value="german" {% if origin == 'german' %}selected{% endif %}>ألماني</option>
-                            <option value="european" {% if origin == 'european' %}selected{% endif %}>أوروبي</option>
-                            <option value="iranian" {% if origin == 'iranian' %}selected{% endif %}>إيراني</option>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">🌍 المواصفات / الوارد</label>
+                        <select name="spec_region" class="select-custom">
+                            <option value="all" {% if spec_region == 'all' %}selected{% endif %}>الكل</option>
+                            <option value="american" {% if spec_region == 'american' %}selected{% endif %}>أمريكي</option>
+                            <option value="gcc" {% if spec_region == 'gcc' %}selected{% endif %}>خليجي</option>
+                            <option value="chinese" {% if spec_region == 'chinese' %}selected{% endif %}>صيني</option>
+                            <option value="european" {% if spec_region == 'european' %}selected{% endif %}>أوروبي</option>
+                            <option value="iraqi" {% if spec_region == 'iraqi' %}selected{% endif %}>عراقي / وكيل محلي</option>
                         </select>
                     </div>
                     <div>
@@ -250,13 +239,6 @@
                             <option value="coupe" {% if body_type == 'coupe' %}selected{% endif %}>كوبيه</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-slate-300 text-sm font-semibold mb-2">📦 الحالة</label>
-                        <select name="condition" class="select-custom">
-                            <option value="used" {% if condition == 'used' %}selected{% endif %}>مستعمل</option>
-                            <option value="new" {% if condition == 'new' %}selected{% endif %}>جديد</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div class="flex justify-center mt-6">
@@ -264,7 +246,7 @@
                 </div>
             </form>
 
-            <!-- شريط/بطاقة الانتظار أثناء طلب الذكاء الاصطناعي -->
+            <!-- شريط/بطاقة الانتظار أثناء البحث في قاعدة الأسعار -->
             <div id="loading-card" class="htmx-indicator"> 
                 <div style="background:linear-gradient(135deg, rgba(245,158,11,0.06), rgba(251,191,36,0.02)); border:1px solid rgba(245,158,11,0.15); border-radius:20px; padding:30px 24px; text-align:center; margin-top:20px;">
                     <div class="spin-wheel"></div>
@@ -272,7 +254,7 @@
                         <span class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
                     </div>
                     <h3 class="text-lg font-extrabold text-white mb-1">حالياً نبحث لك عن سيارة 🚗</h3>
-                    <p class="text-slate-400 text-sm mb-5">انتظر قليلاً من فضلك — نستطلع السوق العراقي لنجد لك الخيارات المناسبة...</p>
+                    <p class="text-slate-400 text-sm mb-5">انتظر قليلاً من فضلك، نبحث في قاعدة الأسعار عن الخيارات المناسبة...</p>
 
                     <div class="text-right max-w-md mx-auto space-y-2">
                         <p class="text-amber-400 text-xs font-bold mb-2">💡 في هذه الأثناء، تعرّف على خدماتنا:</p>
@@ -290,8 +272,8 @@
                     <a href="{% url 'budget_finder' %}" class="text-amber-400 hover:text-amber-300 transition text-sm font-semibold">🔄 بحث جديد</a>
                     <p class="text-slate-400 text-sm">
                         💰 الميزانية: <span class="text-amber-400 font-bold">{{ budget|floatformat:0 }}</span>
-                        {% if currency == 'iqd' %} د.ع{% else %} ${% endif %}
-                        {% if origin != 'all' %} | 🌍 {{ origin }}{% endif %}
+                        د.ع
+                        {% if spec_region != 'all' %} | 🌍 {{ spec_region }}{% endif %}
                         {% if body_type != 'all' %} | 🚗 {{ body_type }}{% endif %}
                     </p>
                 </div>
@@ -299,13 +281,7 @@
                 <div class="flex flex-wrap items-center gap-2 mb-4">
                     <h2 class="text-xl font-bold text-white">🚗 خياراتك المتاحة:</h2>
                     <span class="price-badge">✨ {{ result.cars|length }} خيارات دقيقة</span>
-                    {% if result.from_market %}
                     <span class="tag-badge tag-green">📊 من قاعدة أسعار السوق</span>
-                    {% elif result.provider == 'Gemini' %}
-                    <span class="tag-badge tag-blue">🤖 أعدّها Gemini الذكاء الاصطناعي</span>
-                    {% else %}
-                    <span class="tag-badge tag-blue">🤖 أعدّها {{ result.provider }}</span>
-                    {% endif %}
                 </div>
 
                 {% if result.from_market and result.cars|length < 4 %}
@@ -323,16 +299,13 @@
                             </h3>
                             <span class="price-badge">{{ car.price_iq|default:"—" }}</span>
                         </div>
-                        <p class="text-slate-400 text-sm mb-3">{{ car.price_usd|default:"—" }} دولار</p>
                         <div class="flex flex-wrap gap-2 mb-3">
-                            <span class="tag-badge tag-blue">⚙️ {{ car.engine|default:"—" }}</span>
-                            <span class="tag-badge tag-green">⛽ {{ car.fuel_economy|default:"جيد" }}</span>
-                            <span class="tag-badge tag-amber">🔧 {{ car.maintenance|default:"متوسطة" }}</span>
-                            <span class="tag-badge tag-blue">🌍 {{ car.origin|default:"عام" }}</span>
+                            {% if car.trim %}<span class="tag-badge tag-blue">🏷️ {{ car.trim }}</span>{% endif %}
+                            <span class="tag-badge tag-blue">🌍 {{ car.spec_region|default:"عام" }}</span>
                             <span class="tag-badge tag-amber">🚗 {{ car.body_type|default:"عام" }}</span>
                             <span class="tag-badge tag-blue">📅 {{ car.year }}</span>
                         </div>
-                        <p class="text-slate-300 text-sm">{{ car.pros }}</p>
+                        <p class="text-slate-300 text-sm">{{ car.description }}</p>
                     </div>
                     {% endfor %}
                 </div>

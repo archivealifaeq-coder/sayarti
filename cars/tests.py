@@ -227,94 +227,70 @@ class AiCostControlTests(TestCase):
     @patch('cars.services.deepseek_service._call_groq')
     @patch('cars.services.deepseek_service._call_gemini')
     @patch('cars.services.deepseek_service._call_deepseek')
-    def test_budget_uses_deepseek_when_market_has_no_match_without_saving(self, deepseek, gemini, groq):
-        deepseek.return_value = '[{"name":"نيسان صني 2021","year":2021,"price_min":18000000,"price_max":18000000,"price_iq":"18,000,000 د.ع","price_usd":"12,000","engine":"1.5L","fuel_economy":"ممتاز","maintenance":"رخيصة","pros":"اقتراح قريب من الميزانية"}]'
+    def test_budget_does_not_use_ai_when_market_has_no_match(self, deepseek, gemini, groq):
         result = find_cars_by_budget(18000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.86')
-        self.assertTrue(result['success'])
-        self.assertEqual(result['provider'], 'DeepSeek')
-        self.assertTrue(result['ai_fallback'])
+        self.assertFalse(result['success'])
+        self.assertEqual(result['provider'], 'قاعدة أسعار السوق')
         self.assertEqual(MarketCarPrice.objects.count(), 0)
-        deepseek.assert_called_once()
+        deepseek.assert_not_called()
         gemini.assert_not_called()
-        groq.assert_not_called()
-
-    @patch('cars.services.deepseek_service._call_groq')
-    @patch('cars.services.deepseek_service._call_gemini')
-    @patch('cars.services.deepseek_service._call_deepseek')
-    def test_budget_uses_gemini_after_deepseek_fails_without_groq(self, deepseek, gemini, groq):
-        deepseek.side_effect = RuntimeError('DEEPSEEK_API_KEY not configured')
-        gemini.return_value = '[{"name":"كيا ريو 2022","year":2022,"price_min":19000000,"price_max":19000000,"price_iq":"19,000,000 د.ع","price_usd":"12,667","engine":"1.4L","fuel_economy":"جيد","maintenance":"متوسطة","pros":"اقتراح احتياطي من Gemini"}]'
-        result = find_cars_by_budget(19000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.87')
-        self.assertTrue(result['success'])
-        self.assertEqual(result['provider'], 'Gemini')
-        self.assertEqual(MarketCarPrice.objects.count(), 0)
-        deepseek.assert_called_once()
-        gemini.assert_called_once()
         groq.assert_not_called()
 
     def test_budget_uses_market_table_before_ai(self):
         MarketCarPrice.objects.create(
-            name='تويوتا كورولا 2020',
             brand='تويوتا',
             model='كورولا',
             year=2020,
-            origin='japanese',
+            spec_region='american',
             body_type='sedan',
-            condition='used',
-            price_iqd=25000000,
-            price_usd=16667,
-            engine='1.8L',
-            confidence=90,
+            price_min_iqd=24500000,
+            price_max_iqd=25500000,
+            description='وارد أمريكي فئة LE',
         )
-        result = find_cars_by_budget(25000000, 'iqd', 'japanese', 'used', client_ip='203.0.113.81')
+        result = find_cars_by_budget(25000000, 'iqd', 'american', 'used', client_ip='203.0.113.81')
         self.assertTrue(result['success'])
         self.assertTrue(result['from_market'])
         self.assertEqual(result['provider'], 'قاعدة أسعار السوق')
+        self.assertEqual(result['cars'][0]['description'], 'وارد أمريكي فئة LE')
 
     def test_market_budget_prefers_newer_cars_within_budget_margin(self):
         MarketCarPrice.objects.create(
-            name='سيارة خارج النطاق نزولاً', brand='تجربة', model='رخيص', year=2020,
-            origin='all', body_type='sedan', condition='used', price_iqd=24000000,
-            confidence=99,
+            brand='تجربة', model='رخيص', year=2020,
+            spec_region='all', body_type='sedan', price_min_iqd=23000000, price_max_iqd=24000000,
         )
         MarketCarPrice.objects.create(
-            name='سيارة قريبة من الميزانية', brand='تجربة', model='قريب', year=2021,
-            origin='all', body_type='sedan', condition='used', price_iqd=24900000,
-            confidence=95,
+            brand='تجربة', model='قريب', year=2021,
+            spec_region='all', body_type='sedan', price_min_iqd=24800000, price_max_iqd=25200000,
         )
         MarketCarPrice.objects.create(
-            name='سيارة أحدث ضمن الهامش', brand='تجربة', model='أحدث', year=2024,
-            origin='all', body_type='sedan', condition='used', price_iqd=24600000,
-            confidence=80,
+            brand='تجربة', model='أحدث', year=2024,
+            spec_region='all', body_type='sedan', price_min_iqd=24600000, price_max_iqd=25000000,
         )
         MarketCarPrice.objects.create(
-            name='سيارة كروس لا تظهر مع فلتر سيدان', brand='تجربة', model='كروس', year=2025,
-            origin='all', body_type='suv', condition='used', price_iqd=25000000,
-            confidence=90,
+            brand='تجربة', model='كروس', year=2025,
+            spec_region='all', body_type='suv', price_min_iqd=24900000, price_max_iqd=25100000,
         )
         MarketCarPrice.objects.create(
-            name='سيارة أبعد ضمن النطاق', brand='تجربة', model='أبعد', year=2020,
-            origin='all', body_type='sedan', condition='used', price_iqd=24500000,
-            confidence=80,
+            brand='تجربة', model='أبعد', year=2020,
+            spec_region='all', body_type='sedan', price_min_iqd=24500000, price_max_iqd=24700000,
         )
         MarketCarPrice.objects.create(
-            name='سيارة خارج النطاق صعوداً', brand='تجربة', model='غالي', year=2022,
-            origin='all', body_type='sedan', condition='used', price_iqd=25600000,
-            confidence=100,
+            brand='تجربة', model='غالي', year=2022,
+            spec_region='all', body_type='sedan', price_min_iqd=25600000, price_max_iqd=26000000,
         )
         result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.82')
         self.assertTrue(result['success'])
-        self.assertEqual(result['cars'][0]['name'], 'سيارة أحدث ضمن الهامش')
-        self.assertNotIn('سيارة كروس لا تظهر مع فلتر سيدان', [car['name'] for car in result['cars']])
-        self.assertNotIn('سيارة خارج النطاق نزولاً', [car['name'] for car in result['cars']])
-        self.assertNotIn('سيارة خارج النطاق صعوداً', [car['name'] for car in result['cars']])
+        self.assertEqual(result['cars'][0]['name'], 'تجربة أحدث 2024')
+        names = [car['name'] for car in result['cars']]
+        self.assertNotIn('تجربة كروس 2025', names)
+        self.assertNotIn('تجربة رخيص 2020', names)
+        self.assertNotIn('تجربة غالي 2022', names)
 
     def test_market_budget_supports_usd_price_matching(self):
         MarketCarPrice.objects.create(
-            name='سيارة دولار قريبة', brand='تجربة', model='دولار', year=2023,
-            origin='korean', body_type='suv', condition='used', price_iqd=30000000,
-            price_usd=20000, confidence=90,
+            brand='تجربة', model='دولار', year=2023,
+            spec_region='all', body_type='suv', price_min_iqd=29500000, price_max_iqd=30500000,
         )
         result = find_cars_by_budget(20000, 'usd', 'korean', 'used', 'suv', client_ip='203.0.113.83')
         self.assertTrue(result['success'])
-        self.assertEqual(result['cars'][0]['name'], 'سيارة دولار قريبة')
+        self.assertEqual(result['cars'][0]['name'], 'تجربة دولار 2023')

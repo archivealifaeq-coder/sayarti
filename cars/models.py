@@ -377,60 +377,44 @@ class FeatureCard(models.Model):
 
 
 class MarketCarPrice(models.Model):
-    ORIGIN_CHOICES = [
+    SPEC_REGION_CHOICES = [
         ('all', 'عام'),
-        ('japanese', 'ياباني'),
-        ('korean', 'كوري'),
-        ('chinese', 'صيني'),
         ('american', 'أمريكي'),
-        ('german', 'ألماني'),
+        ('gcc', 'خليجي'),
+        ('chinese', 'صيني'),
         ('european', 'أوروبي'),
-        ('iranian', 'إيراني'),
+        ('iraqi', 'عراقي / وكيل محلي'),
     ]
     BODY_TYPE_CHOICES = [
-        ('all', 'عام'),
+        ('all', 'الكل'),
         ('sedan', 'سيدان'),
-        ('suv', 'SUV / عائلي'),
+        ('suv', 'SUV'),
         ('pickup', 'بيكب'),
         ('hatchback', 'هاتشباك'),
         ('van', 'فان'),
         ('coupe', 'كوبيه'),
     ]
-    CONDITION_CHOICES = [
-        ('used', 'مستعمل'),
-        ('new', 'جديد'),
-    ]
     id1 = models.PositiveBigIntegerField(null=True, blank=True, unique=True, db_index=True, verbose_name='ID خارجي')
-    name = models.CharField(max_length=180, verbose_name='اسم السيارة الكامل')
     brand = models.CharField(max_length=100, verbose_name='الماركة عربي')
     brand_en = models.CharField(max_length=100, blank=True, verbose_name='الماركة إنجليزي')
-    model = models.CharField(max_length=100, verbose_name='الموديل عربي')
-    model_en = models.CharField(max_length=100, blank=True, verbose_name='الموديل إنجليزي')
+    model = models.CharField(max_length=100, verbose_name='النوع عربي')
+    model_en = models.CharField(max_length=100, blank=True, verbose_name='النوع إنجليزي')
     brand_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
     model_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
-    year = models.IntegerField(validators=[MinValueValidator(1990), MaxValueValidator(2099)], verbose_name='السنة')
+    spec_region = models.CharField(max_length=20, choices=SPEC_REGION_CHOICES, default='all', db_index=True, verbose_name='المواصفات')
     trim = models.CharField(max_length=80, blank=True, verbose_name='الفئة / الكلاس')
-    origin = models.CharField(max_length=20, choices=ORIGIN_CHOICES, default='all', db_index=True, verbose_name='المنشأ')
     body_type = models.CharField(max_length=20, choices=BODY_TYPE_CHOICES, default='all', db_index=True, verbose_name='نوع الجسم')
-    condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, default='used', db_index=True, verbose_name='الحالة')
-    price_iqd = models.PositiveBigIntegerField(db_index=True, verbose_name='السعر بالدينار')
-    price_usd = models.PositiveIntegerField(null=True, blank=True, db_index=True, verbose_name='السعر بالدولار')
-    engine = models.CharField(max_length=80, blank=True, verbose_name='المحرك')
-    fuel_economy = models.CharField(max_length=50, blank=True, default='جيد', verbose_name='صرف الوقود')
-    maintenance = models.CharField(max_length=50, blank=True, default='متوسطة', verbose_name='الصيانة')
-    pros = models.CharField(max_length=240, blank=True, verbose_name='سبب الترشيح')
-    source_name = models.CharField(max_length=120, blank=True, verbose_name='مصدر السعر')
-    source_url = models.URLField(blank=True, verbose_name='رابط المصدر')
-    is_active = models.BooleanField(default=True, db_index=True, verbose_name='مفعل')
-    confidence = models.PositiveSmallIntegerField(default=80, validators=[MinValueValidator(0), MaxValueValidator(100)], verbose_name='درجة الثقة')
+    year = models.IntegerField(validators=[MinValueValidator(1990), MaxValueValidator(2099)], verbose_name='السنة')
+    price_min_iqd = models.PositiveBigIntegerField(db_index=True, verbose_name='السعر من (دينار)')
+    price_max_iqd = models.PositiveBigIntegerField(db_index=True, verbose_name='السعر إلى (دينار)')
+    description = models.CharField(max_length=240, blank=True, verbose_name='الوصف')
     updated_at = models.DateTimeField(auto_now=True, db_index=True, verbose_name='آخر تحديث')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإضافة')
 
     class Meta:
-        ordering = ['-year', 'price_iqd', '-confidence', 'brand', 'model']
+        ordering = ['-year', 'price_min_iqd', 'brand', 'model']
         indexes = [
-            models.Index(fields=['condition', 'origin', 'body_type', 'price_iqd']),
-            models.Index(fields=['condition', 'origin', 'body_type', 'price_usd']),
+            models.Index(fields=['spec_region', 'body_type', 'price_min_iqd', 'price_max_iqd']),
             models.Index(fields=['brand_norm', 'model_norm']),
         ]
         verbose_name = 'سعر سيارة في السوق'
@@ -440,10 +424,12 @@ class MarketCarPrice(models.Model):
         from .services.textnorm import fold_ar
         self.brand_norm = fold_ar(self.brand)
         self.model_norm = fold_ar(self.model)
+        if self.price_max_iqd < self.price_min_iqd:
+            self.price_min_iqd, self.price_max_iqd = self.price_max_iqd, self.price_min_iqd
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f'{self.name} ({self.year})'
+        return f'{self.brand} {self.model} {self.year}'
 
 SITE_SETTINGS_CACHE_KEY = 'site_settings_obj'
 SITE_SETTINGS_CACHE_TTL = 60
@@ -506,24 +492,24 @@ class SiteSettings(models.Model):
         max_length=200,
         blank=True,
         verbose_name="مفتاح Groq (حائط صد أخير)",
-        help_text="من console.groq.com — يستخدم في ميزات البحث الأخرى، وليس fallback شكد فلوسك الحالي"
+        help_text="من console.groq.com — يستخدم في ميزات البحث الأخرى فقط، ولا يُستخدم في شكد فلوسك"
     )
     gemini_api_key = models.CharField(
         max_length=200,
         blank=True,
         verbose_name="مفتاح Gemini (احتياطي)",
-        help_text="من aistudio.google.com — احتياطي في شكد فلوسك إذا لم تجد القاعدة نتيجة وتعطل DeepSeek"
+        help_text="من aistudio.google.com — يستخدم في ميزات البحث الأخرى فقط، ولا يُستخدم في شكد فلوسك"
     )
     deepseek_api_key = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="مفتاح DeepSeek API (الأساسي)",
-        help_text="مفتاح API من platform.deepseek.com — يستخدم كخيار ثانٍ في شكد فلوسك بعد قاعدة الأسعار"
+        help_text="مفتاح API من platform.deepseek.com — يستخدم في ميزات البحث الأخرى فقط، ولا يُستخدم في شكد فلوسك"
     )
     exchange_rate_iqd_per_usd = models.PositiveIntegerField(
         default=1500,
         verbose_name="سعر صرف الدولار مقابل الدينار",
-        help_text="سعر السوق الموازي: كم دينار عراقي لكل 1 دولار. يُستخدم لحساب السعر الناقص عند استيراد أسعار شكد فلوسك."
+        help_text="سعر السوق الموازي: كم دينار عراقي لكل 1 دولار. شكد فلوسك يعتمد الدينار في الجدول والاستيراد."
     )
     exchange_rate_source = models.CharField(
         max_length=120,
