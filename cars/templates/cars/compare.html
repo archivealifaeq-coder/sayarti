@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قارن سيارتين - سيارتي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json"/>
+    <meta name="theme-color" content="#0f172a"/>
+    <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        body { background: #0a0f1a; min-height: 100vh; color: #e2e8f0; }
+        .nav-link { color: #94a3b8; transition: .3s; text-decoration: none; font-weight: 700; }
+        .nav-link:hover, .nav-link.active { color: #fbbf24; }
+        .glass-card { background: rgba(30, 41, 59, .72); border: 1px solid rgba(245, 158, 11, .16); border-radius: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.5); backdrop-filter: blur(16px); }
+        .input-custom { background: rgba(15,23,42,.85); border: 1.5px solid #334155; color: #f8fafc; padding: 13px 16px; border-radius: 14px; width: 100%; outline: none; }
+        .input-custom:focus { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,.15); }
+        .btn-main { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0a0f1a; font-weight: 900; padding: 15px 36px; border-radius: 999px; border: 0; box-shadow: 0 8px 30px rgba(245,158,11,.28); }
+        .compare-table { overflow: hidden; border-radius: 20px; border: 1px solid rgba(148,163,184,.18); }
+        .compare-row { display: grid; grid-template-columns: 1fr 1.4fr 1.4fr; gap: 0; border-bottom: 1px solid rgba(148,163,184,.12); }
+        .compare-row:last-child { border-bottom: 0; }
+        .compare-cell { padding: 15px 18px; background: rgba(15,23,42,.48); }
+        .compare-label { color: #fbbf24; font-weight: 900; background: rgba(245,158,11,.08); }
+        .same { color: #34d399; }
+        .diff { color: #f8fafc; }
+        @media (max-width: 720px) {
+            .compare-row { grid-template-columns: 1fr; }
+            .compare-label { border-bottom: 1px solid rgba(148,163,184,.12); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="fixed w-full top-0 z-50 px-6 py-3" style="background: rgba(10,15,26,.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(245,158,11,.12);">
+        <div class="max-w-7xl mx-auto flex justify-between items-center gap-4">
+            <a href="{% url 'index' %}" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">🚗 سيارتي</a>
+            <div class="flex flex-wrap gap-4 text-sm justify-end">
+                <a href="{% url 'index' %}" class="nav-link">الرئيسية</a>
+                <a href="{% url 'search' %}" class="nav-link">البحث</a>
+                <a href="{% url 'mix_calculator' %}" class="nav-link">حاسبة الخلط</a>
+                <a href="{% url 'compare' %}" class="nav-link active">قارن سيارتين</a>
+                <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">نافذة الخدمات</a>
+                {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color:#fbbf24;" rel="nofollow">لوحة التحكم</a>{% endif %}
+            </div>
+        </div>
+    </nav>
+    <div class="h-20"></div>
+
+    <main class="max-w-6xl mx-auto px-4 py-7">
+        <section class="glass-card p-6 md:p-9 mb-6">
+            <div class="text-center mb-7">
+                <div class="text-5xl mb-3">⚖️</div>
+                <h1 class="text-3xl md:text-4xl font-black text-white mb-2">قارن سيارتك بسيارة تريد تشتريها</h1>
+                <p class="text-slate-400 text-sm md:text-base">المقارنة تعتمد على قاعدة بيانات سيارتي فقط: زيت، وقود، بطارية، إطارات، محرك وصيانة.</p>
+            </div>
+
+            <form method="GET" class="space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div class="rounded-3xl p-5" style="background:rgba(15,23,42,.55); border:1px solid rgba(148,163,184,.14);">
+                        <h2 class="font-black text-amber-400 mb-4">سيارتك الحالية</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input class="input-custom" name="brand1" value="{{ params1.brand }}" placeholder="الماركة: تويوتا" required>
+                            <input class="input-custom" name="model1" value="{{ params1.model }}" placeholder="الموديل: كورولا" required>
+                            <input class="input-custom" name="year1" value="{{ params1.year }}" type="number" min="1900" max="2099" placeholder="السنة: 2020" required>
+                            <input class="input-custom" name="engine1" value="{{ params1.engine }}" placeholder="المحرك اختياري: 1.8">
+                        </div>
+                    </div>
+                    <div class="rounded-3xl p-5" style="background:rgba(15,23,42,.55); border:1px solid rgba(148,163,184,.14);">
+                        <h2 class="font-black text-amber-400 mb-4">السيارة التي تريد شراءها</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input class="input-custom" name="brand2" value="{{ params2.brand }}" placeholder="الماركة: هيونداي" required>
+                            <input class="input-custom" name="model2" value="{{ params2.model }}" placeholder="الموديل: النترا" required>
+                            <input class="input-custom" name="year2" value="{{ params2.year }}" type="number" min="1900" max="2099" placeholder="السنة: 2021" required>
+                            <input class="input-custom" name="engine2" value="{{ params2.engine }}" placeholder="المحرك اختياري: 2.0">
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn-main">اعرض المقارنة</button>
+                </div>
+            </form>
+        </section>
+
+        {% if searched %}
+            {% if car1 and car2 %}
+            <section class="glass-card p-5 md:p-7">
+                <div class="compare-table">
+                    <div class="compare-row">
+                        <div class="compare-cell compare-label">البند</div>
+                        <div class="compare-cell text-white font-black">سيارتك</div>
+                        <div class="compare-cell text-white font-black">السيارة المراد شراؤها</div>
+                    </div>
+                    {% for row in rows %}
+                    <div class="compare-row">
+                        <div class="compare-cell compare-label">{{ row.label }}</div>
+                        <div class="compare-cell {% if row.same %}same{% else %}diff{% endif %}">{{ row.left }}</div>
+                        <div class="compare-cell {% if row.same %}same{% else %}diff{% endif %}">{{ row.right }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="text-slate-400 text-xs mt-4 text-center">اللون الأخضر يعني أن القيمة متطابقة بين السيارتين.</p>
+            </section>
+            {% else %}
+            <section class="glass-card p-6 text-center">
+                <h2 class="text-xl font-black text-white mb-2">لم نجد بيانات كافية للمقارنة</h2>
+                <p class="text-slate-400 text-sm">تأكد من كتابة الماركة والموديل والسنة كما هي في قاعدة البيانات. إذا كان المحرك غير مؤكد، اتركه فارغاً.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5 text-sm">
+                    <div class="rounded-2xl p-4 {% if car1 %}text-green-300{% else %}text-red-300{% endif %}" style="background:rgba(15,23,42,.55);">سيارتك الحالية: {% if car1 %}موجودة{% else %}غير موجودة{% endif %}</div>
+                    <div class="rounded-2xl p-4 {% if car2 %}text-green-300{% else %}text-red-300{% endif %}" style="background:rgba(15,23,42,.55);">السيارة المراد شراؤها: {% if car2 %}موجودة{% else %}غير موجودة{% endif %}</div>
+                </div>
+            </section>
+            {% endif %}
+        {% endif %}
+    </main>
+</body>
+</html>

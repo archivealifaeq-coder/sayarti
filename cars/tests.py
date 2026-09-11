@@ -8,7 +8,7 @@ from django.test import Client, TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from cars.models import MarketCarPrice, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.models import CarSpecification, MarketCarPrice, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
 from cars.services.deepseek_service import _provider_chain, find_cars_by_budget
 from cars.views import _client_ip
 
@@ -191,9 +191,35 @@ class ReportViewTests(TestCase):
 
 class PageSmokeTests(TestCase):
     def test_public_pages(self):
-        for path in ['/', '/mix/', '/search/', '/budget/', '/services/', '/sitemap.xml']:
+        for path in ['/', '/mix/', '/search/', '/compare/', '/services/', '/sitemap.xml']:
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
+
+    def test_budget_redirects_to_compare(self):
+        response = self.client.get('/budget/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/compare/')
+
+    def test_compare_page_compares_two_existing_cars(self):
+        CarSpecification.objects.create(
+            id=900001, brand_ar='تويوتا', brand_en='Toyota', model_ar='كورولا', model_en='Corolla',
+            year=2020, engine='1.8L', oil_visc='5W-30', fuel='بنزين', octane=91,
+            spark='عادي', oil_capacity='4L', tire_size='205/55R16', battery='60Ah',
+            transmission_type='CVT', transmission_oil_spec='ATF WS'
+        )
+        CarSpecification.objects.create(
+            id=900002, brand_ar='هيونداي', brand_en='Hyundai', model_ar='النترا', model_en='Elantra',
+            year=2021, engine='2.0L', oil_visc='5W-30', fuel='بنزين', octane=95,
+            spark='عادي', oil_capacity='4.5L', tire_size='205/55R16', battery='60Ah',
+            transmission_type='Automatic', transmission_oil_spec='SP-IV'
+        )
+        response = self.client.get('/compare/', {
+            'brand1': 'تويوتا', 'model1': 'كورولا', 'year1': '2020',
+            'brand2': 'هيونداي', 'model2': 'النترا', 'year2': '2021',
+        })
+        self.assertContains(response, 'تويوتا كورولا 2020')
+        self.assertContains(response, 'هيونداي النترا 2021')
+        self.assertContains(response, 'زيت المحرك')
 
     def test_security_headers_are_present(self):
         response = self.client.get('/')
