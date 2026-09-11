@@ -119,7 +119,7 @@ def _budget_margin(budget):
     return max(1, int(int(budget) * BUDGET_MARGIN_PERCENT))
 
 
-def find_market_cars_by_budget(budget, currency='iqd', spec_region='all', condition='used', body_type='all', brand=''):
+def find_market_cars_by_budget(budget, currency='iqd', spec_region='all', condition='used', body_type='all'):
     if currency == 'usd':
         rate = SiteSettings.load().exchange_rate_iqd_per_usd or 1500
         budget = int(budget * rate)
@@ -129,10 +129,6 @@ def find_market_cars_by_budget(budget, currency='iqd', spec_region='all', condit
         qs = qs.filter(Q(spec_region=spec_region) | Q(spec_region='all'))
     if body_type != 'all':
         qs = qs.filter(Q(body_type=body_type) | Q(body_type='all'))
-    if brand:
-        from .textnorm import fold_ar
-        brand_norm = fold_ar(brand)
-        qs = qs.filter(Q(brand_norm__icontains=brand_norm) | Q(brand_en__icontains=brand))
 
     margin = _budget_margin(budget)
     min_budget = budget - margin
@@ -238,8 +234,8 @@ def _call_gemini(prompt, max_tokens=900, temperature=0.25):
     return _clean_json(text)
 
 
-def find_cars_by_budget(budget, currency='iqd', spec_region='all', condition='used', body_type='all', client_ip=None, brand=''):
-    market_result = find_market_cars_by_budget(budget, currency, spec_region, condition, body_type, brand)
+def find_cars_by_budget(budget, currency='iqd', spec_region='all', condition='used', body_type='all', client_ip=None):
+    market_result = find_market_cars_by_budget(budget, currency, spec_region, condition, body_type)
     if market_result.get('success'):
         return market_result
 
