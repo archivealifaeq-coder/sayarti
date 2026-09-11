@@ -75,8 +75,8 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         ('⛽ الوقود', {
             'fields': ('fuel', 'octane')
         }),
-        ('🛞 الإطارات والشمعات', {
-            'fields': ('tire_size', 'spark')
+        ('🛞 الإطارات', {
+            'fields': ('tire_size',)
         }),
         ('📝 توصيات إضافية', {
             'fields': ('recommendations',),
@@ -587,10 +587,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         ('🤖 مفاتيح الذكاء الاصطناعي', {
             'fields': ('deepseek_api_key', 'gemini_api_key', 'groq_api_key'),
             'description': 'هذه المفاتيح تستخدم لميزات البحث الذكي فقط.'
-        }),
-        ('💱 سعر الصرف اليدوي', {
-            'fields': ('exchange_rate_iqd_per_usd', 'exchange_rate_source'),
-            'description': 'حقل احتياطي لأي حسابات سعر صرف مستقبلية.'
         }),
     )
 

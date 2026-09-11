@@ -71,8 +71,6 @@ class CarSpecification(models.Model):
         ]
     )
     
-    spark = models.CharField(max_length=100)
-
     tire_size = models.CharField(
         max_length=50,
         verbose_name="حجم الإطار",
@@ -534,17 +532,6 @@ class SiteSettings(models.Model):
         verbose_name="مفتاح DeepSeek API (الأساسي)",
         help_text="مفتاح API من platform.deepseek.com — يستخدم في ميزات البحث الذكي فقط"
     )
-    exchange_rate_iqd_per_usd = models.PositiveIntegerField(
-        default=1500,
-        verbose_name="سعر صرف الدولار مقابل الدينار",
-        help_text="سعر السوق الموازي: كم دينار عراقي لكل 1 دولار."
-    )
-    exchange_rate_source = models.CharField(
-        max_length=120,
-        blank=True,
-        verbose_name="مصدر سعر الصرف"
-    )
-
     def __str__(self):
         return "إعدادات الموقع"
 

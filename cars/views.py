@@ -488,7 +488,6 @@ def _car_base_dict(car):
         'fuel': car.fuel,
         'oil_visc': car.oil_visc,
         'oil_visc_high_km': car.oil_visc_high_km or '',
-        'spark': car.spark,
         'octane': car.octane,
         'trim': car.trim or '',
         'engine_type': car.get_engine_type_display() if car.engine_type else '',

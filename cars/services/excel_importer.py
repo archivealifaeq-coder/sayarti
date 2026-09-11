@@ -150,7 +150,6 @@ def import_cars_from_excel(file):
                     'oil_visc_high_km': _cell(row, 'Oil Visc (>100k)'),
                     'fuel': _cell(row, 'Fuel'),
                     'octane': _cell(row, 'Octane'),
-                    'spark': _cell(row, 'Spark'),
                     'tire_size': tire_size_val,
                     'oil_capacity': _cell(row, 'Oil Capacity'),
                     'recommendations': _cell(row, 'Recommendations'),
