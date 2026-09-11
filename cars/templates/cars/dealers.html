@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>وكلاء الزيوت وقطع الغيار - سيارتي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json"/>
+    <meta name="theme-color" content="#0f172a"/>
+    <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        body { background: radial-gradient(circle at top, rgba(245,158,11,.12), transparent 34%), #0a0f1a; min-height: 100vh; color: #e2e8f0; }
+        .nav-link { color: #94a3b8; transition: .25s; text-decoration: none; font-weight: 700; }
+        .nav-link:hover, .nav-link.active { color: #fbbf24; }
+        .glass-card { background: rgba(30, 41, 59, .72); border: 1px solid rgba(245, 158, 11, .16); border-radius: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.48); backdrop-filter: blur(16px); }
+        .tab-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 18px; border-radius: 999px; border: 1px solid rgba(148,163,184,.18); background: rgba(15,23,42,.65); color: #cbd5e1; font-weight: 900; transition: .25s; }
+        .tab-link.active, .tab-link:hover { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0a0f1a; border-color: transparent; }
+        .filter-link { display: inline-flex; padding: 9px 14px; border-radius: 999px; color: #cbd5e1; background: rgba(15,23,42,.7); border: 1px solid rgba(148,163,184,.15); font-size: .86rem; font-weight: 800; }
+        .filter-link.active, .filter-link:hover { color: #0a0f1a; background: #fbbf24; }
+        .dealer-card { background: rgba(15,23,42,.64); border: 1px solid rgba(148,163,184,.16); border-radius: 24px; padding: 22px; transition: .25s; }
+        .dealer-card:hover { transform: translateY(-3px); border-color: rgba(245,158,11,.38); }
+        .badge { display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 999px; font-size: .75rem; font-weight: 900; }
+        .badge-amber { background: rgba(245,158,11,.16); color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
+        .badge-blue { background: rgba(59,130,246,.14); color: #60a5fa; border: 1px solid rgba(59,130,246,.25); }
+        .detail-line { color: #cbd5e1; font-size: .92rem; line-height: 1.8; }
+        .action-btn { display: inline-flex; align-items: center; justify-content: center; padding: 9px 13px; border-radius: 12px; font-weight: 900; font-size: .84rem; text-decoration: none; }
+        .action-call { background: rgba(59,130,246,.16); color: #93c5fd; }
+        .action-whatsapp { background: rgba(34,197,94,.16); color: #86efac; }
+        .action-site { background: rgba(245,158,11,.16); color: #fcd34d; }
+    </style>
+</head>
+<body>
+    <nav class="fixed w-full top-0 z-50 px-6 py-3" style="background: rgba(10,15,26,.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(245,158,11,.12);">
+        <div class="max-w-7xl mx-auto flex justify-between items-center gap-4">
+            <a href="{% url 'index' %}" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">🚗 سيارتي</a>
+            <div class="flex flex-wrap gap-4 text-sm justify-end">
+                <a href="{% url 'index' %}" class="nav-link">الرئيسية</a>
+                <a href="{% url 'search' %}" class="nav-link">البحث</a>
+                <a href="{% url 'mix_calculator' %}" class="nav-link">حاسبة الخلط</a>
+                <a href="{% url 'dealers' %}" class="nav-link active">وكلاء الزيوت وقطع الغيار</a>
+                <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">نافذة الخدمات</a>
+                {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color:#fbbf24;" rel="nofollow">لوحة التحكم</a>{% endif %}
+            </div>
+        </div>
+    </nav>
+    <div class="h-20"></div>
+
+    <main class="max-w-7xl mx-auto px-4 py-7">
+        <section class="glass-card p-6 md:p-10 mb-6 text-center">
+            <div class="text-5xl mb-3">🛢️</div>
+            <h1 class="text-3xl md:text-4xl font-black text-white mb-3">وكلاء الزيوت وقطع الغيار في العراق</h1>
+            <p class="text-slate-400 max-w-2xl mx-auto leading-loose">دليل منظم للوكلاء المعتمدين والموردين الذين تضيفهم إدارة سيارتي، مع أرقام الهاتف والواتساب والموقع والتفاصيل المهمة.</p>
+        </section>
+
+        <section class="glass-card p-5 md:p-7 mb-6">
+            <div class="flex flex-wrap gap-3 justify-center mb-5">
+                <a href="{% url 'dealers' %}?category=oil" class="tab-link{% if category == 'oil' %} active{% endif %}">🛢️ وكلاء الزيوت في العراق</a>
+                <a href="{% url 'dealers' %}?category=parts&parts_region=all" class="tab-link{% if category == 'parts' %} active{% endif %}">🔧 وكلاء قطع الغيار</a>
+            </div>
+            {% if category == 'parts' %}
+            <div class="flex flex-wrap gap-2 justify-center">
+                {% for value, label in parts_region_choices %}
+                <a href="{% url 'dealers' %}?category=parts&parts_region={{ value }}" class="filter-link{% if parts_region == value %} active{% endif %}">{{ label }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+
+        {% if dealers %}
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for dealer in dealers %}
+            <article class="dealer-card">
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white">{{ dealer.name }}</h2>
+                        <p class="text-slate-400 text-sm mt-1">{{ dealer.governorate|default:'العراق' }}</p>
+                    </div>
+                    {% if dealer.is_featured %}<span class="badge badge-amber">مميز</span>{% endif %}
+                </div>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="badge badge-blue">{{ dealer.get_dealer_type_display }}</span>
+                    {% if dealer.dealer_type == 'parts' %}<span class="badge badge-amber">{{ dealer.get_parts_region_display }}</span>{% endif %}
+                </div>
+                {% if dealer.brands %}<p class="detail-line"><b>الاختصاص:</b> {{ dealer.brands }}</p>{% endif %}
+                {% if dealer.address %}<p class="detail-line"><b>العنوان:</b> {{ dealer.address }}</p>{% endif %}
+                {% if dealer.description %}<p class="detail-line mt-2">{{ dealer.description|linebreaksbr }}</p>{% endif %}
+                <div class="flex flex-wrap gap-2 mt-5">
+                    {% if dealer.phone %}<a href="tel:{{ dealer.phone }}" class="action-btn action-call">اتصال</a>{% endif %}
+                    {% if dealer.whatsapp %}<a href="https://wa.me/{{ dealer.whatsapp }}" class="action-btn action-whatsapp" target="_blank" rel="noopener">واتساب</a>{% endif %}
+                    {% if dealer.website %}<a href="{{ dealer.website }}" class="action-btn action-site" target="_blank" rel="noopener">الموقع</a>{% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+        {% else %}
+        <section class="glass-card p-8 text-center">
+            <h2 class="text-xl font-black text-white mb-2">لا توجد نتائج حالياً</h2>
+            <p class="text-slate-400">يمكن إضافة الوكلاء وتفعيلهم من لوحة التحكم، ثم سيظهرون هنا مباشرة.</p>
+        </section>
+        {% endif %}
+    </main>
+</body>
+</html>

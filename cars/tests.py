@@ -8,7 +8,7 @@ from django.test import Client, TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from cars.models import MarketCarPrice, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.models import Dealer, MarketCarPrice, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
 from cars.services.deepseek_service import _provider_chain, find_cars_by_budget
 from cars.views import _client_ip
 
@@ -191,9 +191,29 @@ class ReportViewTests(TestCase):
 
 class PageSmokeTests(TestCase):
     def test_public_pages(self):
-        for path in ['/', '/mix/', '/search/', '/budget/', '/services/', '/sitemap.xml']:
+        for path in ['/', '/mix/', '/search/', '/dealers/', '/services/', '/sitemap.xml']:
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
+
+    def test_budget_redirects_to_dealers(self):
+        response = self.client.get('/budget/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/dealers/')
+
+    def test_dealers_page_filters_parts_region(self):
+        Dealer.objects.create(name='وكيل زيوت', dealer_type='oil', phone='07700000000', is_active=True)
+        Dealer.objects.create(name='قطع ياباني', dealer_type='parts', parts_region='japanese', is_active=True)
+        Dealer.objects.create(name='قطع ألماني', dealer_type='parts', parts_region='german', is_active=True)
+        response = self.client.get('/dealers/', {'category': 'parts', 'parts_region': 'japanese'})
+        self.assertContains(response, 'قطع ياباني')
+        self.assertNotContains(response, 'قطع ألماني')
+
+    def test_dealers_card_can_be_hidden_from_home(self):
+        settings_obj = SiteSettings.load()
+        settings_obj.show_dealers_card = False
+        settings_obj.save()
+        response = self.client.get('/')
+        self.assertNotContains(response, 'وكلاء الزيوت وقطع الغيار')
 
     def test_security_headers_are_present(self):
         response = self.client.get('/')

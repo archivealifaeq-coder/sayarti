@@ -376,6 +376,46 @@ class FeatureCard(models.Model):
         verbose_name_plural = "بطاقات المميزات"
 
 
+class Dealer(models.Model):
+    DEALER_TYPE_CHOICES = [
+        ('oil', 'وكلاء الزيوت'),
+        ('parts', 'وكلاء قطع الغيار'),
+    ]
+    PARTS_REGION_CHOICES = [
+        ('all', 'عام'),
+        ('japanese', 'ياباني'),
+        ('chinese', 'صيني'),
+        ('iranian', 'إيراني'),
+        ('american', 'أمريكي'),
+        ('german', 'ألماني'),
+    ]
+
+    dealer_type = models.CharField(max_length=12, choices=DEALER_TYPE_CHOICES, db_index=True, verbose_name='نوع الوكيل')
+    parts_region = models.CharField(max_length=20, choices=PARTS_REGION_CHOICES, default='all', db_index=True, verbose_name='تصنيف قطع الغيار')
+    name = models.CharField(max_length=160, verbose_name='اسم الوكيل')
+    governorate = models.CharField(max_length=80, blank=True, verbose_name='المحافظة')
+    address = models.CharField(max_length=220, blank=True, verbose_name='العنوان')
+    phone = models.CharField(max_length=40, blank=True, verbose_name='رقم الهاتف')
+    whatsapp = models.CharField(max_length=40, blank=True, verbose_name='رقم واتساب')
+    website = models.URLField(blank=True, verbose_name='رابط الموقع / الصفحة')
+    brands = models.CharField(max_length=220, blank=True, verbose_name='الماركات / الاختصاص')
+    description = models.TextField(blank=True, verbose_name='تفاصيل الوكيل')
+    is_active = models.BooleanField(default=True, db_index=True, verbose_name='ظاهر في الموقع')
+    is_featured = models.BooleanField(default=False, db_index=True, verbose_name='وكيل مميز')
+    order = models.IntegerField(default=0, verbose_name='الترتيب')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإضافة')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='آخر تحديث')
+
+    class Meta:
+        ordering = ['dealer_type', 'parts_region', '-is_featured', 'order', 'name']
+        indexes = [models.Index(fields=['dealer_type', 'parts_region', 'is_active'])]
+        verbose_name = 'وكيل زيوت أو قطع غيار'
+        verbose_name_plural = 'وكلاء الزيوت وقطع الغيار'
+
+    def __str__(self):
+        return self.name
+
+
 class MarketCarPrice(models.Model):
     SPEC_REGION_CHOICES = [
         ('all', 'عام'),
@@ -465,6 +505,11 @@ class SiteSettings(models.Model):
         blank=True,
         verbose_name="رقم الوحدة: أسفل صفحة التوصيات",
         help_text="data-ad-slot من لوحة AdSense"
+    )
+    show_dealers_card = models.BooleanField(
+        default=True,
+        verbose_name="إظهار بطاقة وكلاء الزيوت وقطع الغيار",
+        help_text="فعّلها لإظهار بطاقة الوكلاء في واجهة الموقع، وألغها لإخفائها."
     )
     ads_txt = models.TextField(
         blank=True,

@@ -196,6 +196,7 @@
             <div class="flex gap-6 text-sm">
                 <a href="{% url 'index' %}" class="nav-link">الرئيسية</a>
                 <a href="{% url 'mix_calculator' %}" class="nav-link active">حاسبة الخلط</a>
+                {% if site_settings.show_dealers_card %}<a href="{% url 'dealers' %}" class="nav-link">🛢️ الوكلاء</a>{% endif %}
                 <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">💼 نافذة الخدمات</a>
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>

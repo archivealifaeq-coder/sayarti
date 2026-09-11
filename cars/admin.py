@@ -9,7 +9,7 @@ from django.utils.html import format_html, mark_safe
 from django.core.cache import cache
 from django.db.models import Count
 from django.db import models as db_models
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice, Dealer
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -426,6 +426,43 @@ class FeatureCardAdmin(admin.ModelAdmin):
         return form
 
 
+@admin.register(Dealer)
+class DealerAdmin(admin.ModelAdmin):
+    list_display = ('name_display', 'dealer_type_badge', 'parts_region_badge', 'governorate', 'phone', 'is_featured', 'is_active', 'order', 'updated_at')
+    list_editable = ('is_featured', 'is_active', 'order')
+    list_filter = ('dealer_type', 'parts_region', 'governorate', 'is_featured', 'is_active')
+    search_fields = ('name', 'governorate', 'address', 'phone', 'whatsapp', 'brands', 'description')
+    ordering = ('dealer_type', 'parts_region', '-is_featured', 'order', 'name')
+    list_per_page = 30
+    fieldsets = (
+        ('تصنيف الوكيل', {
+            'fields': ('dealer_type', 'parts_region', 'is_active', 'is_featured', 'order'),
+            'description': 'اختر وكلاء الزيوت أو وكلاء قطع الغيار. في وكلاء الزيوت يمكن ترك التصنيف عام.'
+        }),
+        ('معلومات الوكيل', {
+            'fields': ('name', 'governorate', 'address', 'brands', 'description')
+        }),
+        ('التواصل والروابط', {
+            'fields': ('phone', 'whatsapp', 'website'),
+            'description': 'رقم واتساب يمكن كتابته بصيغة دولية مثل 9647700000000 أو رقم محلي.'
+        }),
+    )
+
+    def name_display(self, obj):
+        featured = ' ⭐' if obj.is_featured else ''
+        return format_html('<b>{}{}</b><br><span style="color:#64748b;font-size:.78rem;">{}</span>', obj.name, featured, obj.brands or obj.address or '—')
+    name_display.short_description = 'الوكيل'
+
+    def dealer_type_badge(self, obj):
+        cls = 'badge-blue' if obj.dealer_type == 'oil' else 'badge-amber'
+        return format_html('<span class="badge {}">{}</span>', cls, obj.get_dealer_type_display())
+    dealer_type_badge.short_description = 'النوع'
+
+    def parts_region_badge(self, obj):
+        return format_html('<span class="badge badge-green">{}</span>', obj.get_parts_region_display())
+    parts_region_badge.short_description = 'التصنيف'
+
+
 @admin.register(MarketCarPrice)
 class MarketCarPriceAdmin(admin.ModelAdmin):
     change_list_template = 'admin/market_prices_changelist.html'
@@ -613,6 +650,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('ad_slot_results', 'ad_slot_recommend_top', 'ad_slot_recommend_bottom'),
             'classes': ('collapse',),
             'description': 'أنشئ وحدات إعلانية (Display ads) في لوحة AdSense والصق أرقامها data-ad-slot هنا — اتركها فارغة لإخفاء الموضع'
+        }),
+        ('🧩 بطاقات الواجهة', {
+            'fields': ('show_dealers_card',),
+            'description': 'تحكم بظهور بطاقة وكلاء الزيوت وقطع الغيار في الصفحة الرئيسية.'
         }),
         ('📄 ملف ads.txt', {
             'fields': ('ads_txt',),

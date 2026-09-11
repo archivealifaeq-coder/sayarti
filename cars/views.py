@@ -12,7 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django import forms
 from django.core.cache import cache, caches
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice, Dealer
 from .services.excel_importer import import_cars_from_excel
 from .services.textnorm import fold_ar, fold_engine
 
@@ -218,6 +218,27 @@ def search_view(request):
     return render(request, 'cars/search.html', context)
 
 
+def dealers_view(request):
+    category = request.GET.get('category', 'oil')
+    parts_region = request.GET.get('parts_region', 'all')
+    if category not in dict(Dealer.DEALER_TYPE_CHOICES):
+        category = 'oil'
+    if parts_region not in dict(Dealer.PARTS_REGION_CHOICES):
+        parts_region = 'all'
+
+    dealers = Dealer.objects.filter(dealer_type=category, is_active=True)
+    if category == 'parts' and parts_region != 'all':
+        dealers = dealers.filter(Q(parts_region=parts_region) | Q(parts_region='all'))
+
+    return render(request, 'cars/dealers.html', {
+        'dealers': dealers,
+        'category': category,
+        'parts_region': parts_region,
+        'dealer_type_choices': Dealer.DEALER_TYPE_CHOICES,
+        'parts_region_choices': Dealer.PARTS_REGION_CHOICES,
+    })
+
+
 def get_suggestions(request):
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
@@ -410,7 +431,7 @@ def sitemap_view(request):
         {'loc': host, 'priority': '1.0', 'freq': 'daily'},
         {'loc': host + reverse('search'), 'priority': '0.9', 'freq': 'daily'},
         {'loc': host + reverse('mix_calculator'), 'priority': '0.8', 'freq': 'weekly'},
-        {'loc': host + reverse('budget_finder'), 'priority': '0.7', 'freq': 'weekly'},
+        {'loc': host + reverse('dealers'), 'priority': '0.8', 'freq': 'weekly'},
         {'loc': host + reverse('about'), 'priority': '0.5', 'freq': 'monthly'},
         {'loc': host + reverse('privacy'), 'priority': '0.3', 'freq': 'yearly'},
     ]
@@ -436,46 +457,7 @@ def sitemap_view(request):
 
 
 def budget_finder_view(request):
-    from .services.deepseek_service import find_cars_by_budget
-
-    if request.method == 'POST':
-        budget_raw = request.POST.get('budget', '').strip().replace(',', '').replace(' ', '')
-        currency = 'iqd'
-        spec_region = request.POST.get('spec_region', 'all')
-        body_type = request.POST.get('body_type', 'all')
-        condition = 'used'
-        if spec_region not in dict(MarketCarPrice.SPEC_REGION_CHOICES):
-            spec_region = 'all'
-        if body_type not in dict(MarketCarPrice.BODY_TYPE_CHOICES):
-            body_type = 'all'
-
-        try:
-            budget = int(float(budget_raw))
-        except (ValueError, TypeError):
-            messages.error(request, "\u26a0\ufe0f \u0623\u062f\u062e\u0644 \u0645\u0628\u0644\u063a \u0635\u062d\u064a\u062d")
-            return render(request, 'cars/budget_finder.html', {'show_form': True})
-
-        if budget <= 0:
-            messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0645\u0628\u0644\u063a \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631")
-            return render(request, 'cars/budget_finder.html', {'show_form': True})
-
-        if budget > 300_000_000:
-            messages.error(request, "⚠️ أدخل ميزانية ضمن نطاق سيارات السوق المحلي")
-            return render(request, 'cars/budget_finder.html', {'show_form': True})
-
-        result = find_cars_by_budget(budget, currency, spec_region, condition, body_type, client_ip=_client_ip(request))
-
-        return render(request, 'cars/budget_finder.html', {
-            'result': result,
-            'budget': budget,
-            'currency': currency,
-            'spec_region': spec_region,
-            'body_type': body_type,
-            'condition': condition,
-            'show_form': False,
-        })
-
-    return render(request, 'cars/budget_finder.html', {'show_form': True})
+    return redirect('dealers')
 
 
 def search_ai_suggest(request):

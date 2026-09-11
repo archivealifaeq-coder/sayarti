@@ -1358,6 +1358,7 @@
                 <a href="{% url 'index' %}" class="nav-link active" aria-current="page">الرئيسية</a>
                 <a href="{% url 'mix_calculator' %}" class="nav-link">🧮 حاسبة الخلط</a>
                 <a href="#cars-section" class="nav-link">🚗 السيارات</a>
+                {% if site_settings.show_dealers_card %}<a href="{% url 'dealers' %}" class="nav-link">🛢️ الوكلاء</a>{% endif %}
                 <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">💼 نافذة الخدمات</a>
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
@@ -1605,13 +1606,15 @@
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">احسب الآن ←</span>
                 </a>
 
-                <a href="{% url 'budget_finder' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                {% if site_settings.show_dealers_card %}
+                <a href="{% url 'dealers' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
                     <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
-                    <div class="text-3xl mb-2">💰</div>
-                    <h2 class="text-base md:text-lg font-black text-white mb-1">شكد فلوسك</h2>
-                    <p class="text-slate-400 text-xs leading-relaxed">اقتراحات سيارات تناسب ميزانيتك.</p>
-                    <span class="inline-block mt-2 text-amber-400 text-xs font-bold">جرّبها الآن ←</span>
+                    <div class="text-3xl mb-2">🛢️</div>
+                    <h2 class="text-base md:text-lg font-black text-white mb-1">وكلاء الزيوت وقطع الغيار</h2>
+                    <p class="text-slate-400 text-xs leading-relaxed">دليل وكلاء الزيوت وقطع الغيار في العراق.</p>
+                    <span class="inline-block mt-2 text-amber-400 text-xs font-bold">اعرض الوكلاء ←</span>
                 </a>
+                {% endif %}
             </div>
         </div>
         
@@ -1628,6 +1631,7 @@
                     <a href="{% url 'index' %}">الرئيسية</a>
                     <a href="{% url 'mix_calculator' %}">حاسبة الخلط</a>
                     <a href="#cars-section">السيارات</a>
+                    {% if site_settings.show_dealers_card %}<a href="{% url 'dealers' %}">وكلاء الزيوت وقطع الغيار</a>{% endif %}
                     <a href="{% url 'about' %}">من نحن</a>
                     <a href="{% url 'privacy' %}">الخصوصية</a>
                     <a href="{% url 'services_login' %}">💼 نافذة الخدمات</a>
