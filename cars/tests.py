@@ -286,6 +286,23 @@ class AiCostControlTests(TestCase):
         self.assertNotIn('تجربة رخيص 2020', names)
         self.assertNotIn('تجربة غالي 2022', names)
 
+    def test_market_budget_filters_by_brand(self):
+        MarketCarPrice.objects.create(
+            brand='تويوتا', brand_en='Toyota', model='كورولا', year=2022,
+            spec_region='all', body_type='sedan', price_min_iqd=24500000, price_max_iqd=25500000,
+        )
+        MarketCarPrice.objects.create(
+            brand='هيونداي', brand_en='Hyundai', model='النترا', year=2023,
+            spec_region='all', body_type='sedan', price_min_iqd=24500000, price_max_iqd=25500000,
+        )
+        result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.84', brand='تويوتا')
+        self.assertTrue(result['success'])
+        self.assertEqual([car['name'] for car in result['cars']], ['تويوتا كورولا 2022'])
+
+        result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.85', brand='Hyundai')
+        self.assertTrue(result['success'])
+        self.assertEqual([car['name'] for car in result['cars']], ['هيونداي النترا 2023'])
+
     def test_market_budget_supports_usd_price_matching(self):
         MarketCarPrice.objects.create(
             brand='تجربة', model='دولار', year=2023,

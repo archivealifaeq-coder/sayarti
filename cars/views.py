@@ -441,6 +441,7 @@ def budget_finder_view(request):
     if request.method == 'POST':
         budget_raw = request.POST.get('budget', '').strip().replace(',', '').replace(' ', '')
         currency = 'iqd'
+        brand = request.POST.get('brand', '').strip()[:100]
         spec_region = request.POST.get('spec_region', 'all')
         body_type = request.POST.get('body_type', 'all')
         condition = 'used'
@@ -463,12 +464,13 @@ def budget_finder_view(request):
             messages.error(request, "⚠️ أدخل ميزانية ضمن نطاق سيارات السوق المحلي")
             return render(request, 'cars/budget_finder.html', {'show_form': True})
 
-        result = find_cars_by_budget(budget, currency, spec_region, condition, body_type, client_ip=_client_ip(request))
+        result = find_cars_by_budget(budget, currency, spec_region, condition, body_type, client_ip=_client_ip(request), brand=brand)
 
         return render(request, 'cars/budget_finder.html', {
             'result': result,
             'budget': budget,
             'currency': currency,
+            'brand': brand,
             'spec_region': spec_region,
             'body_type': body_type,
             'condition': condition,

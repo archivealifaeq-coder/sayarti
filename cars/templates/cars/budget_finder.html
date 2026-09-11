@@ -210,9 +210,15 @@
                   class="space-y-5">
                 {% csrf_token %}
 
-                <div>
-                    <label class="block text-slate-300 text-sm font-semibold mb-2">💰 الميزانية بالدينار العراقي</label>
-                    <input type="number" name="budget" class="input-custom" placeholder="مثال: 25000000" required min="1">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">💰 الميزانية بالدينار العراقي</label>
+                        <input type="number" name="budget" class="input-custom" placeholder="مثال: 25000000" required min="1">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 text-sm font-semibold mb-2">🏷️ الماركة</label>
+                        <input type="text" name="brand" class="input-custom" placeholder="مثال: تويوتا أو Toyota" value="{{ brand|default:'' }}" maxlength="100">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -273,6 +279,7 @@
                     <p class="text-slate-400 text-sm">
                         💰 الميزانية: <span class="text-amber-400 font-bold">{{ budget|floatformat:0 }}</span>
                         د.ع
+                        {% if brand %} | 🏷️ {{ brand }}{% endif %}
                         {% if spec_region != 'all' %} | 🌍 {{ spec_region }}{% endif %}
                         {% if body_type != 'all' %} | 🚗 {{ body_type }}{% endif %}
                     </p>
