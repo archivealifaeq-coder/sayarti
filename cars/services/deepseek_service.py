@@ -5,8 +5,7 @@ import re
 import requests
 from django.conf import settings
 from django.core.cache import cache, caches
-from django.db.models import Q
-from ..models import SiteSettings, MarketCarPrice
+from ..models import SiteSettings
 
 logger = logging.getLogger('cars')
 
@@ -21,10 +20,6 @@ if DEEPSEEK_MODEL == 'deepseek-v4-flash':
 GEMINI_MODEL = getattr(settings, 'GEMINI_MODEL', 'gemini-3.6-flash')
 GEMINI_API_URL = f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent'
 
-MARKET_BUDGET_RESULTS = 4
-MIN_YEAR = 1990
-MAX_YEAR = 2026
-BUDGET_MARGIN_PERCENT = 0.02
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 
 def _get_key(settings_field, env_field):
@@ -107,64 +102,6 @@ def _json_list(content, key='cars'):
     return []
 
 
-def _format_iqd(lo, hi):
-    if not lo and not hi:
-        return ''
-    if lo == hi or not hi:
-        return f'{lo:,} د.ع'
-    return f'{lo:,} - {hi:,} د.ع'
-
-
-def _budget_margin(budget):
-    return max(1, int(int(budget) * BUDGET_MARGIN_PERCENT))
-
-
-def find_market_cars_by_budget(budget, currency='iqd', spec_region='all', condition='used', body_type='all'):
-    if currency == 'usd':
-        rate = SiteSettings.load().exchange_rate_iqd_per_usd or 1500
-        budget = int(budget * rate)
-
-    qs = MarketCarPrice.objects.all()
-    if spec_region != 'all':
-        qs = qs.filter(Q(spec_region=spec_region) | Q(spec_region='all'))
-    if body_type != 'all':
-        qs = qs.filter(Q(body_type=body_type) | Q(body_type='all'))
-
-    margin = _budget_margin(budget)
-    min_budget = budget - margin
-    max_budget = budget + margin
-    qs = qs.filter(price_min_iqd__lte=max_budget, price_max_iqd__gte=min_budget)
-    candidates = []
-    for car in qs[:1000]:
-        if car.price_min_iqd <= budget <= car.price_max_iqd:
-            distance = 0
-        else:
-            distance = min(abs(car.price_min_iqd - budget), abs(car.price_max_iqd - budget))
-        candidates.append((-car.year, distance, car.price_min_iqd, car))
-
-    candidates.sort(key=lambda item: item[:3])
-    cars = []
-    for _year, _distance, _confidence, car in candidates[:MARKET_BUDGET_RESULTS]:
-        cars.append({
-            'name': f'{car.brand} {car.model} {car.year}' + (f' {car.trim}' if car.trim else ''),
-            'year': car.year,
-            'price_min': car.price_min_iqd,
-            'price_max': car.price_max_iqd,
-            'price_iq': _format_iqd(car.price_min_iqd, car.price_max_iqd),
-            'trim': car.trim,
-            'description': car.description or 'سعر من قاعدة بيانات شكد فلوسك حسب نطاق السعر المدخل.',
-            'over_budget': car.price_min_iqd > budget,
-            'confidence': 100,
-            'spec_region': car.get_spec_region_display(),
-            'body_type': car.get_body_type_display(),
-            'source_name': 'قاعدة أسعار شكد فلوسك',
-        })
-
-    if not cars:
-        return {'success': False}
-    return {'success': True, 'cars': cars, 'provider': 'قاعدة أسعار السوق', 'from_market': True}
-
-
 def _call_groq(prompt, max_tokens=900, temperature=0.25):
     api_key = _get_key('groq_api_key', 'GROQ_API_KEY')
     if not api_key:
@@ -232,18 +169,6 @@ def _call_gemini(prompt, max_tokens=900, temperature=0.25):
     data = resp.json()
     text = data['candidates'][0]['content']['parts'][0]['text']
     return _clean_json(text)
-
-
-def find_cars_by_budget(budget, currency='iqd', spec_region='all', condition='used', body_type='all', client_ip=None):
-    market_result = find_market_cars_by_budget(budget, currency, spec_region, condition, body_type)
-    if market_result.get('success'):
-        return market_result
-
-    return {
-        'success': False,
-        'provider': 'قاعدة أسعار السوق',
-        'error': 'عزيزي السائق المحترم انا المهندس علي النعيمي ارحب بك .. و اعتذر جدا لعدم تلبية طلبك فانا احدث قاعدة البيانات باستمرار ان شاء الله ستجد طلبك خلال ايام .. ارجو المعذرة',
-    }
 
 
 SEARCH_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.

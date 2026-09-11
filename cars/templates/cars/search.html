@@ -704,11 +704,20 @@
 
             var deferredPrompt = null;
             var installBtn = document.getElementById('installBtn');
+            function trackInstallEvent(eventName) {
+                try {
+                    var token = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+                    var body = new URLSearchParams();
+                    body.set('event', eventName);
+                    fetch('{% url "track_app_install" %}', { method: 'POST', headers: { 'X-CSRFToken': token }, credentials: 'same-origin', body: body, keepalive: true });
+                } catch (e) {}
+            }
             function openPwaModal() {
                 var modal = document.getElementById('pwaModal');
                 if (modal) modal.classList.add('open');
             }
             function doInstall() {
+                trackInstallEvent('prompt_click');
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     deferredPrompt.userChoice.then(function(choiceResult) {
@@ -731,6 +740,7 @@
                 }
             });
             window.addEventListener('appinstalled', function() {
+                trackInstallEvent('installed');
                 deferredPrompt = null;
                 if (installBtn) installBtn.style.display = 'none';
             });

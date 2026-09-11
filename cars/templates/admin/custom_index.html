@@ -40,6 +40,48 @@
             <div class="stat-num" style="color:#4ade80;">{{ used_codes|default:"0" }}</div>
             <div class="stat-label">أكواد مستخدمة</div>
         </div>
+        <div class="stat-box">
+            <div class="stat-icon">📲</div>
+            <div class="stat-num" style="color:#60a5fa;">{{ app_install_prompt_clicks|default:"0" }}</div>
+            <div class="stat-label">ضغطات تثبيت التطبيق</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-icon">✅</div>
+            <div class="stat-num" style="color:#34d399;">{{ app_install_done|default:"0" }}</div>
+            <div class="stat-label">تثبيت فعلي</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-icon">☎️</div>
+            <div class="stat-num" style="color:#fbbf24;">{{ dealer_click_total|default:"0" }}</div>
+            <div class="stat-label">نقرات تواصل الوكلاء</div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h3>📈 عدادات التطبيق والوكلاء</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+            <a class="btn btn-outline" href="/admin/cars/appinstallmetric/">عدادات التثبيت</a>
+            <a class="btn btn-outline" href="/admin/cars/appinstallmetric/reset-all/">تصفير كل عدادات التثبيت</a>
+            <a class="btn btn-outline" href="/admin/cars/dealerclickmetric/">عدادات تواصل الوكلاء</a>
+            <a class="btn btn-outline" href="/admin/cars/dealerclickmetric/reset-all/">تصفير كل نقرات الوكلاء</a>
+        </div>
+        {% if dealer_clicks_table %}
+        <table>
+            <thead><tr><th>الوكيل</th><th>النوع</th><th>زر التواصل</th><th>النقرات</th></tr></thead>
+            <tbody>
+            {% for item in dealer_clicks_table %}
+            <tr>
+                <td><b>{{ item.dealer_name }}</b></td>
+                <td>{{ item.dealer_type }}</td>
+                <td>{{ item.action_label }}</td>
+                <td class="num">{{ item.count }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#64748b; font-size:.85rem;">لا توجد نقرات تواصل مسجلة حالياً.</p>
+        {% endif %}
     </div>
 
     {% if sponsors_table %}
@@ -125,6 +167,7 @@
         <a class="btn btn-outline" href="/admin/cars/sponsor/">🏢 إدارة الرعاة</a>
         <a class="btn btn-outline" href="/admin/cars/promocode/">🎟️ إدارة الأكواد</a>
         <a class="btn btn-outline" href="/admin/cars/adbanner/">📢 إدارة البنرات</a>
+        <a class="btn btn-outline" href="/admin/cars/dealer/">🛢️ إدارة الوكلاء</a>
         <a class="btn btn-outline" href="/admin/report/codes/">📄 تقرير الأكواد للطباعة</a>
     </div>
 

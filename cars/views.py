@@ -1,19 +1,17 @@
-﻿import pandas as pd
-import re
+﻿import re
 from pathlib import Path
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django import forms
 from django.core.cache import cache, caches
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice, Dealer
-from .services.excel_importer import import_cars_from_excel
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer, AppInstallMetric, DealerClickMetric
 from .services.textnorm import fold_ar, fold_engine
 
 
@@ -50,10 +48,6 @@ def sw_view(request):
     response['Service-Worker-Allowed'] = '/'
     response['Cache-Control'] = 'public, max-age=0, must-revalidate'
     return response
-
-
-class CsvImportForm(forms.Form):
-    excel_file = forms.FileField(label="\u0627\u062e\u062a\u0631 \u0645\u0644\u0641 \u0627\u0644\u0623\u0643\u0633\u0644")
 
 
 RELAX_LABELS = {
@@ -219,6 +213,9 @@ def search_view(request):
 
 
 def dealers_view(request):
+    if not SiteSettings.load().show_dealers_card:
+        return redirect('index')
+
     category = request.GET.get('category', 'oil')
     parts_region = request.GET.get('parts_region', 'all')
     if category not in dict(Dealer.DEALER_TYPE_CHOICES):
@@ -237,6 +234,30 @@ def dealers_view(request):
         'dealer_type_choices': Dealer.DEALER_TYPE_CHOICES,
         'parts_region_choices': Dealer.PARTS_REGION_CHOICES,
     })
+
+
+@require_POST
+def track_app_install(request):
+    event = request.POST.get('event', '')
+    if event not in dict(AppInstallMetric.EVENT_CHOICES):
+        return JsonResponse({'success': False}, status=400)
+    metric, _ = AppInstallMetric.objects.get_or_create(event=event)
+    AppInstallMetric.objects.filter(pk=metric.pk).update(count=F('count') + 1)
+    cache.delete('admin_dash_stats')
+    return JsonResponse({'success': True})
+
+
+@require_POST
+def track_dealer_click(request, dealer_id, action):
+    if action not in dict(DealerClickMetric.ACTION_CHOICES):
+        return JsonResponse({'success': False}, status=400)
+    dealer = Dealer.objects.filter(pk=dealer_id, is_active=True).first()
+    if not dealer:
+        return JsonResponse({'success': False}, status=404)
+    metric, _ = DealerClickMetric.objects.get_or_create(dealer=dealer, action=action)
+    DealerClickMetric.objects.filter(pk=metric.pk).update(count=F('count') + 1)
+    cache.delete('admin_dash_stats')
+    return JsonResponse({'success': True})
 
 
 def get_suggestions(request):
@@ -294,37 +315,6 @@ def get_suggestions(request):
 def is_staff_user(user):
     return user.is_authenticated and user.is_staff
 
-
-@login_required
-@user_passes_test(is_staff_user)
-def import_excel_view(request):
-    form = CsvImportForm()
-
-    if request.method == 'POST' and request.FILES.get('excel_file'):
-        excel_file = request.FILES['excel_file']
-        
-        try:
-            result = import_cars_from_excel(excel_file)
-            
-            if result['success']:
-                success_msg = f"\u2705 \u062a\u0645 \u0627\u0644\u0627\u0633\u062a\u064a\u0631\u0627\u062f \u0628\u0646\u062c\u0627\u062d! \u0625\u0636\u0627\u0641\u0629 {result['created']} \u0648\u062a\u062d\u062f\u064a\u062b {result['updated']}."
-                if result['failed'] > 0:
-                    success_msg += f" \u274c \u0641\u0634\u0644 {result['failed']} \u0635\u0641."
-                    for failed_row in result['failed_rows'][:5]:
-                        messages.warning(request, f"\u0627\u0644\u0635\u0641 {failed_row['row_number']}: {failed_row['error']}")
-                messages.success(request, success_msg)
-            else:
-                for error in result['errors']:
-                    messages.error(request, f"\u274c {error}")
-                    
-        except Exception:
-            import logging
-            logging.getLogger('cars').exception('Excel import failed')
-            messages.error(request, "\u26a0\ufe0f \u062d\u062f\u062b \u062e\u0637\u0623 \u0623\u062b\u0646\u0627\u0621 \u0645\u0639\u0627\u0644\u062c\u0629 \u0627\u0644\u0645\u0644\u0641. \u062a\u0623\u0643\u062f \u0645\u0646 \u0627\u0644\u0635\u064a\u063a\u0629 \u0648\u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629.")
-        
-        return redirect('import_excel')
-
-    return render(request, 'cars/import_excel.html', {'form': form})
 
 
 MIX_CAR_LIMIT = 3000
@@ -454,10 +444,6 @@ def sitemap_view(request):
         + '\n</urlset>\n'
     )
     return HttpResponse(xml, content_type='application/xml; charset=utf-8')
-
-
-def budget_finder_view(request):
-    return redirect('dealers')
 
 
 def search_ai_suggest(request):

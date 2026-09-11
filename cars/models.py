@@ -416,60 +416,43 @@ class Dealer(models.Model):
         return self.name
 
 
-class MarketCarPrice(models.Model):
-    SPEC_REGION_CHOICES = [
-        ('all', 'عام'),
-        ('american', 'أمريكي'),
-        ('gcc', 'خليجي'),
-        ('chinese', 'صيني'),
-        ('european', 'أوروبي'),
-        ('iraqi', 'عراقي / وكيل محلي'),
+class AppInstallMetric(models.Model):
+    EVENT_CHOICES = [
+        ('prompt_click', 'ضغط زر التثبيت'),
+        ('installed', 'تثبيت فعلي'),
     ]
-    BODY_TYPE_CHOICES = [
-        ('all', 'الكل'),
-        ('sedan', 'سيدان'),
-        ('suv', 'SUV'),
-        ('pickup', 'بيكب'),
-        ('hatchback', 'هاتشباك'),
-        ('van', 'فان'),
-        ('coupe', 'كوبيه'),
-    ]
-    id1 = models.PositiveBigIntegerField(null=True, blank=True, unique=True, db_index=True, verbose_name='ID خارجي')
-    brand = models.CharField(max_length=100, verbose_name='الماركة عربي')
-    brand_en = models.CharField(max_length=100, blank=True, verbose_name='الماركة إنجليزي')
-    model = models.CharField(max_length=100, verbose_name='النوع عربي')
-    model_en = models.CharField(max_length=100, blank=True, verbose_name='النوع إنجليزي')
-    brand_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
-    model_norm = models.CharField(max_length=100, blank=True, default='', db_index=True)
-    spec_region = models.CharField(max_length=20, choices=SPEC_REGION_CHOICES, default='all', db_index=True, verbose_name='المواصفات')
-    trim = models.CharField(max_length=80, blank=True, verbose_name='الفئة / الكلاس')
-    body_type = models.CharField(max_length=20, choices=BODY_TYPE_CHOICES, default='all', db_index=True, verbose_name='نوع الجسم')
-    year = models.IntegerField(validators=[MinValueValidator(1990), MaxValueValidator(2099)], verbose_name='السنة')
-    price_min_iqd = models.PositiveBigIntegerField(db_index=True, verbose_name='السعر من (دينار)')
-    price_max_iqd = models.PositiveBigIntegerField(db_index=True, verbose_name='السعر إلى (دينار)')
-    description = models.CharField(max_length=240, blank=True, verbose_name='الوصف')
-    updated_at = models.DateTimeField(auto_now=True, db_index=True, verbose_name='آخر تحديث')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإضافة')
+    event = models.CharField(max_length=20, choices=EVENT_CHOICES, unique=True, verbose_name='نوع الحدث')
+    count = models.PositiveBigIntegerField(default=0, verbose_name='العدد')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='آخر تحديث')
 
     class Meta:
-        ordering = ['-year', 'price_min_iqd', 'brand', 'model']
-        indexes = [
-            models.Index(fields=['spec_region', 'body_type', 'price_min_iqd', 'price_max_iqd']),
-            models.Index(fields=['brand_norm', 'model_norm']),
-        ]
-        verbose_name = 'سعر سيارة في السوق'
-        verbose_name_plural = 'أسعار السيارات في السوق'
-
-    def save(self, *args, **kwargs):
-        from .services.textnorm import fold_ar
-        self.brand_norm = fold_ar(self.brand)
-        self.model_norm = fold_ar(self.model)
-        if self.price_max_iqd < self.price_min_iqd:
-            self.price_min_iqd, self.price_max_iqd = self.price_max_iqd, self.price_min_iqd
-        super().save(*args, **kwargs)
+        ordering = ['event']
+        verbose_name = 'عداد تثبيت التطبيق'
+        verbose_name_plural = 'عدادات تثبيت التطبيق'
 
     def __str__(self):
-        return f'{self.brand} {self.model} {self.year}'
+        return self.get_event_display()
+
+
+class DealerClickMetric(models.Model):
+    ACTION_CHOICES = [
+        ('phone', 'اتصال'),
+        ('whatsapp', 'واتساب'),
+        ('website', 'الموقع'),
+    ]
+    dealer = models.ForeignKey(Dealer, on_delete=models.CASCADE, related_name='click_metrics', verbose_name='الوكيل')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, verbose_name='نوع النقرة')
+    count = models.PositiveBigIntegerField(default=0, verbose_name='العدد')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='آخر تحديث')
+
+    class Meta:
+        unique_together = [('dealer', 'action')]
+        ordering = ['dealer__name', 'action']
+        verbose_name = 'عداد تواصل وكيل'
+        verbose_name_plural = 'عدادات تواصل الوكلاء'
+
+    def __str__(self):
+        return f'{self.dealer} - {self.get_action_display()}'
 
 SITE_SETTINGS_CACHE_KEY = 'site_settings_obj'
 SITE_SETTINGS_CACHE_TTL = 60
@@ -507,7 +490,7 @@ class SiteSettings(models.Model):
         help_text="data-ad-slot من لوحة AdSense"
     )
     show_dealers_card = models.BooleanField(
-        default=True,
+        default=False,
         verbose_name="إظهار بطاقة وكلاء الزيوت وقطع الغيار",
         help_text="فعّلها لإظهار بطاقة الوكلاء في واجهة الموقع، وألغها لإخفائها."
     )
@@ -537,24 +520,24 @@ class SiteSettings(models.Model):
         max_length=200,
         blank=True,
         verbose_name="مفتاح Groq (حائط صد أخير)",
-        help_text="من console.groq.com — يستخدم في ميزات البحث الأخرى فقط، ولا يُستخدم في شكد فلوسك"
+        help_text="من console.groq.com — يستخدم في ميزات البحث الذكي فقط"
     )
     gemini_api_key = models.CharField(
         max_length=200,
         blank=True,
         verbose_name="مفتاح Gemini (احتياطي)",
-        help_text="من aistudio.google.com — يستخدم في ميزات البحث الأخرى فقط، ولا يُستخدم في شكد فلوسك"
+        help_text="من aistudio.google.com — يستخدم في ميزات البحث الذكي فقط"
     )
     deepseek_api_key = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="مفتاح DeepSeek API (الأساسي)",
-        help_text="مفتاح API من platform.deepseek.com — يستخدم في ميزات البحث الأخرى فقط، ولا يُستخدم في شكد فلوسك"
+        help_text="مفتاح API من platform.deepseek.com — يستخدم في ميزات البحث الذكي فقط"
     )
     exchange_rate_iqd_per_usd = models.PositiveIntegerField(
         default=1500,
         verbose_name="سعر صرف الدولار مقابل الدينار",
-        help_text="سعر السوق الموازي: كم دينار عراقي لكل 1 دولار. شكد فلوسك يعتمد الدينار في الجدول والاستيراد."
+        help_text="سعر السوق الموازي: كم دينار عراقي لكل 1 دولار."
     )
     exchange_rate_source = models.CharField(
         max_length=120,

@@ -1,4 +1,3 @@
-import pandas as pd
 from django.contrib import admin, messages
 from django.urls import path
 from django.shortcuts import redirect
@@ -7,9 +6,9 @@ from django.http import HttpResponse
 from django.template import Template, RequestContext
 from django.utils.html import format_html, mark_safe
 from django.core.cache import cache
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.db import models as db_models
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, MarketCarPrice, Dealer
+from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer, AppInstallMetric, DealerClickMetric
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -434,6 +433,9 @@ class DealerAdmin(admin.ModelAdmin):
     search_fields = ('name', 'governorate', 'address', 'phone', 'whatsapp', 'brands', 'description')
     ordering = ('dealer_type', 'parts_region', '-is_featured', 'order', 'name')
     list_per_page = 30
+    formfield_overrides = {
+        db_models.TextField: {'widget': forms.Textarea(attrs={'rows': 4, 'style': 'width: 100%; max-width: 720px;'})},
+    }
     fieldsets = (
         ('تصنيف الوكيل', {
             'fields': ('dealer_type', 'parts_region', 'is_active', 'is_featured', 'order'),
@@ -462,181 +464,100 @@ class DealerAdmin(admin.ModelAdmin):
         return format_html('<span class="badge badge-green">{}</span>', obj.get_parts_region_display())
     parts_region_badge.short_description = 'التصنيف'
 
-
-@admin.register(MarketCarPrice)
-class MarketCarPriceAdmin(admin.ModelAdmin):
-    change_list_template = 'admin/market_prices_changelist.html'
-    list_display = ('id1', 'name_display', 'spec_region_badge', 'body_type_badge', 'price_range_display', 'updated_at')
-    list_filter = ('spec_region', 'body_type', 'year', 'updated_at')
-    search_fields = ('id1', 'brand', 'brand_en', 'model', 'model_en', 'trim', 'description')
-    list_per_page = 40
-    ordering = ('-year', 'price_min_iqd', 'brand', 'model')
-    fieldsets = (
-        ('🚗 السيارة', {
-            'fields': ('id1', 'brand', 'brand_en', 'model', 'model_en', 'spec_region', 'trim', 'body_type', 'year')
-        }),
-        ('💰 السعر', {
-            'fields': ('price_min_iqd', 'price_max_iqd'),
-            'description': 'نطاق السعر بالدينار العراقي. البحث في شكد فلوسك يطابق أي نطاق قريب من الميزانية ضمن ±2% فقط.'
-        }),
-        ('📝 الوصف', {
-            'fields': ('description',),
-            'description': 'وصف اختياري يظهر للمستخدم في نتيجة البحث.'
-        }),
-    )
+@admin.register(AppInstallMetric)
+class AppInstallMetricAdmin(admin.ModelAdmin):
+    list_display = ('event_display', 'count_display', 'updated_at', 'reset_link')
+    readonly_fields = ('event', 'count', 'updated_at')
+    actions = ('reset_selected_counters',)
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='market_prices_import_excel'),
+            path('reset/<int:metric_id>/', self.admin_site.admin_view(self.reset_metric), name='app_install_metric_reset'),
+            path('reset-all/', self.admin_site.admin_view(self.reset_all_metrics), name='app_install_metric_reset_all'),
         ]
         return custom_urls + urls
 
-    def import_excel_view(self, request):
-        if request.method == 'POST':
-            excel_file = request.FILES.get('excel_file')
-            if not excel_file:
-                self.message_user(request, 'لم يتم اختيار ملف.', messages.WARNING)
-                return redirect('.')
-            if excel_file.size > 10 * 1024 * 1024:
-                self.message_user(request, 'الملف كبير جداً. الحد الأقصى 10 ميجابايت.', messages.ERROR)
-                return redirect('.')
-            if not excel_file.name.lower().endswith(('.xlsx', '.xls')):
-                self.message_user(request, 'يجب أن يكون الملف بصيغة Excel (.xlsx أو .xls).', messages.ERROR)
-                return redirect('.')
-            try:
-                df = pd.read_excel(excel_file)
-                required = {'brand_ar', 'brand_en', 'model_ar', 'model_en', 'spec_region', 'body_type', 'year', 'price_min_iqd', 'price_max_iqd'}
-                missing = required - set(df.columns)
-                if missing:
-                    self.message_user(request, 'أعمدة ناقصة: ' + ', '.join(sorted(missing)), messages.ERROR)
-                    return redirect('.')
+    def has_add_permission(self, request):
+        return False
 
-                def to_int(value, default=None):
-                    if pd.isna(value) or value == '':
-                        return default
-                    return int(float(str(value).replace(',', '').strip()))
+    def event_display(self, obj):
+        return obj.get_event_display()
+    event_display.short_description = 'الحدث'
 
-                def spec_region_value(value):
-                    value = str(value or '').strip().lower()
-                    return {
-                        'عام': 'all', 'الكل': 'all', 'all': 'all',
-                        'صيني': 'chinese', 'chinese': 'chinese',
-                        'خليجي': 'gcc', 'gcc': 'gcc', 'gulf': 'gcc',
-                        'أمريكي': 'american', 'امريكي': 'american', 'american': 'american',
-                        'أوروبي': 'european', 'اوربي': 'european', 'european': 'european',
-                        'عراقي': 'iraqi', 'وكيل': 'iraqi', 'iraqi': 'iraqi',
-                    }.get(value, 'all')
+    def count_display(self, obj):
+        return format_html('<b>{}</b>', f'{obj.count:,}')
+    count_display.short_description = 'العدد'
 
-                def body_type_value(value):
-                    value = str(value or '').strip().lower()
-                    return {
-                        'عام': 'all', 'الكل': 'all', 'all': 'all',
-                        'سيدان': 'sedan', 'sedan': 'sedan',
-                        'suv': 'suv', 'اس يو في': 'suv', 'عائلي': 'suv', 'عائلية': 'suv',
-                        'بيكب': 'pickup', 'بكب': 'pickup', 'pickup': 'pickup',
-                        'هاتشباك': 'hatchback', 'hatchback': 'hatchback',
-                        'فان': 'van', 'van': 'van',
-                        'كوبيه': 'coupe', 'coupe': 'coupe',
-                    }.get(value, 'all')
+    def reset_selected_counters(self, request, queryset):
+        updated = queryset.update(count=0)
+        self.message_user(request, f'تم تصفير {updated} عداد.', messages.SUCCESS)
+    reset_selected_counters.short_description = 'تصفير العدادات المحددة'
 
-                saved = 0
-                failed = 0
-                seen_id1 = set()
-                for _, row in df.iterrows():
-                    try:
-                        id1 = to_int(row.get('id1')) if 'id1' in df.columns else None
-                        if id1:
-                            if id1 in seen_id1:
-                                failed += 1
-                                continue
-                            seen_id1.add(id1)
-                        brand = str(row.get('brand_ar') or row.get('brand') or '').strip()
-                        brand_en = str(row.get('brand_en') or '').strip()
-                        model = str(row.get('model_ar') or row.get('model') or '').strip()
-                        model_en = str(row.get('model_en') or '').strip()
-                        year = to_int(row.get('year'))
-                        if not (brand and model and year):
-                            failed += 1
-                            continue
-                        price_min_iqd = to_int(row.get('price_min_iqd'))
-                        price_max_iqd = to_int(row.get('price_max_iqd'))
-                        if not price_min_iqd or not price_max_iqd:
-                            failed += 1
-                            continue
-                        if price_max_iqd < price_min_iqd:
-                            price_min_iqd, price_max_iqd = price_max_iqd, price_min_iqd
-                        trim = str(row.get('trim') or '').strip()
-                        lookup = {'id1': id1} if id1 else {
-                            'brand': brand,
-                            'model': model,
-                            'year': year,
-                            'trim': trim,
-                            'spec_region': spec_region_value(row.get('spec_region')),
-                            'body_type': body_type_value(row.get('body_type')),
-                        }
-                        defaults = {
-                            'brand': brand,
-                            'brand_en': brand_en,
-                            'model': model,
-                            'model_en': model_en,
-                            'spec_region': spec_region_value(row.get('spec_region')),
-                            'trim': trim,
-                            'body_type': body_type_value(row.get('body_type')),
-                            'year': year,
-                            'price_min_iqd': price_min_iqd,
-                            'price_max_iqd': price_max_iqd,
-                            'description': str(row.get('description') or '').strip()[:240],
-                        }
-                        if id1:
-                            defaults.pop('id1', None)
-                        MarketCarPrice.objects.update_or_create(**lookup, defaults=defaults)
-                        saved += 1
-                    except Exception:
-                        failed += 1
-                self.message_user(request, f'تم استيراد/تحديث {saved} سعر. فشل {failed} صف.', messages.SUCCESS if saved else messages.ERROR)
-            except Exception:
-                import logging
-                logging.getLogger('cars').exception('Market price Excel import failed')
-                self.message_user(request, 'حدث خطأ أثناء استيراد ملف الأسعار. راجع السجلات.', messages.ERROR)
-            return redirect('..')
+    def reset_link(self, obj):
+        return format_html('<a class="button" href="reset/{}/">تصفير</a>', obj.pk)
+    reset_link.short_description = 'تصفير مفرد'
 
-        form = CsvImportForm()
-        html_template = """
-        {% extends "admin/base_site.html" %}
-        {% block content %}
-        <div class="section-card" style="max-width: 760px; margin: 20px auto;">
-            <h3>📥 استيراد أسعار السوق من Excel</h3>
-            <p style="color:#475569; line-height:1.9;">الجدول المطلوب: id1, brand_ar, brand_en, model_ar, model_en, spec_region, trim, body_type, year, price_min_iqd, price_max_iqd, description. حقل description اختياري، و id1 مهم للتحديث ومنع التكرار.</p>
-            <form method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn btn-primary" style="border:none;">استيراد الأسعار</button>
-                <a href="../" style="color:#64748b; margin-right:10px;">إلغاء</a>
-            </form>
-        </div>
-        {% endblock %}
-        """
-        t = Template(html_template)
-        c = RequestContext(request, {'form': form, 'opts': self.model._meta})
-        return HttpResponse(t.render(c))
+    def reset_metric(self, request, metric_id):
+        AppInstallMetric.objects.filter(pk=metric_id).update(count=0)
+        cache.delete('admin_dash_stats')
+        self.message_user(request, 'تم تصفير العداد.', messages.SUCCESS)
+        return redirect('../../')
 
-    def name_display(self, obj):
-        trim = f' · {obj.trim}' if obj.trim else ''
-        return format_html('<b>{} {}</b><br><span style="color:#64748b;font-size:.78rem;">{}{} · {}</span>', obj.brand, obj.model, obj.model_en or obj.brand_en, trim, obj.year)
-    name_display.short_description = 'السيارة'
+    def reset_all_metrics(self, request):
+        AppInstallMetric.objects.update(count=0)
+        cache.delete('admin_dash_stats')
+        self.message_user(request, 'تم تصفير كل عدادات تثبيت التطبيق.', messages.SUCCESS)
+        return redirect('../')
 
-    def spec_region_badge(self, obj):
-        return format_html('<span class="badge badge-blue">{}</span>', obj.get_spec_region_display())
-    spec_region_badge.short_description = 'المواصفات'
 
-    def body_type_badge(self, obj):
-        return format_html('<span class="badge badge-amber">{}</span>', obj.get_body_type_display())
-    body_type_badge.short_description = 'نوع السيارة'
+@admin.register(DealerClickMetric)
+class DealerClickMetricAdmin(admin.ModelAdmin):
+    list_display = ('dealer', 'action_display', 'count_display', 'updated_at', 'reset_link')
+    list_filter = ('action', 'dealer__dealer_type', 'dealer__parts_region')
+    search_fields = ('dealer__name',)
+    readonly_fields = ('dealer', 'action', 'count', 'updated_at')
+    actions = ('reset_selected_counters',)
 
-    def price_range_display(self, obj):
-        return format_html('<b>{}</b><br><span class="code-cell">{}</span>', f'{obj.price_min_iqd:,}', f'{obj.price_max_iqd:,}')
-    price_range_display.short_description = 'السعر من / إلى د.ع'
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('reset/<int:metric_id>/', self.admin_site.admin_view(self.reset_metric), name='dealer_click_metric_reset'),
+            path('reset-all/', self.admin_site.admin_view(self.reset_all_metrics), name='dealer_click_metric_reset_all'),
+        ]
+        return custom_urls + urls
+
+    def has_add_permission(self, request):
+        return False
+
+    def action_display(self, obj):
+        return obj.get_action_display()
+    action_display.short_description = 'نوع النقرة'
+
+    def count_display(self, obj):
+        return format_html('<b>{}</b>', f'{obj.count:,}')
+    count_display.short_description = 'العدد'
+
+    def reset_selected_counters(self, request, queryset):
+        updated = queryset.update(count=0)
+        self.message_user(request, f'تم تصفير {updated} عداد.', messages.SUCCESS)
+    reset_selected_counters.short_description = 'تصفير العدادات المحددة'
+
+    def reset_link(self, obj):
+        return format_html('<a class="button" href="reset/{}/">تصفير</a>', obj.pk)
+    reset_link.short_description = 'تصفير مفرد'
+
+    def reset_metric(self, request, metric_id):
+        DealerClickMetric.objects.filter(pk=metric_id).update(count=0)
+        cache.delete('admin_dash_stats')
+        self.message_user(request, 'تم تصفير العداد.', messages.SUCCESS)
+        return redirect('../../')
+
+    def reset_all_metrics(self, request):
+        DealerClickMetric.objects.update(count=0)
+        cache.delete('admin_dash_stats')
+        self.message_user(request, 'تم تصفير كل عدادات تواصل الوكلاء.', messages.SUCCESS)
+        return redirect('../')
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
@@ -665,11 +586,11 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         }),
         ('🤖 مفاتيح الذكاء الاصطناعي', {
             'fields': ('deepseek_api_key', 'gemini_api_key', 'groq_api_key'),
-            'description': '<b>شكد فلوسك لا يستخدم الذكاء الاصطناعي نهائياً</b>. هذه المفاتيح تبقى لميزات البحث الأخرى فقط.'
+            'description': 'هذه المفاتيح تستخدم لميزات البحث الذكي فقط.'
         }),
         ('💱 سعر الصرف اليدوي', {
             'fields': ('exchange_rate_iqd_per_usd', 'exchange_rate_source'),
-            'description': 'شكد فلوسك يعتمد أعمدة الدينار فقط في الاستيراد والبحث.'
+            'description': 'حقل احتياطي لأي حسابات سعر صرف مستقبلية.'
         }),
     )
 
@@ -911,6 +832,17 @@ def get_dashboard_stats():
 
     total_codes = PromoCode.objects.count()
     used_codes = PromoCode.objects.filter(status='used').count()
+    install_counts = {item['event']: item['count'] for item in AppInstallMetric.objects.values('event', 'count')}
+    dealer_click_total = DealerClickMetric.objects.aggregate(total=Sum('count'))['total'] or 0
+    dealer_clicks_table = list(
+        DealerClickMetric.objects.select_related('dealer')
+        .order_by('-count', 'dealer__name')
+        .values('dealer__name', 'dealer__dealer_type', 'action', 'count')[:20]
+    )
+    for item in dealer_clicks_table:
+        item['dealer_name'] = item.get('dealer__name') or ''
+        item['dealer_type'] = 'زيوت' if item.get('dealer__dealer_type') == 'oil' else 'قطع غيار'
+        item['action_label'] = dict(DealerClickMetric.ACTION_CHOICES).get(item['action'], item['action'])
 
     result = {
         'total_cars': CarSpecification.objects.count(),
@@ -924,6 +856,10 @@ def get_dashboard_stats():
         'banners_table': banners_table,
         'recent_codes': recent_codes,
         'visitor_stats': get_visitor_stats(),
+        'app_install_prompt_clicks': install_counts.get('prompt_click', 0),
+        'app_install_done': install_counts.get('installed', 0),
+        'dealer_click_total': dealer_click_total,
+        'dealer_clicks_table': dealer_clicks_table,
     }
     _cache.set(DASH_STATS_CACHE_KEY, result, DASH_STATS_CACHE_TTL)
     return result

@@ -8,8 +8,8 @@ from django.test import Client, TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from cars.models import Dealer, MarketCarPrice, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
-from cars.services.deepseek_service import _provider_chain, find_cars_by_budget
+from cars.models import Dealer, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.services.deepseek_service import _provider_chain
 from cars.views import _client_ip
 
 # الاختبارات تعمل في عملية واحدة، لذا نستبدل التخزين "المشترك" بذاكرة محلية
@@ -191,16 +191,23 @@ class ReportViewTests(TestCase):
 
 class PageSmokeTests(TestCase):
     def test_public_pages(self):
-        for path in ['/', '/mix/', '/search/', '/dealers/', '/services/', '/sitemap.xml']:
+        for path in ['/', '/mix/', '/search/', '/services/', '/sitemap.xml']:
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
 
-    def test_budget_redirects_to_dealers(self):
-        response = self.client.get('/budget/')
+    def test_dealers_page_hidden_by_default(self):
+        settings = SiteSettings.load()
+        settings.show_dealers_card = False
+        settings.save()
+        cache.delete(SITE_SETTINGS_CACHE_KEY)
+        response = self.client.get('/dealers/')
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/dealers/')
+        self.assertEqual(response['Location'], '/')
 
     def test_dealers_page_filters_parts_region(self):
+        settings = SiteSettings.load()
+        settings.show_dealers_card = True
+        settings.save()
         Dealer.objects.create(name='وكيل زيوت', dealer_type='oil', phone='07700000000', is_active=True)
         Dealer.objects.create(name='قطع ياباني', dealer_type='parts', parts_region='japanese', is_active=True)
         Dealer.objects.create(name='قطع ألماني', dealer_type='parts', parts_region='german', is_active=True)
@@ -233,84 +240,3 @@ class PageSmokeTests(TestCase):
         r = self.client.get('/admin/report/cars/')
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'تقرير السيارات')
-
-
-@override_settings(CACHES=_LOCMEM_CACHES)
-class AiCostControlTests(TestCase):
-    def test_general_provider_chain_limits_premium_after_five_requests_per_ip(self):
-        ip = '203.0.113.80'
-        caches['shared'].delete(f'ai:premium_hour:{ip}')
-        for _ in range(5):
-            self.assertEqual([name for name, _ in _provider_chain(ip)], ['DeepSeek', 'Gemini', 'Groq'])
-        self.assertEqual([name for name, _ in _provider_chain(ip)], ['Groq'])
-
-    @patch('cars.services.deepseek_service._call_groq')
-    @patch('cars.services.deepseek_service._call_gemini')
-    @patch('cars.services.deepseek_service._call_deepseek')
-    def test_budget_does_not_use_ai_when_market_has_no_match(self, deepseek, gemini, groq):
-        result = find_cars_by_budget(18000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.86')
-        self.assertFalse(result['success'])
-        self.assertEqual(result['provider'], 'قاعدة أسعار السوق')
-        self.assertEqual(MarketCarPrice.objects.count(), 0)
-        deepseek.assert_not_called()
-        gemini.assert_not_called()
-        groq.assert_not_called()
-
-    def test_budget_uses_market_table_before_ai(self):
-        MarketCarPrice.objects.create(
-            brand='تويوتا',
-            model='كورولا',
-            year=2020,
-            spec_region='american',
-            body_type='sedan',
-            price_min_iqd=24500000,
-            price_max_iqd=25500000,
-            description='وارد أمريكي فئة LE',
-        )
-        result = find_cars_by_budget(25000000, 'iqd', 'american', 'used', client_ip='203.0.113.81')
-        self.assertTrue(result['success'])
-        self.assertTrue(result['from_market'])
-        self.assertEqual(result['provider'], 'قاعدة أسعار السوق')
-        self.assertEqual(result['cars'][0]['description'], 'وارد أمريكي فئة LE')
-
-    def test_market_budget_prefers_newer_cars_within_budget_margin(self):
-        MarketCarPrice.objects.create(
-            brand='تجربة', model='رخيص', year=2020,
-            spec_region='all', body_type='sedan', price_min_iqd=23000000, price_max_iqd=24000000,
-        )
-        MarketCarPrice.objects.create(
-            brand='تجربة', model='قريب', year=2021,
-            spec_region='all', body_type='sedan', price_min_iqd=24800000, price_max_iqd=25200000,
-        )
-        MarketCarPrice.objects.create(
-            brand='تجربة', model='أحدث', year=2024,
-            spec_region='all', body_type='sedan', price_min_iqd=24600000, price_max_iqd=25000000,
-        )
-        MarketCarPrice.objects.create(
-            brand='تجربة', model='كروس', year=2025,
-            spec_region='all', body_type='suv', price_min_iqd=24900000, price_max_iqd=25100000,
-        )
-        MarketCarPrice.objects.create(
-            brand='تجربة', model='أبعد', year=2020,
-            spec_region='all', body_type='sedan', price_min_iqd=24500000, price_max_iqd=24700000,
-        )
-        MarketCarPrice.objects.create(
-            brand='تجربة', model='غالي', year=2022,
-            spec_region='all', body_type='sedan', price_min_iqd=25600000, price_max_iqd=26000000,
-        )
-        result = find_cars_by_budget(25000000, 'iqd', 'all', 'used', 'sedan', client_ip='203.0.113.82')
-        self.assertTrue(result['success'])
-        self.assertEqual(result['cars'][0]['name'], 'تجربة أحدث 2024')
-        names = [car['name'] for car in result['cars']]
-        self.assertNotIn('تجربة كروس 2025', names)
-        self.assertNotIn('تجربة رخيص 2020', names)
-        self.assertNotIn('تجربة غالي 2022', names)
-
-    def test_market_budget_supports_usd_price_matching(self):
-        MarketCarPrice.objects.create(
-            brand='تجربة', model='دولار', year=2023,
-            spec_region='all', body_type='suv', price_min_iqd=29500000, price_max_iqd=30500000,
-        )
-        result = find_cars_by_budget(20000, 'usd', 'korean', 'used', 'suv', client_ip='203.0.113.83')
-        self.assertTrue(result['success'])
-        self.assertEqual(result['cars'][0]['name'], 'تجربة دولار 2023')

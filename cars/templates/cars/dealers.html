@@ -19,8 +19,10 @@
         .tab-link.active, .tab-link:hover { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0a0f1a; border-color: transparent; }
         .filter-link { display: inline-flex; padding: 9px 14px; border-radius: 999px; color: #cbd5e1; background: rgba(15,23,42,.7); border: 1px solid rgba(148,163,184,.15); font-size: .86rem; font-weight: 800; }
         .filter-link.active, .filter-link:hover { color: #0a0f1a; background: #fbbf24; }
-        .dealer-card { background: rgba(15,23,42,.64); border: 1px solid rgba(148,163,184,.16); border-radius: 24px; padding: 22px; transition: .25s; }
-        .dealer-card:hover { transform: translateY(-3px); border-color: rgba(245,158,11,.38); }
+        .dealer-card { background: linear-gradient(145deg, rgba(15,23,42,.82), rgba(30,41,59,.62)); border: 1px solid rgba(148,163,184,.16); border-radius: 28px; padding: 24px; transition: .25s; position: relative; overflow: hidden; }
+        .dealer-card::before { content: ''; position: absolute; inset: 0 0 auto auto; width: 130px; height: 130px; border-radius: 999px; background: rgba(245,158,11,.08); filter: blur(18px); transform: translate(35px,-45px); }
+        .dealer-card:hover { transform: translateY(-4px); border-color: rgba(245,158,11,.42); box-shadow: 0 18px 45px rgba(0,0,0,.35); }
+        .dealer-card > * { position: relative; z-index: 1; }
         .badge { display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 999px; font-size: .75rem; font-weight: 900; }
         .badge-amber { background: rgba(245,158,11,.16); color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
         .badge-blue { background: rgba(59,130,246,.14); color: #60a5fa; border: 1px solid rgba(59,130,246,.25); }
@@ -74,7 +76,7 @@
             <article class="dealer-card">
                 <div class="flex items-start justify-between gap-3 mb-3">
                     <div>
-                        <h2 class="text-xl font-black text-white">{{ dealer.name }}</h2>
+                        <h2 class="text-xl font-black text-white leading-relaxed">{{ dealer.name }}</h2>
                         <p class="text-slate-400 text-sm mt-1">{{ dealer.governorate|default:'العراق' }}</p>
                     </div>
                     {% if dealer.is_featured %}<span class="badge badge-amber">مميز</span>{% endif %}
@@ -87,9 +89,9 @@
                 {% if dealer.address %}<p class="detail-line"><b>العنوان:</b> {{ dealer.address }}</p>{% endif %}
                 {% if dealer.description %}<p class="detail-line mt-2">{{ dealer.description|linebreaksbr }}</p>{% endif %}
                 <div class="flex flex-wrap gap-2 mt-5">
-                    {% if dealer.phone %}<a href="tel:{{ dealer.phone }}" class="action-btn action-call">اتصال</a>{% endif %}
-                    {% if dealer.whatsapp %}<a href="https://wa.me/{{ dealer.whatsapp }}" class="action-btn action-whatsapp" target="_blank" rel="noopener">واتساب</a>{% endif %}
-                    {% if dealer.website %}<a href="{{ dealer.website }}" class="action-btn action-site" target="_blank" rel="noopener">الموقع</a>{% endif %}
+                    {% if dealer.phone %}<a href="tel:{{ dealer.phone }}" class="action-btn action-call dealer-track" data-track-url="{% url 'track_dealer_click' dealer.id 'phone' %}">اتصال</a>{% endif %}
+                    {% if dealer.whatsapp %}<a href="https://wa.me/{{ dealer.whatsapp }}" class="action-btn action-whatsapp dealer-track" data-track-url="{% url 'track_dealer_click' dealer.id 'whatsapp' %}" target="_blank" rel="noopener">واتساب</a>{% endif %}
+                    {% if dealer.website %}<a href="{{ dealer.website }}" class="action-btn action-site dealer-track" data-track-url="{% url 'track_dealer_click' dealer.id 'website' %}" target="_blank" rel="noopener">الموقع</a>{% endif %}
                 </div>
             </article>
             {% endfor %}
@@ -101,5 +103,22 @@
         </section>
         {% endif %}
     </main>
+    <script>
+    (function() {
+        function csrfToken() {
+            var match = document.cookie.match(/csrftoken=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        }
+        document.addEventListener('click', function(e) {
+            var link = e.target.closest('.dealer-track');
+            if (!link) return;
+            var url = link.getAttribute('data-track-url');
+            if (!url) return;
+            try {
+                fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken() }, credentials: 'same-origin', keepalive: true });
+            } catch (err) {}
+        });
+    })();
+    </script>
 </body>
 </html>
