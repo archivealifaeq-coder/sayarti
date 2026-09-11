@@ -4,7 +4,6 @@ from . import views
 urlpatterns = [
     path('', views.index_view, name='index'),
     path('search/', views.search_view, name='search'),
-    path('compare/', views.compare_view, name='compare'),
     path('import/', views.import_excel_view, name='import_excel'),
     path('mix/', views.mix_calculator_view, name='mix_calculator'),
     path('get-suggestions/', views.get_suggestions, name='get_suggestions'),
