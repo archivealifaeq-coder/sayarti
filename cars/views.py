@@ -1,4 +1,4 @@
-﻿import re
+import re
 from pathlib import Path
 from django.shortcuts import render, redirect
 from django.contrib import messages
