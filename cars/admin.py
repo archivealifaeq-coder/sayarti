@@ -245,32 +245,21 @@ class AdBannerForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={
                 'placeholder': 'مثال: خصم 20% على زيت المحرك',
-                'style': 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;'
             }),
             'subtitle': forms.TextInput(attrs={
                 'placeholder': 'مثال: أداء أفضل - توفير في الوقود',
-                'style': 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;'
             }),
-            'image': forms.FileInput(attrs={
-                'style': 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;'
-            }),
-            'image_mobile': forms.FileInput(attrs={
-                'style': 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;'
-            }),
+            'image': forms.FileInput(),
+            'image_mobile': forms.FileInput(),
             'background_color': forms.Select(attrs={
-                'style': 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;'
             }),
             'button_text': forms.TextInput(attrs={
                 'placeholder': 'اعرف المزيد',
-                'style': 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;'
             }),
             'button_url': forms.URLInput(attrs={
                 'placeholder': 'https://example.com',
-                'style': 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;'
             }),
-            'order': forms.NumberInput(attrs={
-                'style': 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;'
-            }),
+            'order': forms.NumberInput(),
         }
 
 
