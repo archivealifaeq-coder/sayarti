@@ -279,6 +279,9 @@ class PageSmokeTests(TestCase):
         from openpyxl import load_workbook
         sheet = load_workbook(BytesIO(response.content)).active
         rows = list(sheet.iter_rows(values_only=True))
-        self.assertEqual(rows[0][0:5], ('id', 'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR'))
+        self.assertEqual(rows[0][0:5], ('Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year'))
+        self.assertIn('Engine Code', rows[0])
+        self.assertIn('Spark', rows[0])
+        self.assertEqual(rows[0][-1], 'id')
         self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[1][2], 'تويوتا')
+        self.assertEqual(rows[1][1], 'تويوتا')

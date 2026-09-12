@@ -52,7 +52,7 @@ def validate_excel_file(file):
     optional_columns = [
         'Spec', 'Trim', 'Class', 'Recommendations', 'Oil Brands', 'Oil Visc (>100k)',
         'Battery', 'Battery Size', 'Battery Capacity',
-        'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands'
+        'Engine Code', 'Spark', 'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands'
     ]
     
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -144,12 +144,14 @@ def import_cars_from_excel(file):
                     'engine_type': engine_type_val,
                     'spec_region': spec_region_val,
                     'engine': _cell(row, 'Engine'),
+                    'engine_code': _cell(row, 'Engine Code'),
                     'engine_norm': fold_engine(_cell(row, 'Engine')),
                     'oil_visc': _cell(row, 'Oil Visc'),
                     'oil_visc_high_km': _cell(row, 'Oil Visc (>100k)'),
                     'fuel': _cell(row, 'Fuel'),
                     'octane': _cell(row, 'Octane'),
                     'tire_size': tire_size_val,
+                    'spark': _cell(row, 'Spark'),
                     'oil_capacity': _cell(row, 'Oil Capacity'),
                     'recommendations': _cell(row, 'Recommendations'),
                     'oil_brands': _cell(row, 'Oil Brands'),

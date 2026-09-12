@@ -58,6 +58,8 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         'trim',
         'id', 
         'tire_size',
+        'spark',
+        'engine_code',
         'transmission_type',
         'battery'
     )
@@ -73,7 +75,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
             'fields': ('id', 'brand_ar', 'brand_en', 'model_ar', 'model_en', 'year', 'trim', 'spec')
         }),
         ('⚙️ المحرك والمواصفات', {
-            'fields': ('engine', 'engine_type', 'spec_region')
+            'fields': ('engine', 'engine_code', 'engine_type', 'spec_region')
         }),
         ('🛢️ الزيت', {
             'fields': ('oil_visc', 'oil_visc_high_km', 'oil_capacity', 'oil_brands')
@@ -85,7 +87,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
             'fields': ('fuel', 'octane')
         }),
         ('🛞 الإطارات', {
-            'fields': ('tire_size',)
+            'fields': ('tire_size', 'spark')
         }),
         ('📝 توصيات إضافية', {
             'fields': ('recommendations',),
@@ -187,19 +189,19 @@ class CarSpecificationAdmin(admin.ModelAdmin):
     def _export_rows(self, queryset):
         return [
             {
-                'id': car.id,
                 'Brand_EN': car.brand_en,
                 'Brand_AR': car.brand_ar,
                 'Model_EN': car.model_en,
                 'Model_AR': car.model_ar,
                 'Year': car.year,
                 'Spec': car.spec or '',
-                'Trim': car.trim or '',
                 'Engine': car.engine,
+                'Engine Code': car.engine_code or '',
                 'Oil Visc': car.oil_visc,
                 'Oil Visc (>100k)': car.oil_visc_high_km or '',
                 'Fuel': car.fuel,
                 'Octane': car.octane,
+                'Spark': car.spark or '',
                 'Tire Size': car.tire_size,
                 'Oil Capacity': car.oil_capacity,
                 'Recommendations': car.recommendations or '',
@@ -208,6 +210,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
                 'Transmission Type': car.transmission_type or '',
                 'Transmission Oil Spec': car.transmission_oil_spec or '',
                 'Transmission Oil Brands': car.transmission_oil_brands or '',
+                'id': car.id,
             }
             for car in queryset
         ]
@@ -227,10 +230,10 @@ class CarSpecificationAdmin(admin.ModelAdmin):
             df = pd.DataFrame(self._export_rows(queryset))
             if df.empty:
                 df = pd.DataFrame(columns=[
-                    'id', 'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year', 'Spec', 'Trim',
-                    'Engine', 'Oil Visc', 'Oil Visc (>100k)', 'Fuel', 'Octane', 'Tire Size',
-                    'Oil Capacity', 'Recommendations', 'Oil Brands', 'Battery', 'Transmission Type',
-                    'Transmission Oil Spec', 'Transmission Oil Brands'
+                    'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year', 'Spec',
+                    'Engine', 'Engine Code', 'Oil Visc', 'Oil Visc (>100k)', 'Fuel', 'Octane',
+                    'Spark', 'Tire Size', 'Oil Capacity', 'Recommendations', 'Oil Brands', 'Battery',
+                    'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands', 'id'
                 ])
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='CarSpecifications')

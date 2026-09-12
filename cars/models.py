@@ -59,6 +59,13 @@ class CarSpecification(models.Model):
     )
 
     engine = models.CharField(max_length=100)
+    engine_code = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="كود المحرك",
+        help_text="مثال: 2ZR-FE، G4NA، M274"
+    )
     engine_norm = models.CharField(max_length=100, blank=True, default='')
     oil_visc = models.CharField(max_length=50)
     oil_visc_high_km = models.CharField(max_length=50, blank=True, null=True)
@@ -76,6 +83,13 @@ class CarSpecification(models.Model):
         verbose_name="حجم الإطار",
         default="غير محدد",
         help_text="مثال: 215/60R16"
+    )
+    spark = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="شمعات الاحتراق",
+        help_text="مثال: NGK Iridium"
     )
 
     oil_capacity = models.CharField(max_length=50)
