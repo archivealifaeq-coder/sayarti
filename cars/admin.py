@@ -193,7 +193,8 @@ class CarSpecificationAdmin(admin.ModelAdmin):
                 'Brand_AR': car.brand_ar,
                 'Model_EN': car.model_en,
                 'Model_AR': car.model_ar,
-                'Year': car.year,
+'Year': car.year,
+                'Trim': car.trim or '',
                 'Spec': car.spec or '',
                 'Engine': car.engine,
                 'Engine Code': car.engine_code or '',
@@ -230,7 +231,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
             df = pd.DataFrame(self._export_rows(queryset))
             if df.empty:
                 df = pd.DataFrame(columns=[
-                    'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year', 'Spec',
+                    'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year', 'Trim', 'Spec',
                     'Engine', 'Engine Code', 'Oil Visc', 'Oil Visc (>100k)', 'Fuel', 'Octane',
                     'Spark', 'Tire Size', 'Oil Capacity', 'Recommendations', 'Oil Brands', 'Battery',
                     'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands', 'id'

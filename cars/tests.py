@@ -291,6 +291,7 @@ class PageSmokeTests(TestCase):
         sheet = load_workbook(BytesIO(response.content)).active
         rows = list(sheet.iter_rows(values_only=True))
         self.assertEqual(rows[0][0:5], ('Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year'))
+        self.assertIn('Trim', rows[0])
         self.assertIn('Engine Code', rows[0])
         self.assertIn('Spark', rows[0])
         self.assertEqual(rows[0][-1], 'id')
