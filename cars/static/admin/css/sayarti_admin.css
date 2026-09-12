@@ -1238,16 +1238,25 @@ label.required {
 /* ---------- 17) منع انكماش حقول Django admin داخل wrappers ---------- */
 .aligned .form-row,
 .form-row {
+    display: block !important;
+    padding: 10px 0;
+}
+
+.aligned .form-row > div,
+.form-row > div {
     display: grid !important;
     grid-template-columns: 180px minmax(420px, 760px);
     column-gap: 16px;
     row-gap: 6px;
+    width: 100% !important;
+    min-width: 0;
+    max-width: 960px;
+    box-sizing: border-box;
 }
 
-.aligned .form-row > div,
-.form-row > div,
 .form-row .flex-container,
 .form-row .related-widget-wrapper {
+    grid-column: 2;
     width: 100% !important;
     min-width: 420px;
     max-width: 760px;
@@ -1308,6 +1317,15 @@ label.required {
     max-width: 180px;
 }
 
+.aligned .form-row input,
+.aligned .form-row select,
+.aligned .form-row textarea,
+.form-row input,
+.form-row select,
+.form-row textarea {
+    grid-column: 2;
+}
+
 .form-row .help,
 .aligned .form-row .help,
 .aligned p.help,
@@ -1330,6 +1348,12 @@ label.required {
     .aligned .form-row,
     .form-row {
         display: block !important;
+    }
+
+    .aligned .form-row > div,
+    .form-row > div {
+        display: block !important;
+        max-width: 100%;
     }
 
     .aligned .form-row > div,
