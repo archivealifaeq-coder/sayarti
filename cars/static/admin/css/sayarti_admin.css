@@ -1545,7 +1545,9 @@ label.required {
     color: #64748b;
     font-size: 0.82rem;
     line-height: 1.75;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    word-break: normal;
+    white-space: normal;
 }
 
 #content-main form .form-row input:focus,
