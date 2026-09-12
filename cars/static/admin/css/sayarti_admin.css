@@ -1115,3 +1115,83 @@ fieldset.module,
         min-width: 100%;
     }
 }
+
+/* ---------- 16) إصلاح نهائي لحقول إدخال الأدمن ---------- */
+.aligned .form-row,
+.form-row {
+    display: block;
+    padding: 10px 0;
+}
+
+.aligned .form-row > div,
+.form-row > div,
+.form-row .flex-container,
+.form-row .readonly {
+    max-width: 760px;
+}
+
+.aligned label,
+.form-row label,
+.required label,
+label.required {
+    display: block;
+    float: none;
+    width: auto;
+    margin: 0 0 6px;
+    padding: 0;
+    line-height: 1.6;
+    text-align: right;
+}
+
+.form-row input[type="text"],
+.form-row input[type="password"],
+.form-row input[type="email"],
+.form-row input[type="number"],
+.form-row input[type="url"],
+.form-row input[type="file"],
+.form-row select,
+.form-row .vTextField,
+.form-row .vURLField,
+.form-row .vIntegerField {
+    width: min(100%, 520px) !important;
+    min-height: 38px;
+    height: 38px;
+}
+
+.form-row textarea,
+.form-row .vLargeTextField {
+    width: min(100%, 620px) !important;
+    min-height: 82px !important;
+    height: 82px;
+    max-height: 180px;
+}
+
+.form-row input[type="checkbox"] {
+    width: auto !important;
+    min-height: auto;
+    height: auto;
+    margin-inline-start: 8px;
+}
+
+.checkbox-row label,
+.form-row .checkbox-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.form-row input[type="url"],
+.form-row .vURLField,
+.form-row textarea[name="ga_service_account_json"],
+.form-row textarea[name="ads_txt"] {
+    direction: ltr;
+    text-align: left;
+}
+
+.form-row .help {
+    display: block;
+    margin: 5px 0 0;
+    max-width: 620px;
+    grid-column: auto;
+}
