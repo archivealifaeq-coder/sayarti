@@ -404,14 +404,16 @@
                         <span class="chip-value">{{ car.engine|default:"غير محدد" }}</span>
                     </div>
                     <div class="spec-chip">
+                        <span class="chip-label">🔢 كود المحرك</span>
+                        <span class="chip-value">{{ car.engine_code|default:"غير محدد" }}</span>
+                    </div>
+                    <div class="spec-chip">
                         <span class="chip-label">⛽ رقم الأوكتان</span>
                         <span class="chip-value highlight">{{ car.octane }} <span class="chip-value muted">RON</span></span>
                     </div>
                     <div class="spec-chip">
                         <span class="chip-label">🧪 نوع الوقود</span>
                         <span class="chip-value">{{ car.fuel|default:"بنزين" }}</span>
-                    </div>
-                    <div class="spec-chip">
                     </div>
                 </div>
             </div>
@@ -452,6 +454,10 @@
                     <div class="spec-chip">
                         <span class="chip-label">🛞 حجم الإطار</span>
                         <span class="chip-value">{{ car.tire_size|default:"غير محدد" }}</span>
+                    </div>
+                    <div class="spec-chip">
+                        <span class="chip-label">⚡ شمعات القدح</span>
+                        <span class="chip-value">{{ car.spark|default:"غير محدد" }}</span>
                     </div>
                 </div>
             </div>

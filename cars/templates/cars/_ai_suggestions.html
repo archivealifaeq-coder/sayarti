@@ -22,10 +22,12 @@
             <table class="ai-spec-table">
                 <tr><td class="ai-spec-key">📅 السنة</td><td>{{ car.year }}</td></tr>
                 <tr><td class="ai-spec-key">⚙️ المحرك</td><td>{{ car.engine }}{% if car.engine_type %} ({{ car.engine_type }}){% endif %}</td></tr>
+                {% if car.engine_code %}<tr><td class="ai-spec-key">🔢 كود المحرك</td><td>{{ car.engine_code }}</td></tr>{% endif %}
                 <tr><td class="ai-spec-key">🛢️ الوقود</td><td>{{ car.fuel|default:"غير محدد" }}</td></tr>
                 <tr><td class="ai-spec-key">🧴 لزوجة الزيت</td><td>{{ car.oil_visc }}{% if car.oil_visc_high_km %} / عالي الكيلومتر: {{ car.oil_visc_high_km }}{% endif %}</td></tr>
                 <tr><td class="ai-spec-key">⭕ سعة الزيت</td><td>{{ car.oil_capacity|default:"غير محدد" }}</td></tr>
                 <tr><td class="ai-spec-key">🏷️ ماركات الزيت</td><td>{{ car.oil_brands|default:"غير محدد" }}</td></tr>
+                {% if car.spark %}<tr><td class="ai-spec-key">⚡ شمعات القدح</td><td>{{ car.spark }}</td></tr>{% endif %}
                 <tr><td class="ai-spec-key">🛞 حجم الإطار</td><td>{{ car.tire_size|default:"غير محدد" }}</td></tr>
                 <tr><td class="ai-spec-key">🔋 البطارية</td><td>{{ car.battery|default:"غير محدد" }}</td></tr>
                 <tr><td class="ai-spec-key">⚙️ زيت الناقل</td><td>{{ car.transmission_oil_spec|default:"غير محدد" }}</td></tr>
@@ -56,10 +58,12 @@
             <table class="ai-spec-table">
                 {% if car.year %}<tr><td class="ai-spec-key">📅 السنة</td><td>{{ car.year }}</td></tr>{% endif %}
                 {% if car.engine %}<tr><td class="ai-spec-key">⚙️ المحرك</td><td>{{ car.engine }}</td></tr>{% endif %}
+                {% if car.engine_code %}<tr><td class="ai-spec-key">🔢 كود المحرك</td><td>{{ car.engine_code }}</td></tr>{% endif %}
                 {% if car.fuel %}<tr><td class="ai-spec-key">🛢️ الوقود</td><td>{{ car.fuel }}</td></tr>{% endif %}
                 {% if car.transmission %}<tr><td class="ai-spec-key">⚙️ ناقل الحركة</td><td>{{ car.transmission }}</td></tr>{% endif %}
                 {% if car.oil_visc %}<tr><td class="ai-spec-key">🧴 لزوجة الزيت</td><td>{{ car.oil_visc }}</td></tr>{% endif %}
                 {% if car.oil_capacity %}<tr><td class="ai-spec-key">⭕ سعة الزيت</td><td>{{ car.oil_capacity }}</td></tr>{% endif %}
+                {% if car.spark %}<tr><td class="ai-spec-key">⚡ شمعات القدح</td><td>{{ car.spark }}</td></tr>{% endif %}
                 {% if car.tire_size %}<tr><td class="ai-spec-key">🛞 حجم الإطار</td><td>{{ car.tire_size }}</td></tr>{% endif %}
                 {% if car.battery %}<tr><td class="ai-spec-key">🔋 البطارية الصغيرة</td><td>{{ car.battery }}</td></tr>{% endif %}
                 {% if car.hybrid_battery %}<tr><td class="ai-spec-key">🔋 بطارية الهايبرد</td><td>{{ car.hybrid_battery }}</td></tr>{% endif %}

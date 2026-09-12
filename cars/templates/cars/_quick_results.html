@@ -52,8 +52,10 @@
                 </div>
                 <div class="quick-db-specs">
                     {% if car.octane %}<span><b>⭕</b> أوكتان {{ car.octane }}</span>{% endif %}
+                    {% if car.engine_code %}<span><b>🔢</b> {{ car.engine_code }}</span>{% endif %}
                     {% if car.oil_visc %}<span><b>🛢️</b> {{ car.oil_visc }}</span>{% endif %}
                     {% if car.oil_capacity %}<span><b>🧴</b> {{ car.oil_capacity }}</span>{% endif %}
+                    {% if car.spark %}<span><b>⚡</b> {{ car.spark }}</span>{% endif %}
                     {% if car.tire_size %}<span><b>🛞</b> {{ car.tire_size }}</span>{% endif %}
                     {% if car.battery %}<span><b>🔋</b> {{ car.battery }}</span>{% endif %}
                     {% if car.transmission_type %}<span><b>⚙️</b> {{ car.transmission_type }}</span>{% endif %}
@@ -84,9 +86,11 @@
                 <table class="ai-spec-table">
                     {% if car.year %}<tr><td class="ai-spec-key">📅 السنة</td><td>{{ car.year }}</td></tr>{% endif %}
                     {% if car.engine %}<tr><td class="ai-spec-key">⚙️ المحرك</td><td>{{ car.engine }}</td></tr>{% endif %}
+                    {% if car.engine_code %}<tr><td class="ai-spec-key">🔢 كود المحرك</td><td>{{ car.engine_code }}</td></tr>{% endif %}
                     {% if car.fuel %}<tr><td class="ai-spec-key">🛢️ الوقود</td><td>{{ car.fuel }}</td></tr>{% endif %}
                     {% if car.oil_visc %}<tr><td class="ai-spec-key">🧴 لزوجة الزيت</td><td>{{ car.oil_visc }}</td></tr>{% endif %}
                     {% if car.oil_capacity %}<tr><td class="ai-spec-key">⭕ سعة الزيت</td><td>{{ car.oil_capacity }}</td></tr>{% endif %}
+                    {% if car.spark %}<tr><td class="ai-spec-key">⚡ شمعات القدح</td><td>{{ car.spark }}</td></tr>{% endif %}
                     {% if car.battery %}<tr><td class="ai-spec-key">🔋 البطارية الصغيرة</td><td>{{ car.battery }}</td></tr>{% endif %}
                     {% if car.hybrid_battery %}<tr><td class="ai-spec-key">🔋 بطارية الهايبرد</td><td>{{ car.hybrid_battery }}</td></tr>{% endif %}
                     {% if car.battery_notes %}<tr><td class="ai-spec-key">🪫 ملاحظة البطارية</td><td>{{ car.battery_notes }}</td></tr>{% endif %}

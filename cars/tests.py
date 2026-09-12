@@ -262,6 +262,17 @@ class PageSmokeTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'تقرير السيارات')
 
+    def test_search_card_shows_engine_code_and_spark(self):
+        car = _make_car(1, 'تويوتا', 'كورولا')
+        car.engine_code = '2ZR-FE'
+        car.spark = 'NGK Iridium'
+        car.save()
+
+        response = self.client.get('/search/', {'brand': 'Toyota'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '2ZR-FE')
+        self.assertContains(response, 'NGK Iridium')
+
     def test_car_export_excel_by_brand(self):
         self.client.force_login(User.objects.create_superuser('boss4', 'b4@example.com', 'pw'))
         _make_car(1, 'تويوتا', 'كورولا')

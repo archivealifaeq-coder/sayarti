@@ -223,15 +223,17 @@
                             <h3 class="car-title">{{ car.brand_ar|escape }} {{ car.model_ar|escape }}{% if car.trim %} <span class="text-pink-400 text-base">({{ car.trim|escape }})</span>{% endif %}</h3>
                             <p class="car-subtitle">{{ car.brand_en|escape }} {{ car.model_en|escape }} <span class="highlight">| {{ car.year|escape }}</span>{% if car.engine_type %}<span class="highlight">| {{ car.get_engine_type_display|escape }}</span>{% endif %}{% if car.spec_region %}<span class="text-slate-500">| {{ car.get_spec_region_display|escape }}</span>{% endif %}</p>
                         </div>
-                        <div class="engine-badge"><span>⚙️ المحرك</span><span class="value">{{ car.engine|escape }}</span></div>
+                        <div class="engine-badge"><span>⚙️ المحرك</span><span class="value">{{ car.engine|escape }}{% if car.engine_code %} · {{ car.engine_code|escape }}{% endif %}</span></div>
                         <div class="spec-grid">
                             <div class="spec-item"><span class="label">🛢️ لزوجة الزيت</span><span class="value">{{ car.oil_visc|escape }}</span></div>
+                            {% if car.spark %}<div class="spec-item"><span class="label">⚡ شمعات القدح</span><span class="value">{{ car.spark|escape }}</span></div>{% endif %}
                             <div class="spec-item"><span class="label">🛞 حجم الإطار</span><span class="value blue">{{ car.tire_size|default:"غير محدد"|escape }}</span></div>
                             <div class="spec-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ car.oil_capacity|default:"غير محدد"|escape }}</span></div>
                         </div>
                         <div class="card-details-extra" id="details-{{ car.id }}" style="display:none;">
                             <div class="spec-grid" style="margin-top:4px;">
                                 {% if car.fuel %}<div class="spec-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ car.fuel|escape }}</span></div>{% endif %}
+                                {% if car.engine_code %}<div class="spec-item"><span class="label">🔢 كود المحرك</span><span class="value">{{ car.engine_code|escape }}</span></div>{% endif %}
                                 {% if car.spec_region %}<div class="spec-item"><span class="label">🌍 المنطقة</span><span class="value">{{ car.get_spec_region_display|escape }}</span></div>{% endif %}
                                 {% if car.engine_type %}<div class="spec-item"><span class="label">🔧 نوع المحرك</span><span class="value">{{ car.get_engine_type_display|escape }}</span></div>{% endif %}
                                 {% if car.trim %}<div class="spec-item"><span class="label">🏷️ الفئة</span><span class="value">{{ car.trim|escape }}</span></div>{% endif %}
