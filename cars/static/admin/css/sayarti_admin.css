@@ -1234,3 +1234,132 @@ label.required {
         margin-bottom: 6px;
     }
 }
+
+/* ---------- 17) منع انكماش حقول Django admin داخل wrappers ---------- */
+.aligned .form-row,
+.form-row {
+    display: grid !important;
+    grid-template-columns: 180px minmax(420px, 760px);
+    column-gap: 16px;
+    row-gap: 6px;
+}
+
+.aligned .form-row > div,
+.form-row > div,
+.form-row .flex-container,
+.form-row .related-widget-wrapper {
+    width: 100% !important;
+    min-width: 420px;
+    max-width: 760px;
+    box-sizing: border-box;
+}
+
+.form-row .related-widget-wrapper {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-row input[type="text"],
+.form-row input[type="password"],
+.form-row input[type="email"],
+.form-row input[type="number"],
+.form-row input[type="url"],
+.form-row input[type="file"],
+.form-row select,
+.form-row textarea,
+.form-row .vTextField,
+.form-row .vURLField,
+.form-row .vIntegerField,
+.form-row .vLargeTextField,
+.form-row .related-widget-wrapper input,
+.form-row .related-widget-wrapper select {
+    width: 100% !important;
+    min-width: 420px !important;
+    max-width: 760px !important;
+    box-sizing: border-box !important;
+}
+
+.form-row input[type="text"],
+.form-row input[type="password"],
+.form-row input[type="email"],
+.form-row input[type="number"],
+.form-row input[type="url"],
+.form-row select,
+.form-row .vTextField,
+.form-row .vURLField,
+.form-row .vIntegerField {
+    min-height: 46px !important;
+    height: 46px !important;
+    line-height: 1.8 !important;
+}
+
+.form-row textarea,
+.form-row .vLargeTextField {
+    min-height: 130px !important;
+    height: 130px !important;
+    line-height: 1.8 !important;
+}
+
+.aligned .form-row label,
+.form-row label {
+    grid-column: 1;
+    width: 180px !important;
+    max-width: 180px;
+}
+
+.form-row .help,
+.aligned .form-row .help,
+.aligned p.help,
+.aligned div.help {
+    grid-column: 2;
+    width: 100% !important;
+    min-width: 420px;
+    max-width: 760px;
+    margin: 4px 0 0 !important;
+    padding: 0 !important;
+}
+
+.form-row input[type="checkbox"] {
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+}
+
+@media (max-width: 820px) {
+    .aligned .form-row,
+    .form-row {
+        display: block !important;
+    }
+
+    .aligned .form-row > div,
+    .form-row > div,
+    .form-row .flex-container,
+    .form-row .related-widget-wrapper,
+    .form-row input[type="text"],
+    .form-row input[type="password"],
+    .form-row input[type="email"],
+    .form-row input[type="number"],
+    .form-row input[type="url"],
+    .form-row input[type="file"],
+    .form-row select,
+    .form-row textarea,
+    .form-row .vTextField,
+    .form-row .vURLField,
+    .form-row .vIntegerField,
+    .form-row .vLargeTextField,
+    .form-row .help,
+    .aligned .form-row .help,
+    .aligned p.help,
+    .aligned div.help {
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .aligned .form-row label,
+    .form-row label {
+        width: auto !important;
+        max-width: none;
+    }
+}
