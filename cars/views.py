@@ -724,10 +724,22 @@ def generate_promo_code(request):
     if not sponsor:
         return JsonResponse({'success': False, 'error': 'شركة غير موجودة أو غير مفعلة'}, status=404)
 
-    # حدّ توليد لكل عنوان IP في الساعة — الحماية تشترك بين كل عمال gunicorn
-    # (تخزين في قاعدة البيانات لا في ذاكرة العامل الواحد).
-    shared = caches['shared']
     ip = _client_ip(request)
+    shared = caches['shared']
+    visitor_key = f'promo:visitor:{sponsor.pk}:{ip}'
+    existing_code = shared.get(visitor_key)
+    if existing_code:
+        existing = PromoCode.objects.filter(code=existing_code, sponsor=sponsor, status='active').first()
+        if existing:
+            return JsonResponse({
+                'success': True,
+                'code': existing.code,
+                'discount': sponsor.discount,
+                'sponsor': sponsor.name,
+                'status': 'existing',
+            })
+
+    # حدّ توليد حقيقي لكل عنوان IP في الساعة — لا يحسب إعادة عرض الكود القديم.
     rate_key = 'codegen:' + ip
     generated = shared.get(rate_key, 0)
     if generated >= CODE_GEN_RATE_LIMIT:
@@ -756,6 +768,7 @@ def generate_promo_code(request):
         return JsonResponse({'success': False, 'error': 'تعذر توليد كود الآن'}, status=500)
 
     shared.set(rate_key, generated + 1, 3600)
+    shared.set(visitor_key, code, PROMO_CODE_IP_CACHE_TTL)
 
     return JsonResponse({
         'success': True,
@@ -920,6 +933,7 @@ _REPORT_LIMIT = 500
 
 # حد توليد أكواد لكل عنوان IP في الساعة (حماية من التخزين الآلي)
 CODE_GEN_RATE_LIMIT = 60
+PROMO_CODE_IP_CACHE_TTL = 60 * 60 * 24 * 2
 
 
 @staff_member_required

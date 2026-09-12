@@ -87,12 +87,14 @@ class PromoGenerationTests(TestCase):
         r = self.client.post('/api/promo-code/generate/', {'sponsor': 'nope'})
         self.assertEqual(r.status_code, 404)
 
-    def test_generate_rejects_same_code_twice(self):
+    def test_generate_returns_same_code_for_same_ip(self):
         r1 = self.client.post('/api/promo-code/generate/', {'sponsor': self.sp.slug})
         r2 = self.client.post('/api/promo-code/generate/', {'sponsor': self.sp.slug})
         self.assertEqual(r1.status_code, 200)
         self.assertEqual(r2.status_code, 200)
-        self.assertNotEqual(r1.json()['code'], r2.json()['code'])
+        self.assertEqual(r1.json()['code'], r2.json()['code'])
+        self.assertEqual(r2.json()['status'], 'existing')
+        self.assertEqual(PromoCode.objects.filter(sponsor=self.sp).count(), 1)
 
     def test_rate_limit_per_ip(self):
         caches['shared'].set('codegen:203.0.113.5', 60, 3600)
