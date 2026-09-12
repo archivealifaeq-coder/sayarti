@@ -47,8 +47,7 @@ def validate_excel_file(file):
     
     required_columns = [
         'id', 'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR',
-        'Year', 'Engine', 'Oil Visc', 'Fuel', 'Octane',
-        'Spark', 'Oil Capacity'
+        'Year', 'Engine', 'Oil Visc', 'Fuel', 'Octane', 'Oil Capacity'
     ]
     optional_columns = [
         'Spec', 'Trim', 'Class', 'Recommendations', 'Oil Brands', 'Oil Visc (>100k)',

@@ -16,6 +16,15 @@ class CsvImportForm(forms.Form):
     excel_file = forms.FileField(label="اختر ملف الأكسل")
 
 
+class CarExportForm(forms.Form):
+    brand = forms.ChoiceField(label="الماركة", required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        brands = CarSpecification.objects.order_by('brand_ar').values_list('brand_ar', flat=True).distinct()
+        self.fields['brand'].choices = [('', 'تصدير كل الماركات')] + [(brand, brand) for brand in brands if brand]
+
+
 @admin.register(CarSpecification)
 class CarSpecificationAdmin(admin.ModelAdmin):
     change_list_template = 'admin/cars_changelist.html'
@@ -171,8 +180,95 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='car_import_excel'),
+            path('export-excel/', self.admin_site.admin_view(self.export_excel_view), name='car_export_excel'),
         ]
         return custom_urls + urls
+
+    def _export_rows(self, queryset):
+        return [
+            {
+                'id': car.id,
+                'Brand_EN': car.brand_en,
+                'Brand_AR': car.brand_ar,
+                'Model_EN': car.model_en,
+                'Model_AR': car.model_ar,
+                'Year': car.year,
+                'Spec': car.spec or '',
+                'Trim': car.trim or '',
+                'Engine': car.engine,
+                'Oil Visc': car.oil_visc,
+                'Oil Visc (>100k)': car.oil_visc_high_km or '',
+                'Fuel': car.fuel,
+                'Octane': car.octane,
+                'Tire Size': car.tire_size,
+                'Oil Capacity': car.oil_capacity,
+                'Recommendations': car.recommendations or '',
+                'Oil Brands': car.oil_brands or '',
+                'Battery': car.battery or '',
+                'Transmission Type': car.transmission_type or '',
+                'Transmission Oil Spec': car.transmission_oil_spec or '',
+                'Transmission Oil Brands': car.transmission_oil_brands or '',
+            }
+            for car in queryset
+        ]
+
+    def export_excel_view(self, request):
+        form = CarExportForm(request.GET or None)
+        if request.GET.get('download') == '1' and form.is_valid():
+            brand = form.cleaned_data.get('brand')
+            queryset = CarSpecification.objects.order_by('brand_ar', 'model_ar', 'year', 'id')
+            if brand:
+                queryset = queryset.filter(brand_ar=brand)
+
+            from io import BytesIO
+            import pandas as pd
+
+            output = BytesIO()
+            df = pd.DataFrame(self._export_rows(queryset))
+            if df.empty:
+                df = pd.DataFrame(columns=[
+                    'id', 'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year', 'Spec', 'Trim',
+                    'Engine', 'Oil Visc', 'Oil Visc (>100k)', 'Fuel', 'Octane', 'Tire Size',
+                    'Oil Capacity', 'Recommendations', 'Oil Brands', 'Battery', 'Transmission Type',
+                    'Transmission Oil Spec', 'Transmission Oil Brands'
+                ])
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='CarSpecifications')
+                worksheet = writer.sheets['CarSpecifications']
+                worksheet.freeze_panes = 'A2'
+                for cell in worksheet[1]:
+                    cell.font = cell.font.copy(bold=True)
+                for column_cells in worksheet.columns:
+                    width = min(max(len(str(cell.value or '')) for cell in column_cells) + 3, 42)
+                    worksheet.column_dimensions[column_cells[0].column_letter].width = width
+            output.seek(0)
+
+            filename_brand = 'brand' if brand else 'all'
+            response = HttpResponse(
+                output.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="car-specifications-{filename_brand}.xlsx"'
+            return response
+
+        html_template = """
+        {% extends "admin/base_site.html" %}
+        {% block content %}
+        <div class="section-card" style="max-width: 720px; margin: 20px auto;">
+            <h3>📤 تصدير قاعدة بيانات السيارات إلى Excel</h3>
+            <p style="color:#475569; line-height:1.9;">اختر ماركة محددة أو اترك الخيار على تصدير كل الماركات. الملف الناتج يستخدم نفس عناوين الأعمدة المطلوبة في الاستيراد الحالي.</p>
+            <form method="GET">
+                {{ form.as_p }}
+                <input type="hidden" name="download" value="1">
+                <button type="submit" class="btn btn-primary" style="border:none;">تصدير Excel</button>
+                <a href="../" style="color:#64748b; margin-right:10px;">إلغاء</a>
+            </form>
+        </div>
+        {% endblock %}
+        """
+        t = Template(html_template)
+        c = RequestContext(request, {"form": form, "opts": self.model._meta})
+        return HttpResponse(t.render(c))
 
     def import_excel_view(self, request):
         if request.method == "POST":

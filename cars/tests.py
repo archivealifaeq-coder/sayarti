@@ -1,3 +1,4 @@
+from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -8,7 +9,7 @@ from django.test import Client, TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from cars.models import Dealer, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.models import CarSpecification, Dealer, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
 from cars.services.deepseek_service import _provider_chain
 from cars.views import _client_ip
 
@@ -25,6 +26,24 @@ def _make_sponsor(slug='testco', prefix='TEST'):
     sp.set_password('secret123')
     sp.save()
     return sp
+
+
+def _make_car(car_id=1, brand_ar='تويوتا', model_ar='كورولا'):
+    return CarSpecification.objects.create(
+        id=car_id,
+        brand_en='Toyota',
+        brand_ar=brand_ar,
+        model_en='Corolla',
+        model_ar=model_ar,
+        year=2020,
+        spec='خليجي',
+        engine='1.8',
+        oil_visc='5W-30',
+        fuel='بنزين',
+        octane=91,
+        tire_size='205/55R16',
+        oil_capacity='4.2L',
+    )
 
 
 class SiteSettingsCacheTests(TestCase):
@@ -242,3 +261,24 @@ class PageSmokeTests(TestCase):
         r = self.client.get('/admin/report/cars/')
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'تقرير السيارات')
+
+    def test_car_export_excel_by_brand(self):
+        self.client.force_login(User.objects.create_superuser('boss4', 'b4@example.com', 'pw'))
+        _make_car(1, 'تويوتا', 'كورولا')
+        _make_car(2, 'هيونداي', 'النترا')
+
+        page = self.client.get('/admin/cars/carspecification/export-excel/')
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'تصدير قاعدة بيانات السيارات')
+
+        response = self.client.get('/admin/cars/carspecification/export-excel/', {'brand': 'تويوتا', 'download': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Disposition'].split(';')[0], 'attachment')
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+        from openpyxl import load_workbook
+        sheet = load_workbook(BytesIO(response.content)).active
+        rows = list(sheet.iter_rows(values_only=True))
+        self.assertEqual(rows[0][0:5], ('id', 'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR'))
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[1][2], 'تويوتا')
