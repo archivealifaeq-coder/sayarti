@@ -79,12 +79,15 @@ if [ -z "$GH_TOKEN" ] || [ -z "$GH_REPO" ]; then
   exit 0
 fi
 
-# مستودع git مؤقت (خاص) للنسخ
+# مستودع git مؤقت (خاص) للنسخ: نسحب الموجود أولاً حتى لا يرفض GitHub الدفع برسالة fetch first.
 GIT_DIR="${WORK_DIR}/gitrepo"
-mkdir -p "$GIT_DIR"
-git -C "$GIT_DIR" init -q 2>/dev/null || true
-git -C "$GIT_DIR" remote remove origin 2>/dev/null || true
-git -C "$GIT_DIR" remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git"
+REMOTE_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git"
+if ! git clone -q "$REMOTE_URL" "$GIT_DIR" 2>/dev/null; then
+  mkdir -p "$GIT_DIR"
+  git -C "$GIT_DIR" init -q 2>/dev/null || true
+  git -C "$GIT_DIR" remote remove origin 2>/dev/null || true
+  git -C "$GIT_DIR" remote add origin "$REMOTE_URL"
+fi
 
 # نسخ ملف النسخة الجديد إلى مستودع النسخ مع تسمية موحدة (نبقّي التاريخ في اسم)
 git -C "$GIT_DIR" config user.email "backup@srv.local"
@@ -96,16 +99,17 @@ cp "${BACKUP_NAME}_${DATE_STAMP}.tar.gz" "$GIT_DIR/backups/"
 (cd "$GIT_DIR/backups" && ls -1t *.tar.gz 2>/dev/null | tail -n +$((KEEP_LAST+1)) | while read -r old; do rm -f "$old"; done)
 
 git -C "$GIT_DIR" add -A
-git -C "$GIT_DIR" commit -q -m "backup $DATE_STAMP" 2>/dev/null || true
-
-# دفع (إن كان الخادم الأول مرة قد يحتاج إلى push من الصفر)
-if git -C "$GIT_DIR" rev-parse --verify refs/remotes/origin/master >/dev/null 2>&1; then
-  git -C "$GIT_DIR" push -q origin master
+if git -C "$GIT_DIR" diff --cached --quiet; then
+  echo "  لا توجد تغييرات جديدة للرفع."
 else
-  # أول مرة: ادفع فرع master (الرفع من فرع فارغ أول مرة)
-  git -C "$GIT_DIR" push -q -u origin master 2>/dev/null || \
-    git -C "$GIT_DIR" push -q origin HEAD:master
+  git -C "$GIT_DIR" commit -q -m "backup $DATE_STAMP"
 fi
+
+BRANCH="$(git -C "$GIT_DIR" branch --show-current 2>/dev/null || true)"
+if [ -z "$BRANCH" ]; then
+  BRANCH="master"
+fi
+git -C "$GIT_DIR" push -q origin "HEAD:${BRANCH}"
 
 echo "✅ اكتمل: ${BACKUP_NAME}_${DATE_STAMP}.tar.gz رُفع إلى github.com/${GH_REPO}"
 
