@@ -1362,7 +1362,7 @@
                 <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">💼 نافذة الخدمات</a>
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
-            <button type="button" id="installBtn" class="pwa-install-btn md:flex hidden" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
+            <button type="button" id="installBtn" class="pwa-install-btn" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
             <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
         </div>
     </nav>
@@ -1929,7 +1929,7 @@
                             openPwaModal();
                         }
                         deferredPrompt = null;
-                        if (installBtn) installBtn.style.display = 'none';
+                        if (installBtn) installBtn.style.display = 'inline-flex';
                     });
                 } else {
                     openPwaModal();
@@ -1944,7 +1944,6 @@
                 if (installBtn) {
                     installBtn.style.display = 'inline-flex';
                     installBtn.classList.remove('hidden');
-                    installBtn.classList.add('md:flex');
                 }
             });
 

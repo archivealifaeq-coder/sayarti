@@ -1382,7 +1382,7 @@
             gap: 20px;
         }
         @media (min-width: 768px) {
-            .search-modes.is-visible { grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+            .search-modes.is-visible { grid-template-columns: 1fr; gap: 24px; align-items: start; }
         }
 
         /* ---- بطاقة البحث السريع (الذهبية المستقلة) ---- */

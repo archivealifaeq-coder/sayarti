@@ -42,7 +42,7 @@
                 <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">💼 نافذة الخدمات</a>
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
             </div>
-            <button type="button" id="installBtn" class="pwa-install-btn md:flex hidden" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
+            <button type="button" id="installBtn" class="pwa-install-btn" aria-label="تثبيت التطبيق">📲 <span>ثبّت التطبيق</span></button>
             <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
         </div>
     </nav>
@@ -177,7 +177,7 @@
                             <div id="suggestions-container" class="hidden" aria-hidden="true"></div>
                             <input type="hidden" name="fuel" id="fuelInput">
 
-                            <div class="lg:col-span-3 flex flex-wrap justify-center gap-3 md:gap-4 mt-3 md:mt-4">
+                            <div class="md:col-span-2 lg:col-span-3 flex flex-wrap justify-center gap-3 md:gap-4 mt-3 md:mt-4">
                                 <button type="submit" class="btn-primary px-8 md:px-12 py-3 md:py-4 text-base md:text-lg" id="searchButton">🔍 بحث</button>
                                 <a href="{% url 'search' %}" class="btn-secondary px-6 md:px-8 py-3 md:py-4 text-base md:text-lg">إعادة تعيين</a>
                             </div>
@@ -724,7 +724,7 @@
                     deferredPrompt.userChoice.then(function(choiceResult) {
                         if (choiceResult.outcome === 'dismissed') openPwaModal();
                         deferredPrompt = null;
-                        if (installBtn) installBtn.style.display = 'none';
+                        if (installBtn) installBtn.style.display = 'inline-flex';
                     });
                 } else {
                     openPwaModal();
@@ -737,7 +737,6 @@
                 if (installBtn) {
                     installBtn.style.display = 'inline-flex';
                     installBtn.classList.remove('hidden');
-                    installBtn.classList.add('md:flex');
                 }
             });
             window.addEventListener('appinstalled', function() {
