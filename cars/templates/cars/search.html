@@ -744,9 +744,10 @@
                 deferredPrompt = null;
                 if (installBtn) installBtn.style.display = 'none';
             });
-            var modalClose = document.getElementById('pwaModalClose');
-            if (modalClose) modalClose.addEventListener('click', function() {
-                document.getElementById('pwaModal').classList.remove('open');
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'pwaModalClose') {
+                    document.getElementById('pwaModal').classList.remove('open');
+                }
             });
 
             /* ============================================
