@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.template import Template, RequestContext
 from django.utils.html import format_html, mark_safe
 from django.core.cache import cache
+from django.middleware.csrf import get_token
 from django.db.models import Count, Sum
 from django.db import models as db_models
 from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer, AppInstallMetric, DealerClickMetric
@@ -23,6 +24,12 @@ class CarExportForm(forms.Form):
         super().__init__(*args, **kwargs)
         brands = CarSpecification.objects.order_by('brand_ar').values_list('brand_ar', flat=True).distinct()
         self.fields['brand'].choices = [('', 'تصدير كل الماركات')] + [(brand, brand) for brand in brands if brand]
+
+
+def _safe_excel_value(value):
+    if isinstance(value, str) and value[:1] in ('=', '+', '-', '@'):
+        return "'" + value
+    return value
 
 
 @admin.register(CarSpecification)
@@ -188,7 +195,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
 
     def _export_rows(self, queryset):
         return [
-            {
+            {key: _safe_excel_value(value) for key, value in {
                 'Brand_EN': car.brand_en,
                 'Brand_AR': car.brand_ar,
                 'Model_EN': car.model_en,
@@ -212,7 +219,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
                 'Transmission Oil Spec': car.transmission_oil_spec or '',
                 'Transmission Oil Brands': car.transmission_oil_brands or '',
                 'id': car.id,
-            }
+            }.items()}
             for car in queryset
         ]
 
@@ -570,6 +577,10 @@ class AppInstallMetricAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
+    def changelist_view(self, request, extra_context=None):
+        self._request = request
+        return super().changelist_view(request, extra_context)
+
     def event_display(self, obj):
         return obj.get_event_display()
     event_display.short_description = 'الحدث'
@@ -584,16 +595,29 @@ class AppInstallMetricAdmin(admin.ModelAdmin):
     reset_selected_counters.short_description = 'تصفير العدادات المحددة'
 
     def reset_link(self, obj):
-        return format_html('<a class="button" href="reset/{}/">تصفير</a>', obj.pk)
+        return format_html(
+            '<form method="post" action="reset/{}/" style="margin:0;">'
+            '<input type="hidden" name="csrfmiddlewaretoken" value="{}">'
+            '<button type="submit" class="button" style="border:0;cursor:pointer;">تصفير</button>'
+            '</form>',
+            obj.pk,
+            get_token(getattr(self, '_request', None)),
+        )
     reset_link.short_description = 'تصفير مفرد'
 
     def reset_metric(self, request, metric_id):
+        if request.method != 'POST':
+            self.message_user(request, 'طلب غير صالح. استخدم زر التصفير من لوحة الإدارة.', messages.ERROR)
+            return redirect('../../')
         AppInstallMetric.objects.filter(pk=metric_id).update(count=0)
         cache.delete('admin_dash_stats')
         self.message_user(request, 'تم تصفير العداد.', messages.SUCCESS)
         return redirect('../../')
 
     def reset_all_metrics(self, request):
+        if request.method != 'POST':
+            self.message_user(request, 'طلب غير صالح. استخدم زر التصفير من لوحة الإدارة.', messages.ERROR)
+            return redirect('../')
         AppInstallMetric.objects.update(count=0)
         cache.delete('admin_dash_stats')
         self.message_user(request, 'تم تصفير كل عدادات تثبيت التطبيق.', messages.SUCCESS)
@@ -619,6 +643,10 @@ class DealerClickMetricAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
+    def changelist_view(self, request, extra_context=None):
+        self._request = request
+        return super().changelist_view(request, extra_context)
+
     def action_display(self, obj):
         return obj.get_action_display()
     action_display.short_description = 'نوع النقرة'
@@ -633,16 +661,29 @@ class DealerClickMetricAdmin(admin.ModelAdmin):
     reset_selected_counters.short_description = 'تصفير العدادات المحددة'
 
     def reset_link(self, obj):
-        return format_html('<a class="button" href="reset/{}/">تصفير</a>', obj.pk)
+        return format_html(
+            '<form method="post" action="reset/{}/" style="margin:0;">'
+            '<input type="hidden" name="csrfmiddlewaretoken" value="{}">'
+            '<button type="submit" class="button" style="border:0;cursor:pointer;">تصفير</button>'
+            '</form>',
+            obj.pk,
+            get_token(getattr(self, '_request', None)),
+        )
     reset_link.short_description = 'تصفير مفرد'
 
     def reset_metric(self, request, metric_id):
+        if request.method != 'POST':
+            self.message_user(request, 'طلب غير صالح. استخدم زر التصفير من لوحة الإدارة.', messages.ERROR)
+            return redirect('../../')
         DealerClickMetric.objects.filter(pk=metric_id).update(count=0)
         cache.delete('admin_dash_stats')
         self.message_user(request, 'تم تصفير العداد.', messages.SUCCESS)
         return redirect('../../')
 
     def reset_all_metrics(self, request):
+        if request.method != 'POST':
+            self.message_user(request, 'طلب غير صالح. استخدم زر التصفير من لوحة الإدارة.', messages.ERROR)
+            return redirect('../')
         DealerClickMetric.objects.update(count=0)
         cache.delete('admin_dash_stats')
         self.message_user(request, 'تم تصفير كل عدادات تواصل الوكلاء.', messages.SUCCESS)

@@ -17,6 +17,24 @@ var CORE_ASSETS = [
   '/static/shared/icons/icon-maskable-512.png'
 ];
 
+var PRIVATE_PREFIXES = [
+  '/admin/',
+  '/services/',
+  '/verify/',
+  '/admin/report/'
+];
+
+function isPrivateRequest(url) {
+  return PRIVATE_PREFIXES.some(function(prefix) {
+    return url.pathname.indexOf(prefix) === 0;
+  });
+}
+
+function canStore(response) {
+  var cacheControl = response.headers.get('Cache-Control') || '';
+  return response.ok && cacheControl.toLowerCase().indexOf('no-store') === -1;
+}
+
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
@@ -50,13 +68,20 @@ self.addEventListener('fetch', function(event) {
   var url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  if (isPrivateRequest(url)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).then(function(response) {
-        var copy = response.clone();
-        caches.open(CACHE_NAME).then(function(cache) {
-          cache.put(request, copy);
-        });
+        if (canStore(response)) {
+          var copy = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(request, copy);
+          });
+        }
         return response;
       }).catch(function() {
         return caches.match(request).then(function(cached) {
@@ -69,10 +94,12 @@ self.addEventListener('fetch', function(event) {
 
   event.respondWith(
     fetch(request).then(function(response) {
-      var copy = response.clone();
-      caches.open(CACHE_NAME).then(function(cache) {
-        cache.put(request, copy);
-      });
+      if (canStore(response)) {
+        var copy = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) {
+          cache.put(request, copy);
+        });
+      }
       return response;
     }).catch(function() {
       return caches.match(request);

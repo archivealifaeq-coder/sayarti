@@ -61,9 +61,15 @@
         <h3>📈 عدادات التطبيق والوكلاء</h3>
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
             <a class="btn btn-outline" href="/admin/cars/appinstallmetric/">عدادات التثبيت</a>
-            <a class="btn btn-outline" href="/admin/cars/appinstallmetric/reset-all/">تصفير كل عدادات التثبيت</a>
+            <form method="post" action="/admin/cars/appinstallmetric/reset-all/" style="display:inline; margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" style="border:0; cursor:pointer;">تصفير كل عدادات التثبيت</button>
+            </form>
             <a class="btn btn-outline" href="/admin/cars/dealerclickmetric/">عدادات تواصل الوكلاء</a>
-            <a class="btn btn-outline" href="/admin/cars/dealerclickmetric/reset-all/">تصفير كل نقرات الوكلاء</a>
+            <form method="post" action="/admin/cars/dealerclickmetric/reset-all/" style="display:inline; margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" style="border:0; cursor:pointer;">تصفير كل نقرات الوكلاء</button>
+            </form>
         </div>
         {% if dealer_clicks_table %}
         <table>
