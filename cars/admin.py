@@ -185,6 +185,29 @@ def import_symptoms_from_excel(excel_file):
         created += int(was_created)
         updated += int(not was_created)
 
+        for priority in range(1, 6):
+            title = _text_value(row, f'cause{priority}_title', f'Cause {priority} Title')
+            if not title:
+                continue
+            likelihood = _text_value(row, f'cause{priority}_likelihood', f'Cause {priority} Likelihood') or 'medium'
+            if likelihood not in valid_likelihood:
+                likelihood = 'medium'
+            _, cause_was_created = SymptomCause.objects.update_or_create(
+                symptom=CarSymptom.objects.get(slug=slug),
+                priority=priority,
+                defaults={
+                    'title': title,
+                    'description': _text_value(row, f'cause{priority}_description', f'Cause {priority} Description'),
+                    'likelihood': likelihood,
+                    'check_method': _text_value(row, f'cause{priority}_check_method', f'Cause {priority} Check Method'),
+                    'solution_hint': _text_value(row, f'cause{priority}_solution_hint', f'Cause {priority} Solution Hint'),
+                    'related_obd_codes': _text_value(row, f'cause{priority}_related_obd_codes', f'Cause {priority} Related OBD Codes'),
+                    'is_active': True,
+                },
+            )
+            cause_created += int(cause_was_created)
+            cause_updated += int(not cause_was_created)
+
     for index, row in enumerate(cause_rows, start=2):
         symptom_slug = _text_value(row, 'symptom_slug', 'Symptom Slug')
         title = _text_value(row, 'title', 'Title')
@@ -1021,22 +1044,15 @@ class CarSymptomAdmin(admin.ModelAdmin):
         {% block content %}
         <div class="section-card" style="max-width: 980px; margin: 20px auto;">
             <h3>استيراد أعراض الأعطال وأسبابها من Excel</h3>
-            <p style="line-height:1.9; color:#475569;">يفضل أن يحتوي الملف على ورقتين: <b>CarSymptom</b> للأعراض و <b>SymptomCause</b> للأسباب. إذا لم توجد ورقة CarSymptom، تُقرأ أول ورقة كأعراض.</p>
+            <p style="line-height:1.9; color:#475569;">يمكنك استخدام ورقة واحدة باسم <b>CarSymptom</b> تحتوي الأعطال وأسبابها في نفس الصف. ما زال يدعم ورقة <b>SymptomCause</b> اختيارياً إذا أردت فصل الأسباب لاحقاً.</p>
             <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">CarSymptom: name,slug,category,description,severity,safety_status,driver_questions,self_check_steps,urgent_warning,seo_title,seo_description,is_active</p>
-            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">SymptomCause: symptom_slug,priority,title,description,likelihood,check_method,solution_hint,related_obd_codes,is_active</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">أعمدة الأسباب داخل نفس الورقة: cause1_title,cause1_description,cause1_likelihood,cause1_check_method,cause1_solution_hint,cause1_related_obd_codes ثم cause2_... حتى cause5_...</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">اختياري للفصل المتقدم - SymptomCause: symptom_slug,priority,title,description,likelihood,check_method,solution_hint,related_obd_codes,is_active</p>
             <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-primary" style="border:0;">استيراد</button> <a href="../">إلغاء</a></form>
         </div>
         {% endblock %}
         """
         return HttpResponse(Template(html_template).render(RequestContext(request, {'form': form, 'opts': self.model._meta})))
-
-
-@admin.register(SymptomCause)
-class SymptomCauseAdmin(admin.ModelAdmin):
-    list_display = ('symptom', 'priority', 'title', 'likelihood', 'related_obd_codes', 'is_active')
-    list_filter = ('likelihood', 'is_active', 'symptom__category')
-    search_fields = ('title', 'description', 'check_method', 'solution_hint', 'related_obd_codes')
-    list_editable = ('priority', 'is_active')
 
 
 @admin.register(MaintenanceTask)
