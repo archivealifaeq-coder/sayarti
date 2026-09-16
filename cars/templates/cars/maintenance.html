@@ -1,0 +1,139 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الصيانة والأعطال - سيارتي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}"/>
+    <link rel="manifest" href="/manifest.json"/>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background:#0f172a; color:#f1f5f9; }
+        .maint-card { background:rgba(30,41,59,.68); border:1px solid rgba(245,158,11,.14); border-radius:24px; padding:22px; box-shadow:0 18px 50px rgba(0,0,0,.35); }
+        .maint-input, .maint-select { width:100%; border:1px solid rgba(148,163,184,.28); background:rgba(15,23,42,.74); color:#f8fafc; border-radius:14px; padding:13px 14px; outline:none; }
+        .maint-input:focus, .maint-select:focus { border-color:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,.12); }
+        .maint-btn { border:0; border-radius:14px; background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#0f172a; font-weight:900; padding:13px 22px; cursor:pointer; }
+        .chip { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:7px 12px; font-size:.78rem; font-weight:800; }
+        .sev-low { background:rgba(34,197,94,.13); color:#86efac; }
+        .sev-medium { background:rgba(251,191,36,.14); color:#fde68a; }
+        .sev-high { background:rgba(249,115,22,.14); color:#fdba74; }
+        .sev-critical { background:rgba(239,68,68,.14); color:#fca5a5; }
+        .row-due { border-color:rgba(239,68,68,.38); }
+        .row-soon { border-color:rgba(251,191,36,.38); }
+        .row-ok { border-color:rgba(34,197,94,.22); }
+    </style>
+</head>
+<body>
+    <nav class="glass-nav" id="navbar" role="navigation" aria-label="القائمة الرئيسية">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="{% url 'index' %}" class="nav-logo flex items-center gap-2" aria-label="الرئيسية"><span>🚗</span> سيارتي</a>
+            <div class="hidden md:flex gap-6 lg:gap-8">
+                <a href="{% url 'index' %}" class="nav-link">الرئيسية</a>
+                <a href="{% url 'search' %}" class="nav-link">🔍 البحث</a>
+                <a href="{% url 'mix_calculator' %}" class="nav-link">🧮 حاسبة الخلط</a>
+                {% if site_settings.show_dealers_card %}<a href="{% url 'dealers' %}" class="nav-link">🛢️ الوكلاء</a>{% endif %}
+                <a href="{% url 'maintenance' %}" class="nav-link active" aria-current="page">🛠️ الصيانة</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 pt-24 pb-12">
+        <section class="text-center mb-8">
+            <div class="text-5xl mb-3">🛠️</div>
+            <h1 class="text-3xl md:text-5xl font-black text-white mb-3">الصيانة والأعطال</h1>
+            <p class="text-slate-400 max-w-3xl mx-auto leading-8">ترجم كود العطل، افهم أعراض السيارة، واعرف الصيانة المطلوبة حسب الممشى والظروف الشاقة.</p>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <section class="maint-card">
+                <h2 class="text-xl font-black text-amber-300 mb-2">1) مترجم كودات الأعطال</h2>
+                <p class="text-slate-400 text-sm mb-4">اكتب الكود كما يظهر بجهاز الفحص، مثل P0300.</p>
+                <form method="get" class="space-y-3">
+                    <input class="maint-input" name="code" value="{{ code_query }}" placeholder="مثال: P0300" maxlength="10">
+                    <button class="maint-btn w-full" type="submit">ترجم الكود</button>
+                </form>
+                {% if code_query %}
+                    <div class="mt-5 maint-card p-4">
+                        {% if obd_result %}
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <span class="chip sev-{{ obd_result.severity }}">{{ obd_result.get_severity_display }}</span>
+                                <span class="chip sev-medium">{{ obd_result.get_safety_status_display }}</span>
+                            </div>
+                            <h3 class="font-black text-white text-lg">{{ obd_result.code }} - {{ obd_result.title }}</h3>
+                            <p class="text-slate-300 text-sm leading-7 mt-2">{{ obd_result.local_explanation|default:obd_result.plain_explanation }}</p>
+                            <a class="inline-block mt-3 text-amber-300 font-bold text-sm" href="{% url 'obd_code_detail' obd_result.code %}">التفاصيل الكاملة ←</a>
+                        {% else %}
+                            <p class="text-slate-300">لم نجد هذا الكود حالياً. يمكن إضافته من لوحة الإدارة.</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="maint-card">
+                <h2 class="text-xl font-black text-amber-300 mb-2">2) مستكشف الأعراض</h2>
+                <p class="text-slate-400 text-sm mb-4">اختر العرض الذي يظهر في السيارة.</p>
+                <form method="get" class="space-y-3">
+                    <select class="maint-select" name="symptom">
+                        <option value="">اختر العرض...</option>
+                        {% for symptom in symptoms %}<option value="{{ symptom.slug }}" {% if selected_symptom.slug == symptom.slug %}selected{% endif %}>{{ symptom.name }}</option>{% endfor %}
+                    </select>
+                    <button class="maint-btn w-full" type="submit">اعرض الاحتمالات</button>
+                </form>
+                {% if selected_symptom %}
+                <div class="mt-5 maint-card p-4">
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <span class="chip sev-{{ selected_symptom.severity }}">{{ selected_symptom.get_severity_display }}</span>
+                        <span class="chip sev-medium">{{ selected_symptom.get_safety_status_display }}</span>
+                    </div>
+                    <h3 class="font-black text-white text-lg">{{ selected_symptom.name }}</h3>
+                    <p class="text-slate-300 text-sm leading-7 mt-2">{{ selected_symptom.description }}</p>
+                    <ol class="mt-3 space-y-2 text-sm">
+                        {% for cause in selected_symptom.causes.all|slice:":3" %}{% if cause.is_active %}<li class="text-slate-300"><b class="text-amber-300">{{ forloop.counter }}. {{ cause.title }}</b> - {{ cause.solution_hint|default:cause.description }}</li>{% endif %}{% endfor %}
+                    </ol>
+                    <a class="inline-block mt-3 text-amber-300 font-bold text-sm" href="{% url 'symptom_detail' selected_symptom.slug %}">التفاصيل الكاملة ←</a>
+                </div>
+                {% endif %}
+            </section>
+
+            <section class="maint-card">
+                <h2 class="text-xl font-black text-amber-300 mb-2">3) جدول الصيانة حسب الممشى</h2>
+                <p class="text-slate-400 text-sm mb-4">أدخل قراءة العداد حسب الظروف الشاقة: حرارة، غبار، ازدحام.</p>
+                <form method="get" class="space-y-3">
+                    <input class="maint-input" type="number" name="odometer" value="{{ odometer }}" min="0" placeholder="مثال: 85000">
+                    <select class="maint-select" name="engine_type">
+                        {% for value,label in engine_type_choices %}<option value="{{ value }}" {% if engine_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <button class="maint-btn w-full" type="submit">اعرض الصيانة</button>
+                </form>
+            </section>
+        </div>
+
+        {% if maintenance_rows %}
+        <section class="maint-card mt-6">
+            <h2 class="text-2xl font-black text-white mb-4">قائمة الصيانة المقترحة للممشى {{ odometer }} كم</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for row in maintenance_rows %}
+                <div class="maint-card p-4 row-{{ row.status }}">
+                    <div class="flex flex-wrap justify-between gap-2 mb-2">
+                        <h3 class="font-black text-white">{{ row.task.name }}</h3>
+                        <span class="chip sev-{{ row.task.importance }}">{{ row.task.get_importance_display }}</span>
+                    </div>
+                    <p class="text-amber-200 text-sm font-bold">{{ row.status_note }}</p>
+                    <p class="text-slate-400 text-sm mt-2 leading-7">{{ row.task.description }}</p>
+                    {% if row.task.iraq_note %}<p class="text-slate-300 text-xs mt-2">ملاحظة محلية: {{ row.task.iraq_note }}</p>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="maint-card mt-6 text-sm text-slate-400 leading-8">
+            <b class="text-amber-300">تنبيه:</b> هذه نتائج تشخيص أولي وليست بديلاً عن فحص مختص. إذا ظهرت لمبة الزيت، حرارة عالية، دخان كثيف، أو فقدان قوي للعزم، أوقف السيارة وراجع مختصاً.
+        </section>
+    </main>
+</body>
+</html>

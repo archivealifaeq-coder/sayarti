@@ -1615,6 +1615,16 @@
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">اعرض الوكلاء ←</span>
                 </a>
                 {% endif %}
+
+                {% if site_settings.show_maintenance_card %}
+                <a href="{% url 'maintenance' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                    <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
+                    <div class="text-3xl mb-2">🛠️</div>
+                    <h2 class="text-base md:text-lg font-black text-white mb-1">الصيانة والأعطال</h2>
+                    <p class="text-slate-400 text-xs leading-relaxed">ترجم كود العطل، افهم الأعراض، واعرف صيانة الممشى.</p>
+                    <span class="inline-block mt-2 text-amber-400 text-xs font-bold">افحص الآن ←</span>
+                </a>
+                {% endif %}
             </div>
         </div>
         

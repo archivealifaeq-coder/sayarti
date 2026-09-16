@@ -1,0 +1,22 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ symptom.seo_title|default:symptom.name }} - سيارتي</title>
+    <meta name="description" content="{{ symptom.seo_description|default:symptom.description|truncatechars:150 }}">
+    <script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="{% static 'css/app.css' %}"/>
+    <style>body{background:#0f172a;color:#f1f5f9}.box{background:rgba(30,41,59,.72);border:1px solid rgba(245,158,11,.14);border-radius:24px;padding:22px}.chip{display:inline-block;border-radius:999px;padding:7px 12px;background:rgba(251,191,36,.14);color:#fde68a;font-weight:800;font-size:.8rem}</style>
+</head>
+<body><main class="max-w-4xl mx-auto px-4 pt-24 pb-12">
+    <a href="{% url 'maintenance' %}?symptom={{ symptom.slug }}" class="text-amber-300 font-bold">← الصيانة والأعطال</a>
+    <section class="box mt-4">
+        <div class="flex flex-wrap gap-2 mb-4"><span class="chip">{{ symptom.get_category_display }}</span><span class="chip">{{ symptom.get_severity_display }}</span><span class="chip">{{ symptom.get_safety_status_display }}</span></div>
+        <h1 class="text-3xl md:text-5xl font-black mb-4">{{ symptom.name }}</h1>
+        <p class="text-slate-300 leading-8">{{ symptom.description }}</p>
+    </section>
+    {% if symptom.urgent_warning %}<section class="box mt-4 border-red-500/40"><h2 class="text-xl font-black text-red-300 mb-2">تحذير مهم</h2><p class="leading-8 text-slate-300">{{ symptom.urgent_warning }}</p></section>{% endif %}
+    <section class="box mt-4"><h2 class="text-xl font-black text-amber-300 mb-3">أهم الأسباب المحتملة</h2><div class="space-y-3">{% for cause in symptom.causes.all %}{% if cause.is_active %}<div class="box p-4"><h3 class="font-black text-white">{{ cause.priority }}. {{ cause.title }}</h3><p class="text-slate-300 text-sm leading-7 mt-1">{{ cause.description }}</p>{% if cause.check_method %}<p class="text-amber-100 text-sm mt-2">الفحص: {{ cause.check_method }}</p>{% endif %}{% if cause.solution_hint %}<p class="text-slate-400 text-sm mt-2">الحل المتوقع: {{ cause.solution_hint }}</p>{% endif %}{% if cause.related_obd_codes %}<p class="text-slate-500 text-xs mt-2">أكواد مرتبطة: {{ cause.related_obd_codes }}</p>{% endif %}</div>{% endif %}{% endfor %}</div></section>
+    {% if symptom.driver_questions %}<section class="box mt-4"><h2 class="text-xl font-black text-amber-300 mb-2">أسئلة قبل مراجعة الفيتر</h2><p class="whitespace-pre-line leading-8 text-slate-300">{{ symptom.driver_questions }}</p></section>{% endif %}
+    {% if symptom.self_check_steps %}<section class="box mt-4"><h2 class="text-xl font-black text-amber-300 mb-2">خطوات فحص ذاتي</h2><p class="whitespace-pre-line leading-8 text-slate-300">{{ symptom.self_check_steps }}</p></section>{% endif %}
+</main></body></html>

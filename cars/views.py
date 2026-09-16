@@ -11,7 +11,10 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django import forms
 from django.core.cache import cache, caches
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer, AppInstallMetric, DealerClickMetric
+from .models import (
+    CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer,
+    AppInstallMetric, DealerClickMetric, OBDCode, CarSymptom, MaintenanceTask,
+)
 from .services.textnorm import fold_ar, fold_engine
 
 
@@ -48,6 +51,79 @@ def sw_view(request):
     response['Service-Worker-Allowed'] = '/'
     response['Cache-Control'] = 'public, max-age=0, must-revalidate'
     return response
+
+
+def _safe_int(value, default=0):
+    try:
+        return max(0, int(str(value).replace(',', '').strip()))
+    except (TypeError, ValueError):
+        return default
+
+
+def _maintenance_due_status(task, odometer):
+    if odometer < task.start_km:
+        return 'later', f'تبدأ عادة قرب {task.start_km:,} كم'
+    interval = task.severe_interval_km or task.interval_km or 1
+    distance_since_start = odometer - task.start_km
+    remainder = distance_since_start % interval
+    km_to_next = interval - remainder if remainder else 0
+    if remainder == 0 or km_to_next <= 1000:
+        return 'due', 'مستحقة الآن أو قريبة جداً'
+    if km_to_next <= 3000:
+        return 'soon', f'قريبة بعد حوالي {km_to_next:,} كم'
+    return 'ok', f'المراجعة القادمة بعد حوالي {km_to_next:,} كم'
+
+
+def maintenance_view(request):
+    code_query = request.GET.get('code', '').strip().upper()
+    symptom_slug = request.GET.get('symptom', '').strip()
+    odometer = _safe_int(request.GET.get('odometer'))
+    engine_type = request.GET.get('engine_type', 'all').strip() or 'all'
+
+    obd_result = None
+    if code_query:
+        obd_result = OBDCode.objects.filter(code=code_query, is_active=True).first()
+
+    symptoms = CarSymptom.objects.filter(is_active=True).prefetch_related('causes')
+    selected_symptom = None
+    if symptom_slug:
+        selected_symptom = symptoms.filter(slug=symptom_slug).first()
+
+    maintenance_rows = []
+    if odometer:
+        tasks = MaintenanceTask.objects.filter(is_active=True).filter(
+            Q(applies_to_engine_type='all') | Q(applies_to_engine_type=engine_type)
+        )
+        for task in tasks:
+            status, note = _maintenance_due_status(task, odometer)
+            maintenance_rows.append({'task': task, 'status': status, 'status_note': note})
+        status_order = {'due': 0, 'soon': 1, 'ok': 2, 'later': 3}
+        maintenance_rows.sort(key=lambda row: (status_order.get(row['status'], 9), row['task'].category, row['task'].name))
+
+    return render(request, 'cars/maintenance.html', {
+        'code_query': code_query,
+        'obd_result': obd_result,
+        'symptoms': symptoms,
+        'selected_symptom': selected_symptom,
+        'odometer': odometer or '',
+        'engine_type': engine_type,
+        'engine_type_choices': [('all', 'كل المحركات')] + list(CarSpecification.ENGINE_TYPE_CHOICES),
+        'maintenance_rows': maintenance_rows,
+    })
+
+
+def obd_code_detail(request, code):
+    code_obj = OBDCode.objects.filter(code=code.upper(), is_active=True).first()
+    if not code_obj:
+        return redirect(f'{reverse("maintenance")}?code={code.upper()}')
+    return render(request, 'cars/maintenance_obd_detail.html', {'code_obj': code_obj})
+
+
+def symptom_detail(request, slug):
+    symptom = CarSymptom.objects.filter(slug=slug, is_active=True).prefetch_related('causes').first()
+    if not symptom:
+        return redirect('maintenance')
+    return render(request, 'cars/maintenance_symptom_detail.html', {'symptom': symptom})
 
 
 RELAX_LABELS = {

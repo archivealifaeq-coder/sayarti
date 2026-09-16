@@ -9,7 +9,10 @@ from django.core.cache import cache
 from django.middleware.csrf import get_token
 from django.db.models import Count, Sum
 from django.db import models as db_models
-from .models import CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer, AppInstallMetric, DealerClickMetric
+from .models import (
+    CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer,
+    AppInstallMetric, DealerClickMetric, OBDCode, CarSymptom, SymptomCause, MaintenanceTask,
+)
 from .services.excel_importer import import_cars_from_excel
 
 
@@ -26,10 +29,198 @@ class CarExportForm(forms.Form):
         self.fields['brand'].choices = [('', 'تصدير كل الماركات')] + [(brand, brand) for brand in brands if brand]
 
 
+class MaintenanceImportForm(forms.Form):
+    excel_file = forms.FileField(label='اختر ملف Excel')
+
+
 def _safe_excel_value(value):
     if isinstance(value, str) and value[:1] in ('=', '+', '-', '@'):
         return "'" + value
     return value
+
+
+def _text_value(row, *names):
+    for name in names:
+        if name in row and row[name] is not None:
+            value = str(row[name]).strip()
+            if value and value.lower() != 'nan':
+                return value
+    return ''
+
+
+def _int_value(row, name, default=0):
+    value = _text_value(row, name)
+    if not value:
+        return default
+    try:
+        return int(float(value.replace(',', '')))
+    except ValueError:
+        return default
+
+
+def _bool_value(row, name, default=True):
+    value = _text_value(row, name).lower()
+    if not value:
+        return default
+    return value in ('1', 'true', 'yes', 'y', 'نعم', 'فعال', 'مفعل')
+
+
+def _sheet_rows(excel_file, preferred_names=None):
+    import pandas as pd
+    sheets = pd.read_excel(excel_file, sheet_name=None, dtype=str).items()
+    preferred = {name.lower() for name in (preferred_names or [])}
+    selected = None
+    for sheet_name, df in sheets:
+        if selected is None or sheet_name.lower() in preferred:
+            selected = df
+        if sheet_name.lower() in preferred:
+            break
+    if selected is None:
+        return []
+    selected = selected.fillna('')
+    return selected.to_dict('records')
+
+
+def _workbook_sheets(excel_file):
+    import pandas as pd
+    return {name.lower(): df.fillna('').to_dict('records') for name, df in pd.read_excel(excel_file, sheet_name=None, dtype=str).items()}
+
+
+def _pick_sheet(sheets, names):
+    for name in names:
+        rows = sheets.get(name.lower())
+        if rows is not None:
+            return rows
+    return []
+
+
+def import_obd_codes_from_excel(excel_file):
+    rows = _sheet_rows(excel_file, ['OBDCode', 'OBD', 'Codes'])
+    created = updated = failed = 0
+    errors = []
+    valid_systems = {key for key, _ in OBDCode.SYSTEM_CHOICES}
+    valid_severity = {key for key, _ in OBDCode._meta.get_field('severity').choices}
+    valid_safety = {key for key, _ in OBDCode._meta.get_field('safety_status').choices}
+
+    for index, row in enumerate(rows, start=2):
+        code = _text_value(row, 'code', 'Code', 'OBD Code').upper()
+        title = _text_value(row, 'title', 'Title')
+        slug = _text_value(row, 'slug', 'Slug')
+        if not code or not title or not slug:
+            failed += 1
+            errors.append(f'صف {index}: code و title و slug مطلوبة')
+            continue
+        system = _text_value(row, 'system', 'System') or 'engine'
+        severity = _text_value(row, 'severity', 'Severity') or 'medium'
+        safety_status = _text_value(row, 'safety_status', 'Safety Status') or 'check_soon'
+        if system not in valid_systems or severity not in valid_severity or safety_status not in valid_safety:
+            failed += 1
+            errors.append(f'صف {index}: قيمة system/severity/safety_status غير صحيحة')
+            continue
+        defaults = {
+            'title': title,
+            'slug': slug,
+            'system': system,
+            'severity': severity,
+            'safety_status': safety_status,
+            'plain_explanation': _text_value(row, 'plain_explanation', 'Plain Explanation'),
+            'local_explanation': _text_value(row, 'local_explanation', 'Local Explanation'),
+            'common_causes': _text_value(row, 'common_causes', 'Common Causes'),
+            'local_causes': _text_value(row, 'local_causes', 'Local Causes'),
+            'symptoms': _text_value(row, 'symptoms', 'Symptoms'),
+            'self_check_steps': _text_value(row, 'self_check_steps', 'Self Check Steps'),
+            'mechanic_advice': _text_value(row, 'mechanic_advice', 'Mechanic Advice'),
+            'dont_do': _text_value(row, 'dont_do', 'Dont Do', "Don't Do"),
+            'estimated_cost_note': _text_value(row, 'estimated_cost_note', 'Estimated Cost Note'),
+            'seo_title': _text_value(row, 'seo_title', 'SEO Title'),
+            'seo_description': _text_value(row, 'seo_description', 'SEO Description'),
+            'is_active': _bool_value(row, 'is_active', True),
+        }
+        _, was_created = OBDCode.objects.update_or_create(code=code, defaults=defaults)
+        created += int(was_created)
+        updated += int(not was_created)
+    return {'created': created, 'updated': updated, 'failed': failed, 'errors': errors[:10]}
+
+
+def import_symptoms_from_excel(excel_file):
+    sheets = _workbook_sheets(excel_file)
+    symptom_rows = _pick_sheet(sheets, ['CarSymptom', 'Symptoms', 'اعطال', 'الأعطال']) or next(iter(sheets.values()), [])
+    cause_rows = _pick_sheet(sheets, ['SymptomCause', 'Causes', 'اسباب', 'الأسباب'])
+    created = updated = failed = 0
+    cause_created = cause_updated = cause_failed = 0
+    errors = []
+    valid_categories = {key for key, _ in CarSymptom.CATEGORY_CHOICES}
+    valid_severity = {key for key, _ in CarSymptom._meta.get_field('severity').choices}
+    valid_safety = {key for key, _ in CarSymptom._meta.get_field('safety_status').choices}
+    valid_likelihood = {key for key, _ in SymptomCause.LIKELIHOOD_CHOICES}
+
+    for index, row in enumerate(symptom_rows, start=2):
+        name = _text_value(row, 'name', 'Name')
+        slug = _text_value(row, 'slug', 'Slug')
+        if not name or not slug:
+            failed += 1
+            errors.append(f'أعراض صف {index}: name و slug مطلوبة')
+            continue
+        category = _text_value(row, 'category', 'Category') or 'engine'
+        severity = _text_value(row, 'severity', 'Severity') or 'medium'
+        safety_status = _text_value(row, 'safety_status', 'Safety Status') or 'check_soon'
+        if category not in valid_categories or severity not in valid_severity or safety_status not in valid_safety:
+            failed += 1
+            errors.append(f'أعراض صف {index}: قيمة category/severity/safety_status غير صحيحة')
+            continue
+        defaults = {
+            'name': name,
+            'category': category,
+            'description': _text_value(row, 'description', 'Description'),
+            'severity': severity,
+            'safety_status': safety_status,
+            'driver_questions': _text_value(row, 'driver_questions', 'Driver Questions'),
+            'self_check_steps': _text_value(row, 'self_check_steps', 'Self Check Steps'),
+            'urgent_warning': _text_value(row, 'urgent_warning', 'Urgent Warning'),
+            'seo_title': _text_value(row, 'seo_title', 'SEO Title'),
+            'seo_description': _text_value(row, 'seo_description', 'SEO Description'),
+            'is_active': _bool_value(row, 'is_active', True),
+        }
+        _, was_created = CarSymptom.objects.update_or_create(slug=slug, defaults=defaults)
+        created += int(was_created)
+        updated += int(not was_created)
+
+    for index, row in enumerate(cause_rows, start=2):
+        symptom_slug = _text_value(row, 'symptom_slug', 'Symptom Slug')
+        title = _text_value(row, 'title', 'Title')
+        priority = _int_value(row, 'priority', 1)
+        if not symptom_slug or not title:
+            cause_failed += 1
+            errors.append(f'أسباب صف {index}: symptom_slug و title مطلوبة')
+            continue
+        symptom = CarSymptom.objects.filter(slug=symptom_slug).first()
+        if not symptom:
+            cause_failed += 1
+            errors.append(f'أسباب صف {index}: لم يتم العثور على العرض {symptom_slug}')
+            continue
+        likelihood = _text_value(row, 'likelihood', 'Likelihood') or 'medium'
+        if likelihood not in valid_likelihood:
+            cause_failed += 1
+            errors.append(f'أسباب صف {index}: likelihood غير صحيحة')
+            continue
+        defaults = {
+            'title': title,
+            'description': _text_value(row, 'description', 'Description'),
+            'likelihood': likelihood,
+            'check_method': _text_value(row, 'check_method', 'Check Method'),
+            'solution_hint': _text_value(row, 'solution_hint', 'Solution Hint'),
+            'related_obd_codes': _text_value(row, 'related_obd_codes', 'Related OBD Codes'),
+            'is_active': _bool_value(row, 'is_active', True),
+        }
+        _, was_created = SymptomCause.objects.update_or_create(symptom=symptom, priority=priority, defaults=defaults)
+        cause_created += int(was_created)
+        cause_updated += int(not was_created)
+
+    return {
+        'created': created, 'updated': updated, 'failed': failed,
+        'cause_created': cause_created, 'cause_updated': cause_updated, 'cause_failed': cause_failed,
+        'errors': errors[:10],
+    }
 
 
 @admin.register(CarSpecification)
@@ -703,8 +894,8 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'description': 'أنشئ وحدات إعلانية (Display ads) في لوحة AdSense والصق أرقامها data-ad-slot هنا — اتركها فارغة لإخفاء الموضع'
         }),
         ('🧩 بطاقات الواجهة', {
-            'fields': ('show_dealers_card',),
-            'description': 'تحكم بظهور بطاقة وكلاء الزيوت وقطع الغيار في الصفحة الرئيسية.'
+            'fields': ('show_dealers_card', 'show_maintenance_card'),
+            'description': 'تحكم بظهور بطاقات الواجهة في الصفحة الرئيسية.'
         }),
         ('📄 ملف ads.txt', {
             'fields': ('ads_txt',),
@@ -738,6 +929,128 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             return mark_safe('<span style="color: #b45309;">⚠️ ID exists but ads disabled</span>')
         return mark_safe('<span style="color: #475569;">⚪ AdSense not linked yet</span>')
     settings_summary.short_description = 'Status'
+
+
+@admin.register(OBDCode)
+class OBDCodeAdmin(admin.ModelAdmin):
+    change_list_template = 'admin/obd_changelist.html'
+    list_display = ('code', 'title', 'system', 'severity', 'safety_status', 'is_active', 'updated_at')
+    list_filter = ('system', 'severity', 'safety_status', 'is_active')
+    search_fields = ('code', 'title', 'plain_explanation', 'local_explanation', 'common_causes')
+    prepopulated_fields = {'slug': ('code', 'title')}
+    list_editable = ('is_active',)
+    fieldsets = (
+        ('المعلومات الأساسية', {'fields': ('code', 'title', 'slug', 'system', 'severity', 'safety_status', 'is_active')}),
+        ('شرح الكود', {'fields': ('plain_explanation', 'local_explanation', 'common_causes', 'local_causes', 'symptoms')}),
+        ('الفحص والأمان', {'fields': ('self_check_steps', 'mechanic_advice', 'dont_do', 'estimated_cost_note')}),
+        ('SEO', {'fields': ('seo_title', 'seo_description'), 'classes': ('collapse',)}),
+    )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='obd_import_excel')]
+        return custom_urls + urls
+
+    def import_excel_view(self, request):
+        form = MaintenanceImportForm(request.POST or None, request.FILES or None)
+        if request.method == 'POST' and form.is_valid():
+            result = import_obd_codes_from_excel(form.cleaned_data['excel_file'])
+            msg = f"تم الاستيراد: إضافة {result['created']} وتحديث {result['updated']}."
+            if result['failed']:
+                msg += f" فشل {result['failed']} صف."
+            self.message_user(request, msg, messages.WARNING if result['failed'] else messages.SUCCESS)
+            for error in result['errors']:
+                self.message_user(request, error, messages.ERROR)
+            return redirect('../')
+
+        html_template = """
+        {% extends "admin/base_site.html" %}
+        {% block content %}
+        <div class="section-card" style="max-width: 900px; margin: 20px auto;">
+            <h3>استيراد أكواد OBD من Excel</h3>
+            <p style="line-height:1.9; color:#475569;">الأعمدة المطلوبة: code, title, slug. باقي الأعمدة اختيارية ومطابقة لقاعدة البيانات.</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">code,title,slug,system,severity,safety_status,plain_explanation,local_explanation,common_causes,local_causes,symptoms,self_check_steps,mechanic_advice,dont_do,estimated_cost_note,seo_title,seo_description,is_active</p>
+            <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-primary" style="border:0;">استيراد</button> <a href="../">إلغاء</a></form>
+        </div>
+        {% endblock %}
+        """
+        return HttpResponse(Template(html_template).render(RequestContext(request, {'form': form, 'opts': self.model._meta})))
+
+
+class SymptomCauseInline(admin.TabularInline):
+    model = SymptomCause
+    extra = 1
+    fields = ('priority', 'title', 'likelihood', 'related_obd_codes', 'is_active')
+
+
+@admin.register(CarSymptom)
+class CarSymptomAdmin(admin.ModelAdmin):
+    change_list_template = 'admin/symptoms_changelist.html'
+    list_display = ('name', 'category', 'severity', 'safety_status', 'is_active', 'updated_at')
+    list_filter = ('category', 'severity', 'safety_status', 'is_active')
+    search_fields = ('name', 'description', 'driver_questions', 'self_check_steps')
+    prepopulated_fields = {'slug': ('name',)}
+    list_editable = ('is_active',)
+    inlines = (SymptomCauseInline,)
+    fieldsets = (
+        ('المعلومات الأساسية', {'fields': ('name', 'slug', 'category', 'severity', 'safety_status', 'is_active')}),
+        ('التشخيص الأولي', {'fields': ('description', 'driver_questions', 'self_check_steps', 'urgent_warning')}),
+        ('SEO', {'fields': ('seo_title', 'seo_description'), 'classes': ('collapse',)}),
+    )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='symptoms_import_excel')]
+        return custom_urls + urls
+
+    def import_excel_view(self, request):
+        form = MaintenanceImportForm(request.POST or None, request.FILES or None)
+        if request.method == 'POST' and form.is_valid():
+            result = import_symptoms_from_excel(form.cleaned_data['excel_file'])
+            msg = (
+                f"الأعراض: إضافة {result['created']} وتحديث {result['updated']} وفشل {result['failed']}. "
+                f"الأسباب: إضافة {result['cause_created']} وتحديث {result['cause_updated']} وفشل {result['cause_failed']}."
+            )
+            self.message_user(request, msg, messages.WARNING if result['failed'] or result['cause_failed'] else messages.SUCCESS)
+            for error in result['errors']:
+                self.message_user(request, error, messages.ERROR)
+            return redirect('../')
+
+        html_template = """
+        {% extends "admin/base_site.html" %}
+        {% block content %}
+        <div class="section-card" style="max-width: 980px; margin: 20px auto;">
+            <h3>استيراد أعراض الأعطال وأسبابها من Excel</h3>
+            <p style="line-height:1.9; color:#475569;">يفضل أن يحتوي الملف على ورقتين: <b>CarSymptom</b> للأعراض و <b>SymptomCause</b> للأسباب. إذا لم توجد ورقة CarSymptom، تُقرأ أول ورقة كأعراض.</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">CarSymptom: name,slug,category,description,severity,safety_status,driver_questions,self_check_steps,urgent_warning,seo_title,seo_description,is_active</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">SymptomCause: symptom_slug,priority,title,description,likelihood,check_method,solution_hint,related_obd_codes,is_active</p>
+            <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-primary" style="border:0;">استيراد</button> <a href="../">إلغاء</a></form>
+        </div>
+        {% endblock %}
+        """
+        return HttpResponse(Template(html_template).render(RequestContext(request, {'form': form, 'opts': self.model._meta})))
+
+
+@admin.register(SymptomCause)
+class SymptomCauseAdmin(admin.ModelAdmin):
+    list_display = ('symptom', 'priority', 'title', 'likelihood', 'related_obd_codes', 'is_active')
+    list_filter = ('likelihood', 'is_active', 'symptom__category')
+    search_fields = ('title', 'description', 'check_method', 'solution_hint', 'related_obd_codes')
+    list_editable = ('priority', 'is_active')
+
+
+@admin.register(MaintenanceTask)
+class MaintenanceTaskAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category', 'start_km', 'severe_interval_km', 'importance', 'applies_to_engine_type', 'is_active')
+    list_filter = ('category', 'importance', 'applies_to_engine_type', 'applies_to_transmission', 'is_active')
+    search_fields = ('name', 'description', 'iraq_note')
+    list_editable = ('is_active',)
+    fieldsets = (
+        ('المهمة', {'fields': ('name', 'category', 'importance', 'is_active')}),
+        ('الفترات', {'fields': ('interval_km', 'interval_months', 'severe_interval_km', 'severe_interval_months', 'start_km')}),
+        ('التطبيق', {'fields': ('applies_to_engine_type', 'applies_to_transmission')}),
+        ('الشرح', {'fields': ('description', 'iraq_note')}),
+    )
 
 
 class SponsorForm(forms.ModelForm):

@@ -506,6 +506,11 @@ class SiteSettings(models.Model):
         verbose_name="إظهار بطاقة وكلاء الزيوت وقطع الغيار",
         help_text="فعّلها لإظهار بطاقة الوكلاء في واجهة الموقع، وألغها لإخفائها."
     )
+    show_maintenance_card = models.BooleanField(
+        default=False,
+        verbose_name="إظهار بطاقة الصيانة والأعطال",
+        help_text="فعّلها لإظهار بطاقة الصيانة والأعطال في واجهة الموقع، وألغها لإخفائها أثناء تجهيز البيانات."
+    )
     ads_txt = models.TextField(
         blank=True,
         verbose_name="محتوى ads.txt",
@@ -566,3 +571,178 @@ class SiteSettings(models.Model):
         obj, _ = cls.objects.get_or_create(pk=1)
         cache.set(SITE_SETTINGS_CACHE_KEY, obj, SITE_SETTINGS_CACHE_TTL)
         return obj
+
+
+class MaintenanceSeverity(models.TextChoices):
+    LOW = 'low', 'منخفض'
+    MEDIUM = 'medium', 'متوسط'
+    HIGH = 'high', 'عالي'
+    CRITICAL = 'critical', 'حرج'
+
+
+class DrivingSafety(models.TextChoices):
+    DRIVE_CAREFULLY = 'drive_carefully', 'يمكن القيادة بحذر'
+    CHECK_SOON = 'check_soon', 'افحص قريباً'
+    STOP_NOW = 'stop_now', 'أوقف السيارة'
+    TOW_REQUIRED = 'tow_required', 'يفضل سطحة'
+
+
+class OBDCode(models.Model):
+    SYSTEM_CHOICES = [
+        ('engine', 'المحرك'),
+        ('transmission', 'ناقل الحركة'),
+        ('emissions', 'الانبعاثات'),
+        ('electrical', 'الكهرباء'),
+        ('fuel', 'الوقود'),
+        ('cooling', 'التبريد'),
+        ('other', 'أخرى'),
+    ]
+
+    code = models.CharField(max_length=10, unique=True, db_index=True, verbose_name='كود العطل')
+    title = models.CharField(max_length=180, verbose_name='العنوان')
+    slug = models.SlugField(max_length=220, unique=True, verbose_name='رابط SEO')
+    system = models.CharField(max_length=30, choices=SYSTEM_CHOICES, default='engine', verbose_name='النظام')
+    severity = models.CharField(max_length=20, choices=MaintenanceSeverity.choices, default=MaintenanceSeverity.MEDIUM, verbose_name='درجة الخطورة')
+    safety_status = models.CharField(max_length=30, choices=DrivingSafety.choices, default=DrivingSafety.CHECK_SOON, verbose_name='مؤشر الأمان')
+    plain_explanation = models.TextField(verbose_name='شرح مبسط')
+    local_explanation = models.TextField(blank=True, verbose_name='شرح باللهجة المحلية')
+    common_causes = models.TextField(blank=True, verbose_name='الأسباب الشائعة')
+    local_causes = models.TextField(blank=True, verbose_name='أسباب شائعة محلياً')
+    symptoms = models.TextField(blank=True, verbose_name='الأعراض المتوقعة')
+    self_check_steps = models.TextField(blank=True, verbose_name='خطوات فحص ذاتي')
+    mechanic_advice = models.TextField(blank=True, verbose_name='نصيحة مراجعة المختص')
+    dont_do = models.TextField(blank=True, verbose_name='أشياء لا تفعلها')
+    estimated_cost_note = models.TextField(blank=True, verbose_name='ملاحظة التكلفة')
+    seo_title = models.CharField(max_length=220, blank=True, verbose_name='عنوان SEO')
+    seo_description = models.CharField(max_length=320, blank=True, verbose_name='وصف SEO')
+    is_active = models.BooleanField(default=True, verbose_name='ظاهر في الموقع')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['code']
+        verbose_name = 'كود عطل OBD'
+        verbose_name_plural = 'أكواد الأعطال OBD'
+        indexes = [models.Index(fields=['code']), models.Index(fields=['slug']), models.Index(fields=['system'])]
+
+    def save(self, *args, **kwargs):
+        self.code = (self.code or '').upper().strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.code} - {self.title}'
+
+
+class CarSymptom(models.Model):
+    CATEGORY_CHOICES = [
+        ('engine', 'المحرك'),
+        ('cooling', 'التبريد'),
+        ('fuel', 'الوقود'),
+        ('electrical', 'الكهرباء'),
+        ('transmission', 'ناقل الحركة'),
+        ('suspension', 'التعليق'),
+        ('brakes', 'الفرامل'),
+        ('tires', 'الإطارات'),
+        ('other', 'أخرى'),
+    ]
+
+    name = models.CharField(max_length=160, unique=True, verbose_name='اسم العرض')
+    slug = models.SlugField(max_length=200, unique=True, verbose_name='رابط SEO')
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='engine', verbose_name='التصنيف')
+    description = models.TextField(verbose_name='وصف العرض')
+    severity = models.CharField(max_length=20, choices=MaintenanceSeverity.choices, default=MaintenanceSeverity.MEDIUM, verbose_name='درجة الخطورة')
+    safety_status = models.CharField(max_length=30, choices=DrivingSafety.choices, default=DrivingSafety.CHECK_SOON, verbose_name='مؤشر الأمان')
+    driver_questions = models.TextField(blank=True, verbose_name='أسئلة للسائق')
+    self_check_steps = models.TextField(blank=True, verbose_name='خطوات فحص ذاتي')
+    urgent_warning = models.TextField(blank=True, verbose_name='تحذير عاجل')
+    seo_title = models.CharField(max_length=220, blank=True, verbose_name='عنوان SEO')
+    seo_description = models.CharField(max_length=320, blank=True, verbose_name='وصف SEO')
+    is_active = models.BooleanField(default=True, verbose_name='ظاهر في الموقع')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['category', 'name']
+        verbose_name = 'عرض عطل'
+        verbose_name_plural = 'أعراض الأعطال'
+        indexes = [models.Index(fields=['slug']), models.Index(fields=['category'])]
+
+    def __str__(self):
+        return self.name
+
+
+class SymptomCause(models.Model):
+    LIKELIHOOD_CHOICES = [
+        ('high', 'عالية'),
+        ('medium', 'متوسطة'),
+        ('low', 'منخفضة'),
+    ]
+
+    symptom = models.ForeignKey(CarSymptom, related_name='causes', on_delete=models.CASCADE, verbose_name='العرض')
+    title = models.CharField(max_length=180, verbose_name='السبب المحتمل')
+    description = models.TextField(blank=True, verbose_name='شرح السبب')
+    priority = models.PositiveSmallIntegerField(default=1, verbose_name='الترتيب')
+    likelihood = models.CharField(max_length=20, choices=LIKELIHOOD_CHOICES, default='medium', verbose_name='الاحتمالية')
+    check_method = models.TextField(blank=True, verbose_name='طريقة الفحص')
+    solution_hint = models.TextField(blank=True, verbose_name='إشارة للحل')
+    related_obd_codes = models.CharField(max_length=120, blank=True, verbose_name='أكواد مرتبطة')
+    is_active = models.BooleanField(default=True, verbose_name='ظاهر')
+
+    class Meta:
+        ordering = ['symptom', 'priority', 'id']
+        verbose_name = 'سبب عرض'
+        verbose_name_plural = 'أسباب الأعراض'
+
+    def __str__(self):
+        return f'{self.symptom}: {self.title}'
+
+
+class MaintenanceTask(models.Model):
+    CATEGORY_CHOICES = [
+        ('oil', 'زيوت'),
+        ('filters', 'فلاتر'),
+        ('spark', 'شمعات القدح'),
+        ('cooling', 'تبريد'),
+        ('transmission', 'ناقل الحركة'),
+        ('brakes', 'فرامل'),
+        ('electrical', 'كهرباء'),
+        ('tires', 'إطارات'),
+        ('inspection', 'فحص عام'),
+    ]
+    APPLIES_CHOICES = [
+        ('all', 'الكل'),
+        ('regular', 'بنزين عادي'),
+        ('hybrid', 'هايبرد'),
+        ('turbo', 'تيربو'),
+        ('diesel', 'ديزل'),
+        ('electric', 'كهربائي'),
+    ]
+    TRANSMISSION_CHOICES = [
+        ('all', 'الكل'),
+        ('automatic', 'أوتوماتيك'),
+        ('cvt', 'CVT'),
+        ('manual', 'عادي'),
+    ]
+
+    name = models.CharField(max_length=180, verbose_name='اسم المهمة')
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='inspection', verbose_name='التصنيف')
+    interval_km = models.PositiveIntegerField(default=10000, verbose_name='كل كم كيلومتر')
+    interval_months = models.PositiveSmallIntegerField(default=12, verbose_name='كل كم شهر')
+    severe_interval_km = models.PositiveIntegerField(default=5000, verbose_name='كل كم في الظروف الشاقة')
+    severe_interval_months = models.PositiveSmallIntegerField(default=6, verbose_name='كل كم شهر في الظروف الشاقة')
+    start_km = models.PositiveIntegerField(default=0, verbose_name='تبدأ من ممشى')
+    importance = models.CharField(max_length=20, choices=MaintenanceSeverity.choices, default=MaintenanceSeverity.MEDIUM, verbose_name='الأهمية')
+    description = models.TextField(blank=True, verbose_name='شرح المهمة')
+    iraq_note = models.TextField(blank=True, verbose_name='ملاحظة للظروف العراقية')
+    applies_to_engine_type = models.CharField(max_length=20, choices=APPLIES_CHOICES, default='all', verbose_name='نوع المحرك')
+    applies_to_transmission = models.CharField(max_length=20, choices=TRANSMISSION_CHOICES, default='all', verbose_name='نوع ناقل الحركة')
+    is_active = models.BooleanField(default=True, verbose_name='ظاهر في الموقع')
+
+    class Meta:
+        ordering = ['start_km', 'severe_interval_km', 'name']
+        verbose_name = 'مهمة صيانة'
+        verbose_name_plural = 'مهام الصيانة'
+        indexes = [models.Index(fields=['category']), models.Index(fields=['start_km']), models.Index(fields=['severe_interval_km'])]
+
+    def __str__(self):
+        return self.name
