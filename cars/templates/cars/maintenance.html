@@ -57,7 +57,7 @@
                     <button class="maint-btn w-full" type="submit">ترجم الكود</button>
                 </form>
                 {% if code_query %}
-                    <div class="mt-5 maint-card p-4">
+                    <div class="mt-5 maint-card p-4" id="obd-result">
                         {% if obd_result %}
                             <div class="flex flex-wrap gap-2 mb-3">
                                 <span class="chip sev-{{ obd_result.severity }}">{{ obd_result.get_severity_display }}</span>
@@ -84,7 +84,7 @@
                     <button class="maint-btn w-full" type="submit">اعرض الاحتمالات</button>
                 </form>
                 {% if selected_symptom %}
-                <div class="mt-5 maint-card p-4">
+                <div class="mt-5 maint-card p-4" id="symptom-result">
                     <div class="flex flex-wrap gap-2 mb-3">
                         <span class="chip sev-{{ selected_symptom.severity }}">{{ selected_symptom.get_severity_display }}</span>
                         <span class="chip sev-medium">{{ selected_symptom.get_safety_status_display }}</span>
@@ -113,7 +113,7 @@
         </div>
 
         {% if maintenance_rows %}
-        <section class="maint-card mt-6">
+        <section class="maint-card mt-6" id="maintenance-results">
             <h2 class="text-2xl font-black text-white mb-4">قائمة الصيانة المقترحة للممشى {{ odometer }} كم</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {% for row in maintenance_rows %}
@@ -135,5 +135,19 @@
             <b class="text-amber-300">تنبيه:</b> هذه نتائج تشخيص أولي وليست بديلاً عن فحص مختص. إذا ظهرت لمبة الزيت، حرارة عالية، دخان كثيف، أو فقدان قوي للعزم، أوقف السيارة وراجع مختصاً.
         </section>
     </main>
+    <script>
+        (function() {
+            var hasResult = {% if code_query or selected_symptom or maintenance_rows %}true{% else %}false{% endif %};
+            if (!hasResult) return;
+            window.addEventListener('load', function() {
+                var target = document.getElementById('obd-result') || document.getElementById('symptom-result') || document.getElementById('maintenance-results');
+                if (target) {
+                    setTimeout(function() {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 180);
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
