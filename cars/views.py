@@ -292,6 +292,10 @@ def index_view(request):
     return render(request, 'cars/index.html', context)
 
 
+def legacy_budget_redirect(request):
+    return redirect('index', permanent=True)
+
+
 def search_view(request):
     context = _search_context(request)
     context['banners'] = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
