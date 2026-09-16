@@ -260,7 +260,333 @@
 
 
 =========================================================================
-13) آخر النشر
+13) الصيانة والأعطال
+=========================================================================
+
+تمت إضافة قسم مستقل باسم:
+- الصيانة والأعطال
+
+الرابط:
+- /maintenance/
+
+التحكم بظهور البطاقة من:
+- لوحة التحكم > إعدادات الموقع > بطاقات الواجهة > إظهار بطاقة الصيانة والأعطال
+
+الوضع الافتراضي:
+- البطاقة مخفية حتى تكتمل البيانات.
+- الصفحة نفسها تعمل ويمكن تجهيز البيانات من لوحة الإدارة.
+
+الأدوات داخل القسم:
+- مترجم كودات الأعطال OBD-II.
+- مستكشف أعراض الأعطال.
+- جدول الصيانة حسب الممشى.
+
+الجداول الجديدة:
+- OBDCode: أكواد الأعطال مثل P0300.
+- CarSymptom: الأعطال/الأعراض التي يلاحظها السائق.
+- SymptomCause: أسباب كل عرض، وتدار داخل صفحة العرض نفسها ولا تظهر كقسم مستقل.
+- MaintenanceTask: مهام الصيانة العامة أو حسب الشركة ونوع المحرك.
+
+استيراد Excel متاح من لوحة الإدارة لـ:
+- أكواد الأعطال OBD.
+- أعراض الأعطال، مع الأسباب داخل نفس الورقة.
+- مهام الصيانة.
+
+-----------------------------
+13.1) جدول OBDCode
+-----------------------------
+
+اسم ورقة Excel:
+- OBDCode
+
+الأعمدة النهائية بالترتيب:
+- code
+- title
+- slug
+- system
+- severity
+- safety_status
+- plain_explanation
+- local_explanation
+- common_causes
+- local_causes
+- symptoms
+- self_check_steps
+- mechanic_advice
+- dont_do
+- estimated_cost_note
+- seo_title
+- seo_description
+- is_active
+
+القيم المسموحة:
+- system = engine, transmission, emissions, electrical, fuel, cooling, other
+- severity = low, medium, high, critical
+- safety_status = drive_carefully, check_soon, stop_now, tow_required
+- is_active = TRUE أو FALSE
+
+مثال صف:
+- code: P0300
+- title: اختلال احتراق عشوائي
+- slug: p0300-random-misfire
+- system: engine
+- severity: high
+- safety_status: check_soon
+- plain_explanation: المحرك لا يحرق الوقود بشكل منتظم في سلندر أو أكثر.
+- local_explanation: السيارة بيها رجة أو تقطيع لأن الحرق مو مضبوط. غالباً السبب بواجي، كويل، بخاخات، أو بنزين رديء.
+- common_causes: بواجي ضعيفة | كويل متعب | بخاخات متسخة | تهريب هواء
+- local_causes: بنزين رديء | غبار | قطع تجارية ضعيفة
+- symptoms: رجة | تقطيع | صرفية بنزين | لمبة Check Engine
+- self_check_steps: افحص البواجي | افحص فلتر الهواء | افحص الكويلات | اقرأ الأكواد
+- mechanic_advice: إذا اللمبة تومض أو الرجة قوية افحصها بسرعة.
+- dont_do: لا تضغط على السيارة إذا الرجة قوية ولا تبدل قطع عشوائياً.
+- estimated_cost_note: الكلفة تعتمد على السبب ونتيجة الفحص.
+- seo_title: شرح كود P0300
+- seo_description: تعرف على أسباب كود P0300 وحلول اختلال الاحتراق.
+- is_active: TRUE
+
+Prompt جاهز لتوليد OBDCode:
+
+أريد ملف CSV لورقة Excel اسمها OBDCode لميزة تشخيص أعطال السيارات.
+استخدم الأعمدة التالية بالضبط وبنفس الترتيب:
+code,title,slug,system,severity,safety_status,plain_explanation,local_explanation,common_causes,local_causes,symptoms,self_check_steps,mechanic_advice,dont_do,estimated_cost_note,seo_title,seo_description,is_active
+
+القيم المسموحة:
+system = engine,transmission,emissions,electrical,fuel,cooling,other
+severity = low,medium,high,critical
+safety_status = drive_carefully,check_soon,stop_now,tow_required
+is_active = TRUE
+
+أريد 50 كود OBD شائع للسيارات في العراق والخليج.
+استخدم لغة عربية بسيطة ولهجة عراقية خفيفة في local_explanation.
+لا تعط تشخيصاً قطعياً، بل احتمالات آمنة.
+اجعل slug إنكليزي وفريد.
+استخدم الرمز | للفصل بين النقاط داخل الخلية، ولا تستخدم فاصلة داخل النصوص.
+أخرج CSV فقط بدون شرح إضافي.
+
+-----------------------------
+13.2) جدول CarSymptom مع الأسباب بنفس الورقة
+-----------------------------
+
+اسم ورقة Excel:
+- CarSymptom
+
+الأعمدة الأساسية:
+- name
+- slug
+- category
+- description
+- severity
+- safety_status
+- driver_questions
+- self_check_steps
+- urgent_warning
+- seo_title
+- seo_description
+- is_active
+
+أعمدة الأسباب داخل نفس الصف:
+- cause1_title
+- cause1_description
+- cause1_likelihood
+- cause1_check_method
+- cause1_solution_hint
+- cause1_related_obd_codes
+- cause2_title
+- cause2_description
+- cause2_likelihood
+- cause2_check_method
+- cause2_solution_hint
+- cause2_related_obd_codes
+- cause3_title
+- cause3_description
+- cause3_likelihood
+- cause3_check_method
+- cause3_solution_hint
+- cause3_related_obd_codes
+
+يمكن إضافة cause4 و cause5 بنفس النمط إذا لزم.
+
+القيم المسموحة:
+- category = engine, cooling, fuel, electrical, transmission, suspension, brakes, tires, other
+- severity = low, medium, high, critical
+- safety_status = drive_carefully, check_soon, stop_now, tow_required
+- cause*_likelihood = high, medium, low
+- is_active = TRUE أو FALSE
+
+مثال صف:
+- name: رجة عالسلو
+- slug: idle-shaking
+- category: engine
+- description: السيارة تهتز وهي واقفة أو على N وقد تزيد مع تشغيل المكيف.
+- severity: medium
+- safety_status: check_soon
+- driver_questions: هل تزيد مع المكيف؟ | هل لمبة المحرك شغالة؟ | متى آخر تبديل بواجي؟
+- self_check_steps: افحص فلتر الهواء | افحص البواجي | افحص الثروتل | اقرأ الأكواد
+- urgent_warning: إذا اللمبة تومض أو الرجة قوية لا تضغط على السيارة قبل الفحص.
+- seo_title: أسباب رجة السيارة عالسلو
+- seo_description: تعرف على أسباب رجة السيارة عالسلو وأهم الفحوصات قبل مراجعة الفيتر.
+- is_active: TRUE
+- cause1_title: بواجي ضعيفة
+- cause1_description: البواجي القديمة تسبب حرق غير منتظم خصوصاً على السلو.
+- cause1_likelihood: high
+- cause1_check_method: افحص عمر وشكل البواجي.
+- cause1_solution_hint: تبديل بواجي أصلية بالمواصفة الصحيحة.
+- cause1_related_obd_codes: P0300
+- cause2_title: كويل متعب
+- cause2_description: الكويل الضعيف يسبب تقطيع ورجة متقطعة.
+- cause2_likelihood: high
+- cause2_check_method: افحص الكويل بجهاز الفحص أو تبديل مكانه للتأكد.
+- cause2_solution_hint: تبديل الكويل المتضرر فقط بعد التشخيص.
+- cause2_related_obd_codes: P0300|P0301
+- cause3_title: ثروتل متسخ
+- cause3_description: اتساخ الثروتل يسبب عدم انتظام الهواء على السلو.
+- cause3_likelihood: medium
+- cause3_check_method: فحص وتنظيف الثروتل بطريقة صحيحة.
+- cause3_solution_hint: تنظيف احترافي بدون رش عشوائي على الحساسات.
+- cause3_related_obd_codes:
+
+Prompt جاهز لتوليد CarSymptom:
+
+أريد ملف CSV لورقة Excel اسمها CarSymptom لميزة أعراض أعطال السيارات.
+استخدم الأعمدة التالية بالضبط وبنفس الترتيب:
+name,slug,category,description,severity,safety_status,driver_questions,self_check_steps,urgent_warning,seo_title,seo_description,is_active,cause1_title,cause1_description,cause1_likelihood,cause1_check_method,cause1_solution_hint,cause1_related_obd_codes,cause2_title,cause2_description,cause2_likelihood,cause2_check_method,cause2_solution_hint,cause2_related_obd_codes,cause3_title,cause3_description,cause3_likelihood,cause3_check_method,cause3_solution_hint,cause3_related_obd_codes
+
+القيم المسموحة:
+category = engine,cooling,fuel,electrical,transmission,suspension,brakes,tires,other
+severity = low,medium,high,critical
+safety_status = drive_carefully,check_soon,stop_now,tow_required
+cause_likelihood = high,medium,low
+is_active = TRUE
+
+أريد 50 عرض عطل شائع في سيارات العراق والخليج.
+لكل عرض ضع 3 أسباب فقط.
+استخدم لغة بسيطة يفهمها السائق العراقي.
+لا تعط تشخيصاً قطعياً، بل احتمالات.
+ضع تحذيراً واضحاً للحالات الخطرة.
+اجعل slug إنكليزي وفريد.
+استخدم الرمز | للفصل بين الأسئلة أو الخطوات داخل الخلية، ولا تستخدم فاصلة داخل النصوص.
+أخرج CSV فقط بدون شرح إضافي.
+
+-----------------------------
+13.3) جدول MaintenanceTask
+-----------------------------
+
+اسم ورقة Excel:
+- MaintenanceTask
+
+المبدأ:
+- إذا كان brand_ar و brand_en فارغين، تكون المهمة عامة لكل الشركات.
+- إذا كُتبت الشركة، تكون المهمة خاصة بهذه الشركة.
+- لا يوجد موديل ولا سنة.
+- التخصيص يكون حسب الشركة ونوع المحرك فقط.
+
+الأعمدة النهائية بالترتيب:
+- name
+- brand_ar
+- brand_en
+- category
+- interval_km
+- interval_months
+- severe_interval_km
+- severe_interval_months
+- start_km
+- importance
+- manufacturer_note
+- description
+- iraq_note
+- applies_to_engine_type
+- applies_to_transmission
+- is_active
+
+القيم المسموحة:
+- category = oil, filters, spark, cooling, transmission, brakes, electrical, tires, inspection
+- importance = low, medium, high, critical
+- applies_to_engine_type = all, regular, hybrid, turbo, diesel, electric
+- applies_to_transmission = all, automatic, cvt, manual
+- is_active = TRUE أو FALSE
+
+مثال عام لكل الشركات:
+- name: تغيير زيت المحرك
+- brand_ar:
+- brand_en:
+- category: oil
+- interval_km: 10000
+- interval_months: 12
+- severe_interval_km: 5000
+- severe_interval_months: 6
+- start_km: 0
+- importance: high
+- manufacturer_note: توصية عامة حسب نوع الزيت وظروف التشغيل.
+- description: زيت المحرك يحمي من الاحتكاك والحرارة.
+- iraq_note: في العراق يفضل تقليل الفترة بسبب الحرارة والزحام والغبار.
+- applies_to_engine_type: all
+- applies_to_transmission: all
+- is_active: TRUE
+
+مثال Toyota بنزين:
+- name: تغيير زيت المحرك
+- brand_ar: تويوتا
+- brand_en: Toyota
+- category: oil
+- interval_km: 10000
+- interval_months: 12
+- severe_interval_km: 5000
+- severe_interval_months: 6
+- start_km: 0
+- importance: high
+- manufacturer_note: توصي الشركة باتباع لزوجة الزيت المطابقة للمحرك وظروف التشغيل.
+- description: تغيير الزيت يحافظ على عمر المحرك ونعومة التشغيل.
+- iraq_note: الحرارة والزحام تجعل الفترة الأقرب أفضل.
+- applies_to_engine_type: regular
+- applies_to_transmission: all
+- is_active: TRUE
+
+مثال Toyota هايبرد:
+- name: فحص نظام الهايبرد
+- brand_ar: تويوتا
+- brand_en: Toyota
+- category: electrical
+- interval_km: 20000
+- interval_months: 12
+- severe_interval_km: 10000
+- severe_interval_months: 6
+- start_km: 0
+- importance: high
+- manufacturer_note: يفضل فحص نظام الهايبرد والبطارية دورياً حسب دليل الوكالة.
+- description: فحص البطارية ونظام الشحن والتبريد الخاص بالهايبرد.
+- iraq_note: حرارة الصيف تؤثر على البطاريات ويجب متابعة التبريد.
+- applies_to_engine_type: hybrid
+- applies_to_transmission: all
+- is_active: TRUE
+
+Prompt جاهز لتوليد MaintenanceTask:
+
+أريد ملف CSV لورقة Excel اسمها MaintenanceTask لجدول صيانة السيارات.
+استخدم الأعمدة التالية بالضبط وبنفس الترتيب:
+name,brand_ar,brand_en,category,interval_km,interval_months,severe_interval_km,severe_interval_months,start_km,importance,manufacturer_note,description,iraq_note,applies_to_engine_type,applies_to_transmission,is_active
+
+القيم المسموحة:
+category = oil,filters,spark,cooling,transmission,brakes,electrical,tires,inspection
+importance = low,medium,high,critical
+applies_to_engine_type = all,regular,hybrid,turbo,diesel,electric
+applies_to_transmission = all,automatic,cvt,manual
+is_active = TRUE
+
+أريد جدول صيانة عام ومخصص حسب الشركة ونوع المحرك فقط، بدون موديل وبدون سنة.
+اكتب مهام عامة بترك brand_ar و brand_en فارغين.
+واكتب مهام مخصصة لشركات شائعة مثل Toyota, Hyundai, Kia, Nissan, Lexus, BMW, Mercedes, Chevrolet, Ford, Mitsubishi, Honda.
+غطِ أنواع المحركات: regular, hybrid, turbo, diesel, electric عند الحاجة.
+استخدم severe_interval_km للظروف الشاقة في العراق والخليج: حرارة، زحام، غبار.
+ضع manufacturer_note كتوصية الشركة الأم بصياغة عامة وآمنة.
+ضع iraq_note كملاحظة محلية للحرارة والوقود والغبار والزحام.
+استخدم أرقاماً صحيحة فقط في حقول الكيلومترات والأشهر.
+استخدم الرمز | للفصل بين النقاط داخل الخلية، ولا تستخدم فاصلة داخل النصوص.
+أخرج CSV فقط بدون شرح إضافي.
+
+
+=========================================================================
+14) آخر النشر
 =========================================================================
 
 آخر commits منشورة:
@@ -283,7 +609,7 @@
 
 
 =========================================================================
-14) سجل التنفيذ المختصر
+15) سجل التنفيذ المختصر
 =========================================================================
 
 2026-09-10:
