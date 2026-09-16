@@ -504,27 +504,40 @@ def robots_view(request):
 def sitemap_view(request):
     from django.urls import reverse
     from django.utils import timezone
+    from xml.sax.saxutils import escape
 
     host = request.build_absolute_uri('/').rstrip('/')
     today = timezone.localdate().isoformat()
+    settings_obj = SiteSettings.load()
 
     urls = [
         {'loc': host, 'priority': '1.0', 'freq': 'daily'},
         {'loc': host + reverse('search'), 'priority': '0.9', 'freq': 'daily'},
         {'loc': host + reverse('mix_calculator'), 'priority': '0.8', 'freq': 'weekly'},
-        {'loc': host + reverse('dealers'), 'priority': '0.8', 'freq': 'weekly'},
         {'loc': host + reverse('about'), 'priority': '0.5', 'freq': 'monthly'},
         {'loc': host + reverse('privacy'), 'priority': '0.3', 'freq': 'yearly'},
     ]
-    for car_id in CarSpecification.objects.values_list('id', flat=True).iterator():
+    if settings_obj.show_dealers_card:
+        urls.append({'loc': host + reverse('dealers'), 'priority': '0.8', 'freq': 'weekly'})
+    if settings_obj.show_maintenance_card:
+        urls.append({'loc': host + reverse('maintenance'), 'priority': '0.8', 'freq': 'weekly'})
+        for code in OBDCode.objects.filter(is_active=True).values_list('code', flat=True)[:1000]:
+            urls.append({'loc': host + reverse('obd_code_detail', args=[code]), 'priority': '0.6', 'freq': 'monthly'})
+        for slug in CarSymptom.objects.filter(is_active=True).values_list('slug', flat=True)[:1000]:
+            urls.append({'loc': host + reverse('symptom_detail', args=[slug]), 'priority': '0.6', 'freq': 'monthly'})
+
+    car_ids = (CarSpecification.objects
+               .order_by('-year', 'brand_ar', 'model_ar', 'id')
+               .values_list('id', flat=True)[:1000])
+    for car_id in car_ids:
         urls.append({
             'loc': host + reverse('recommendations', args=[car_id]),
-            'priority': '0.7',
+            'priority': '0.5',
             'freq': 'monthly',
         })
 
     chunk = '\n'.join(
-        f"   <url><loc>{u['loc']}</loc><lastmod>{today}</lastmod>"
+        f"   <url><loc>{escape(u['loc'])}</loc><lastmod>{today}</lastmod>"
         f"<changefreq>{u['freq']}</changefreq><priority>{u['priority']}</priority></url>"
         for u in urls
     )

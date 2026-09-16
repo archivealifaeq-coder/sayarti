@@ -255,6 +255,16 @@ class PageSmokeTests(TestCase):
         response = self.client.get('/')
         self.assertNotContains(response, 'وكلاء الزيوت وقطع الغيار')
 
+    def test_sitemap_excludes_hidden_dealers_page(self):
+        settings_obj = SiteSettings.load()
+        settings_obj.show_dealers_card = False
+        settings_obj.show_maintenance_card = False
+        settings_obj.save()
+        response = self.client.get('/sitemap.xml')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, '/dealers/')
+        self.assertNotContains(response, '/maintenance/')
+
     def test_security_headers_are_present(self):
         response = self.client.get('/')
         self.assertEqual(response['X-Frame-Options'], 'DENY')
