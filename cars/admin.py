@@ -246,6 +246,61 @@ def import_symptoms_from_excel(excel_file):
     }
 
 
+def import_maintenance_tasks_from_excel(excel_file):
+    rows = _sheet_rows(excel_file, ['MaintenanceTask', 'Maintenance', 'صيانة'])
+    created = updated = failed = 0
+    errors = []
+    valid_categories = {key for key, _ in MaintenanceTask.CATEGORY_CHOICES}
+    valid_importance = {key for key, _ in MaintenanceTask._meta.get_field('importance').choices}
+    valid_engines = {key for key, _ in MaintenanceTask.APPLIES_CHOICES}
+    valid_transmissions = {key for key, _ in MaintenanceTask.TRANSMISSION_CHOICES}
+
+    for index, row in enumerate(rows, start=2):
+        name = _text_value(row, 'name', 'Name')
+        if not name:
+            failed += 1
+            errors.append(f'صف {index}: name مطلوب')
+            continue
+        category = _text_value(row, 'category', 'Category') or 'inspection'
+        importance = _text_value(row, 'importance', 'Importance') or 'medium'
+        engine_type = _text_value(row, 'applies_to_engine_type', 'Engine Type') or 'all'
+        transmission = _text_value(row, 'applies_to_transmission', 'Transmission') or 'all'
+        if category not in valid_categories or importance not in valid_importance or engine_type not in valid_engines or transmission not in valid_transmissions:
+            failed += 1
+            errors.append(f'صف {index}: category/importance/engine/transmission غير صحيحة')
+            continue
+        brand_ar = _text_value(row, 'brand_ar', 'Brand AR')
+        brand_en = _text_value(row, 'brand_en', 'Brand EN')
+        defaults = {
+            'brand_ar': brand_ar,
+            'brand_en': brand_en,
+            'category': category,
+            'interval_km': _int_value(row, 'interval_km', 10000),
+            'interval_months': _int_value(row, 'interval_months', 12),
+            'severe_interval_km': _int_value(row, 'severe_interval_km', 5000),
+            'severe_interval_months': _int_value(row, 'severe_interval_months', 6),
+            'start_km': _int_value(row, 'start_km', 0),
+            'importance': importance,
+            'description': _text_value(row, 'description', 'Description'),
+            'manufacturer_note': _text_value(row, 'manufacturer_note', 'Manufacturer Note'),
+            'iraq_note': _text_value(row, 'iraq_note', 'Iraq Note'),
+            'applies_to_engine_type': engine_type,
+            'applies_to_transmission': transmission,
+            'is_active': _bool_value(row, 'is_active', True),
+        }
+        _, was_created = MaintenanceTask.objects.update_or_create(
+            name=name,
+            brand_ar=brand_ar,
+            brand_en=brand_en,
+            applies_to_engine_type=engine_type,
+            applies_to_transmission=transmission,
+            defaults=defaults,
+        )
+        created += int(was_created)
+        updated += int(not was_created)
+    return {'created': created, 'updated': updated, 'failed': failed, 'errors': errors[:10]}
+
+
 @admin.register(CarSpecification)
 class CarSpecificationAdmin(admin.ModelAdmin):
     change_list_template = 'admin/cars_changelist.html'
@@ -1057,16 +1112,52 @@ class CarSymptomAdmin(admin.ModelAdmin):
 
 @admin.register(MaintenanceTask)
 class MaintenanceTaskAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'start_km', 'severe_interval_km', 'importance', 'applies_to_engine_type', 'is_active')
-    list_filter = ('category', 'importance', 'applies_to_engine_type', 'applies_to_transmission', 'is_active')
-    search_fields = ('name', 'description', 'iraq_note')
+    change_list_template = 'admin/maintenance_changelist.html'
+    list_display = ('name', 'brand_display', 'category', 'start_km', 'severe_interval_km', 'importance', 'applies_to_engine_type', 'is_active')
+    list_filter = ('category', 'importance', 'applies_to_engine_type', 'applies_to_transmission', 'is_active', 'brand_ar', 'brand_en')
+    search_fields = ('name', 'brand_ar', 'brand_en', 'description', 'manufacturer_note', 'iraq_note')
     list_editable = ('is_active',)
     fieldsets = (
+        ('نطاق التوصية', {'fields': ('brand_ar', 'brand_en', 'applies_to_engine_type')}),
         ('المهمة', {'fields': ('name', 'category', 'importance', 'is_active')}),
         ('الفترات', {'fields': ('interval_km', 'interval_months', 'severe_interval_km', 'severe_interval_months', 'start_km')}),
-        ('التطبيق', {'fields': ('applies_to_engine_type', 'applies_to_transmission')}),
-        ('الشرح', {'fields': ('description', 'iraq_note')}),
+        ('التطبيق المتقدم', {'fields': ('applies_to_transmission',), 'classes': ('collapse',)}),
+        ('الشرح', {'fields': ('manufacturer_note', 'description', 'iraq_note')}),
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='maintenance_import_excel')]
+        return custom_urls + urls
+
+    def brand_display(self, obj):
+        return obj.brand_ar or obj.brand_en or 'عام'
+    brand_display.short_description = 'الشركة'
+
+    def import_excel_view(self, request):
+        form = MaintenanceImportForm(request.POST or None, request.FILES or None)
+        if request.method == 'POST' and form.is_valid():
+            result = import_maintenance_tasks_from_excel(form.cleaned_data['excel_file'])
+            msg = f"تم الاستيراد: إضافة {result['created']} وتحديث {result['updated']}."
+            if result['failed']:
+                msg += f" فشل {result['failed']} صف."
+            self.message_user(request, msg, messages.WARNING if result['failed'] else messages.SUCCESS)
+            for error in result['errors']:
+                self.message_user(request, error, messages.ERROR)
+            return redirect('../')
+
+        html_template = """
+        {% extends "admin/base_site.html" %}
+        {% block content %}
+        <div class="section-card" style="max-width: 980px; margin: 20px auto;">
+            <h3>استيراد مهام الصيانة من Excel</h3>
+            <p style="line-height:1.9; color:#475569;">كل صف هو توصية صيانة عامة أو خاصة بشركة. اترك brand_ar و brand_en فارغين إذا كانت المهمة عامة لكل الشركات.</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">name,brand_ar,brand_en,category,interval_km,interval_months,severe_interval_km,severe_interval_months,start_km,importance,manufacturer_note,description,iraq_note,applies_to_engine_type,applies_to_transmission,is_active</p>
+            <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-primary" style="border:0;">استيراد</button> <a href="../">إلغاء</a></form>
+        </div>
+        {% endblock %}
+        """
+        return HttpResponse(Template(html_template).render(RequestContext(request, {'form': form, 'opts': self.model._meta})))
 
 
 class SponsorForm(forms.ModelForm):

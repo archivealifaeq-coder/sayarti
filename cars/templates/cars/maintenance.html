@@ -104,6 +104,10 @@
                 <p class="text-slate-400 text-sm mb-4">أدخل قراءة العداد حسب الظروف الشاقة: حرارة، غبار، ازدحام.</p>
                 <form method="get" class="space-y-3">
                     <input class="maint-input" type="number" name="odometer" value="{{ odometer }}" min="0" placeholder="مثال: 85000">
+                    <select class="maint-select" name="maintenance_brand">
+                        <option value="">عام لكل الشركات</option>
+                        {% for brand in maintenance_brand_choices %}<option value="{{ brand|escape }}" {% if maintenance_brand == brand %}selected{% endif %}>{{ brand|escape }}</option>{% endfor %}
+                    </select>
                     <select class="maint-select" name="engine_type">
                         {% for value,label in engine_type_choices %}<option value="{{ value }}" {% if engine_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
                     </select>
@@ -123,6 +127,8 @@
                         <span class="chip sev-{{ row.task.importance }}">{{ row.task.get_importance_display }}</span>
                     </div>
                     <p class="text-amber-200 text-sm font-bold">{{ row.status_note }}</p>
+                    {% if row.task.brand_ar or row.task.brand_en %}<p class="text-slate-300 text-xs mt-2">الشركة: {{ row.task.brand_ar|default:row.task.brand_en }}</p>{% endif %}
+                    {% if row.task.manufacturer_note %}<p class="text-amber-100 text-sm mt-2 leading-7">توصية الشركة: {{ row.task.manufacturer_note }}</p>{% endif %}
                     <p class="text-slate-400 text-sm mt-2 leading-7">{{ row.task.description }}</p>
                     {% if row.task.iraq_note %}<p class="text-slate-300 text-xs mt-2">ملاحظة محلية: {{ row.task.iraq_note }}</p>{% endif %}
                 </div>

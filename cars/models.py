@@ -725,6 +725,8 @@ class MaintenanceTask(models.Model):
     ]
 
     name = models.CharField(max_length=180, verbose_name='اسم المهمة')
+    brand_ar = models.CharField(max_length=100, blank=True, verbose_name='الشركة بالعربي')
+    brand_en = models.CharField(max_length=100, blank=True, verbose_name='الشركة بالإنكليزي')
     category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='inspection', verbose_name='التصنيف')
     interval_km = models.PositiveIntegerField(default=10000, verbose_name='كل كم كيلومتر')
     interval_months = models.PositiveSmallIntegerField(default=12, verbose_name='كل كم شهر')
@@ -733,16 +735,23 @@ class MaintenanceTask(models.Model):
     start_km = models.PositiveIntegerField(default=0, verbose_name='تبدأ من ممشى')
     importance = models.CharField(max_length=20, choices=MaintenanceSeverity.choices, default=MaintenanceSeverity.MEDIUM, verbose_name='الأهمية')
     description = models.TextField(blank=True, verbose_name='شرح المهمة')
+    manufacturer_note = models.TextField(blank=True, verbose_name='توصية الشركة الأم')
     iraq_note = models.TextField(blank=True, verbose_name='ملاحظة للظروف العراقية')
     applies_to_engine_type = models.CharField(max_length=20, choices=APPLIES_CHOICES, default='all', verbose_name='نوع المحرك')
     applies_to_transmission = models.CharField(max_length=20, choices=TRANSMISSION_CHOICES, default='all', verbose_name='نوع ناقل الحركة')
     is_active = models.BooleanField(default=True, verbose_name='ظاهر في الموقع')
 
     class Meta:
-        ordering = ['start_km', 'severe_interval_km', 'name']
+        ordering = ['brand_ar', 'brand_en', 'start_km', 'severe_interval_km', 'name']
         verbose_name = 'مهمة صيانة'
         verbose_name_plural = 'مهام الصيانة'
-        indexes = [models.Index(fields=['category']), models.Index(fields=['start_km']), models.Index(fields=['severe_interval_km'])]
+        indexes = [
+            models.Index(fields=['brand_ar']),
+            models.Index(fields=['brand_en']),
+            models.Index(fields=['category']),
+            models.Index(fields=['start_km']),
+            models.Index(fields=['severe_interval_km']),
+        ]
 
     def __str__(self):
         return self.name

@@ -78,6 +78,7 @@ def maintenance_view(request):
     code_query = request.GET.get('code', '').strip().upper()
     symptom_slug = request.GET.get('symptom', '').strip()
     odometer = _safe_int(request.GET.get('odometer'))
+    maintenance_brand = request.GET.get('maintenance_brand', '').strip()
     engine_type = request.GET.get('engine_type', 'all').strip() or 'all'
 
     obd_result = None
@@ -90,8 +91,20 @@ def maintenance_view(request):
         selected_symptom = symptoms.filter(slug=symptom_slug).first()
 
     maintenance_rows = []
+    brand_values = set()
+    for item in MaintenanceTask.objects.filter(is_active=True).values('brand_ar', 'brand_en').distinct():
+        brand = item.get('brand_ar') or item.get('brand_en')
+        if brand:
+            brand_values.add(brand)
+    maintenance_brand_choices = sorted(brand_values)
+
     if odometer:
-        tasks = MaintenanceTask.objects.filter(is_active=True).filter(
+        tasks = MaintenanceTask.objects.filter(is_active=True)
+        if maintenance_brand:
+            tasks = tasks.filter(Q(brand_ar='') | Q(brand_en='') | Q(brand_ar=maintenance_brand) | Q(brand_en=maintenance_brand))
+        else:
+            tasks = tasks.filter(brand_ar='', brand_en='')
+        tasks = tasks.filter(
             Q(applies_to_engine_type='all') | Q(applies_to_engine_type=engine_type)
         )
         for task in tasks:
@@ -106,6 +119,8 @@ def maintenance_view(request):
         'symptoms': symptoms,
         'selected_symptom': selected_symptom,
         'odometer': odometer or '',
+        'maintenance_brand': maintenance_brand,
+        'maintenance_brand_choices': maintenance_brand_choices,
         'engine_type': engine_type,
         'engine_type_choices': [('all', 'كل المحركات')] + list(CarSpecification.ENGINE_TYPE_CHOICES),
         'maintenance_rows': maintenance_rows,
