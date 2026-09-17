@@ -138,6 +138,11 @@
                 {% endfor %}
             </div>
         </section>
+        {% elif odometer %}
+        <section class="maint-card mt-6" id="maintenance-results">
+            <h2 class="text-2xl font-black text-white mb-3">لا توجد صيانة مستحقة أو قريبة لهذا الممشى</h2>
+            <p class="text-slate-400 leading-8">النظام يعرض فقط المهام المستحقة الآن أو القريبة خلال حوالي 3,000 كم، ولا يعرض المهام البعيدة حتى لا تظهر صيانة 40,000 أو 80,000 كم عند ممشى منخفض.</p>
+        </section>
         {% endif %}
 
         <section class="maint-card mt-6 text-sm text-slate-400 leading-8">

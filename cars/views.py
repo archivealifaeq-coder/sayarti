@@ -121,8 +121,10 @@ def maintenance_view(request):
             if maintenance_brand and not (task.brand_ar or task.brand_en) and task_key in specific_keys:
                 continue
             status, note = _maintenance_due_status(task, odometer)
+            if status not in ('due', 'soon'):
+                continue
             maintenance_rows.append({'task': task, 'status': status, 'status_note': note})
-        status_order = {'due': 0, 'soon': 1, 'ok': 2, 'later': 3}
+        status_order = {'due': 0, 'soon': 1}
         maintenance_rows.sort(key=lambda row: (status_order.get(row['status'], 9), row['task'].category, row['task'].name))
 
     return render(request, 'cars/maintenance.html', {
