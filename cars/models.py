@@ -711,9 +711,9 @@ class MaintenanceTask(models.Model):
     ]
     APPLIES_CHOICES = [
         ('all', 'الكل'),
-        ('regular', 'بنزين عادي'),
+        ('gasoline', 'بنزين بدون تيربو'),
+        ('gasoline_turbo', 'بنزين تيربو'),
         ('hybrid', 'هايبرد'),
-        ('turbo', 'تيربو'),
         ('diesel', 'ديزل'),
         ('electric', 'كهربائي'),
     ]
@@ -721,6 +721,9 @@ class MaintenanceTask(models.Model):
         ('all', 'الكل'),
         ('automatic', 'أوتوماتيك'),
         ('cvt', 'CVT'),
+        ('ecvt', 'e-CVT'),
+        ('dct', 'DCT'),
+        ('amt', 'AMT'),
         ('manual', 'عادي'),
     ]
 

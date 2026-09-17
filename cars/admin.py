@@ -1152,6 +1152,7 @@ class MaintenanceTaskAdmin(admin.ModelAdmin):
         <div class="section-card" style="max-width: 980px; margin: 20px auto;">
             <h3>استيراد مهام الصيانة من Excel</h3>
             <p style="line-height:1.9; color:#475569;">كل صف هو توصية صيانة عامة أو خاصة بشركة. اترك brand_ar و brand_en فارغين إذا كانت المهمة عامة لكل الشركات.</p>
+            <p style="line-height:1.9; color:#475569;">نوع المحرك: all, gasoline, gasoline_turbo, hybrid, diesel, electric. نوع القير: all, automatic, cvt, ecvt, dct, amt, manual. عند وجود مهمة مخصصة للشركة بنفس الاسم والنطاق، تُقدّم على المهمة العامة.</p>
             <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">name,brand_ar,brand_en,category,interval_km,interval_months,severe_interval_km,severe_interval_months,start_km,importance,manufacturer_note,description,iraq_note,applies_to_engine_type,applies_to_transmission,is_active</p>
             <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-primary" style="border:0;">استيراد</button> <a href="../">إلغاء</a></form>
         </div>

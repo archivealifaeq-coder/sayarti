@@ -80,6 +80,7 @@ def maintenance_view(request):
     odometer = _safe_int(request.GET.get('odometer'))
     maintenance_brand = request.GET.get('maintenance_brand', '').strip()
     engine_type = request.GET.get('engine_type', 'all').strip() or 'all'
+    transmission = request.GET.get('transmission', 'all').strip() or 'all'
 
     obd_result = None
     if code_query:
@@ -106,8 +107,19 @@ def maintenance_view(request):
             tasks = tasks.filter(brand_ar='', brand_en='')
         tasks = tasks.filter(
             Q(applies_to_engine_type='all') | Q(applies_to_engine_type=engine_type)
+        ).filter(
+            Q(applies_to_transmission='all') | Q(applies_to_transmission=transmission)
         )
-        for task in tasks:
+        task_list = list(tasks)
+        specific_keys = {
+            (task.name.strip().lower(), task.category, task.applies_to_engine_type, task.applies_to_transmission)
+            for task in task_list
+            if maintenance_brand and (task.brand_ar or task.brand_en)
+        }
+        for task in task_list:
+            task_key = (task.name.strip().lower(), task.category, task.applies_to_engine_type, task.applies_to_transmission)
+            if maintenance_brand and not (task.brand_ar or task.brand_en) and task_key in specific_keys:
+                continue
             status, note = _maintenance_due_status(task, odometer)
             maintenance_rows.append({'task': task, 'status': status, 'status_note': note})
         status_order = {'due': 0, 'soon': 1, 'ok': 2, 'later': 3}
@@ -122,7 +134,9 @@ def maintenance_view(request):
         'maintenance_brand': maintenance_brand,
         'maintenance_brand_choices': maintenance_brand_choices,
         'engine_type': engine_type,
-        'engine_type_choices': [('all', 'كل المحركات')] + list(CarSpecification.ENGINE_TYPE_CHOICES),
+        'engine_type_choices': MaintenanceTask.APPLIES_CHOICES,
+        'transmission': transmission,
+        'transmission_choices': MaintenanceTask.TRANSMISSION_CHOICES,
         'maintenance_rows': maintenance_rows,
     })
 
