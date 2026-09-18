@@ -860,34 +860,33 @@
         }
         
         .gateway-ad-card {
-            min-height: 100%;
+            min-height: auto;
+            height: 120px;
             text-align: right;
             border-color: rgba(245, 158, 11, 0.32) !important;
             background:
                 radial-gradient(circle at top left, rgba(245, 158, 11, 0.18), transparent 48%),
                 linear-gradient(145deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.96)) !important;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
-        .gateway-ad-card__media {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
-            margin: 0 auto 10px;
-            background-size: cover;
-            background-position: center;
-            border: 1px solid rgba(245, 158, 11, 0.25);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
-        }
-        .gateway-ad-card__label { color:#fbbf24; font-size:.68rem; font-weight:900; letter-spacing:.02em; }
-        .gateway-ad-card__title { color:#f8fafc; font-weight:900; font-size:.98rem; margin-top:4px; }
-        .gateway-ad-card__desc { color:#cbd5e1; font-size:.76rem; line-height:1.7; margin-top:5px; }
-        .gateway-ad-card__actions { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
+        .gateway-ad-card .ad-badge { display:none; }
+        .gateway-ad-card__media { display:none; }
+        .gateway-ad-card__label { color:#fbbf24; font-size:.68rem; font-weight:900; letter-spacing:.02em; margin:0; }
+        .gateway-ad-card__title { color:#f8fafc; font-weight:900; font-size:.85rem; margin:0; }
+        .gateway-ad-card__desc { display:none; }
+        .gateway-ad-card__actions { display:flex; justify-content:center; gap:8px; margin-top:0; }
         .gateway-ad-card__link {
             display:inline-flex;
             align-items:center;
             justify-content:center;
             border-radius:999px;
-            padding:7px 12px;
-            font-size:.72rem;
+            padding:4px 10px;
+            font-size:.65rem;
             font-weight:900;
             border:1px solid rgba(245, 158, 11, .25);
             color:#fbbf24;
