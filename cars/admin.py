@@ -153,6 +153,9 @@ def import_symptoms_from_excel(excel_file):
     valid_severity = {key for key, _ in CarSymptom._meta.get_field('severity').choices}
     valid_safety = {key for key, _ in CarSymptom._meta.get_field('safety_status').choices}
     valid_likelihood = {key for key, _ in SymptomCause.LIKELIHOOD_CHOICES}
+    # Map common invalid category/safety values to valid defaults
+    category_map = {'ac': 'cooling', 'steering': 'suspension', 'exhaust': 'cooling', 'cooling system': 'cooling'}
+    safety_map = {'safe': 'check_soon', 'safe_to_drive': 'drive_carefully', 'normal': 'check_soon'}
 
     for index, row in enumerate(symptom_rows, start=2):
         name = _text_value(row, 'name', 'Name')
@@ -164,10 +167,13 @@ def import_symptoms_from_excel(excel_file):
         category = _text_value(row, 'category', 'Category') or 'engine'
         severity = _text_value(row, 'severity', 'Severity') or 'medium'
         safety_status = _text_value(row, 'safety_status', 'Safety Status') or 'check_soon'
-        if category not in valid_categories or severity not in valid_severity or safety_status not in valid_safety:
-            failed += 1
-            errors.append(f'أعراض صف {index}: قيمة category/severity/safety_status غير صحيحة')
-            continue
+        # Auto-correct invalid values instead of failing
+        if category not in valid_categories:
+            category = category_map.get(category.lower().strip(), 'engine')
+        if safety_status not in valid_safety:
+            safety_status = safety_map.get(safety_status.lower().strip(), 'check_soon')
+        if severity not in valid_severity:
+            severity = 'medium'
         defaults = {
             'name': name,
             'category': category,
