@@ -16,6 +16,8 @@ from .models import (
     AppInstallMetric, DealerClickMetric, OBDCode, CarSymptom, MaintenanceTask,
 )
 from .services.textnorm import fold_ar, fold_engine
+from .forms import OBDImportForm
+from .services.excel_importer import import_obd_codes_from_excel
 
 
 SW_FILE = Path(__file__).resolve().parent / 'static' / 'shared' / 'sw.js'
@@ -1225,4 +1227,23 @@ def admin_codes_report(request):
         'rows': rows,
         'total': total,
         'used': used,
+    })
+
+
+def import_obd_view(request):
+    if request.method == 'POST':
+        form = OBDImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            result = import_obd_codes_from_excel(form.cleaned_data['excel_file'])
+            messages.success(request, f"تم الاستيراد: إضافة {result['created']} وتحديث {result['updated']}.")
+            if result['failed']:
+                messages.warning(request, f"فشل {result['failed']} صف.")
+            for error in result['errors']:
+                messages.error(request, error)
+            return redirect('import_obd')
+    else:
+        form = OBDImportForm()
+    return render(request, 'cars/import_obd.html', {
+        'form': form,
+        'columns': 'code,title,slug,system,severity,safety_status,plain_explanation,local_explanation,common_causes,local_causes,symptoms,self_check_steps,mechanic_advice,dont_do,estimated_cost_note,seo_title,seo_description,is_active',
     })

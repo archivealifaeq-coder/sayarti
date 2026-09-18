@@ -24,4 +24,5 @@ urlpatterns = [
     path('services/', views.services_login, name='services_login'),
     path('services/dashboard/', views.services_dashboard, name='services_dashboard'),
     path('services/logout/', views.services_logout, name='services_logout'),
+    path('import-obd/', views.import_obd_view, name='import_obd'),
 ]
