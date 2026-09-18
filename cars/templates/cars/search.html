@@ -659,7 +659,7 @@
             }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
             function initReveal() {
-                var selectors = ['.glass-card', '.feature-card', '.cta-section', '.car-card'];
+                var selectors = ['.glass-card', '.cta-section', '.car-card'];
                 selectors.forEach(function(sel) {
                     document.querySelectorAll(sel + ':not([data-rv])').forEach(function(el) {
                         el.setAttribute('data-rv', '1');

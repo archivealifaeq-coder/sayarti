@@ -859,69 +859,59 @@
             border-color: rgba(245, 158, 11, 0.2);
         }
         
-        .feature-card {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 110px;
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(245, 158, 11, 0.06);
+        .gateway-ad-card {
+            min-height: 100%;
+            text-align: right;
+            border-color: rgba(245, 158, 11, 0.32) !important;
+            background:
+                radial-gradient(circle at top left, rgba(245, 158, 11, 0.18), transparent 48%),
+                linear-gradient(145deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.96)) !important;
+        }
+        .gateway-ad-card__media {
+            width: 48px;
+            height: 48px;
             border-radius: 16px;
-            padding: 18px 14px;
-            text-align: center;
-            overflow: hidden;
-            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease, border-color 0.4s ease;
-        }
-        .feature-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 30% 20%, rgba(245, 158, 11, 0.12), transparent 60%);
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            pointer-events: none;
-        }
-        .feature-card:hover {
-            border-color: rgba(245, 158, 11, 0.35);
-            transform: translateY(-6px) scale(1.03);
-            box-shadow: 0 16px 38px rgba(245, 158, 11, 0.18);
-        }
-        .feature-card:hover::after { opacity: 1; }
-        .feature-card .feature-icon { font-size: 2.1rem; margin-bottom: 6px; display: block; transition: transform 0.4s ease; }
-        .feature-card:hover .feature-icon { transform: scale(1.15) rotate(-6deg); }
-        .feature-card .feature-title { color: #f1f5f9; font-weight: 700; font-size: 0.9rem; }
-        .feature-card .feature-desc { color: #94a3b8; font-size: 0.7rem; margin-top: 2px; }
-
-        /* بطاقة إعلانية: الصورة تملأ القالب بالكامل */
-        .feature-card--ad {
-            padding: 0;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            background: #0f172a;
-        }
-        .feature-card--ad .ad-media {
-            position: absolute;
-            inset: 0;
+            margin: 0 auto 10px;
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
-            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
         }
-        .feature-card--ad:hover .ad-media { transform: scale(1.08); }
-        .feature-card--ad .ad-caption {
-            position: relative;
-            z-index: 2;
-            margin-top: auto;
-            width: 100%;
-            padding: 26px 12px 12px;
+        .gateway-ad-card__label { color:#fbbf24; font-size:.68rem; font-weight:900; letter-spacing:.02em; }
+        .gateway-ad-card__title { color:#f8fafc; font-weight:900; font-size:.98rem; margin-top:4px; }
+        .gateway-ad-card__desc { color:#cbd5e1; font-size:.76rem; line-height:1.7; margin-top:5px; }
+        .gateway-ad-card__actions { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
+        .gateway-ad-card__link,
+        .gateway-ad-card__promo {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:999px;
+            padding:7px 12px;
+            font-size:.72rem;
+            font-weight:900;
+            border:1px solid rgba(245, 158, 11, .25);
+            color:#fbbf24;
+            background:rgba(245, 158, 11, .08);
+        }
+        .gateway-ad-card__promo { cursor:pointer; }
+
+        .gateway-card-sponsor {
+            margin-top: 12px;
+            padding: 9px 10px;
+            border-radius: 14px;
+            border: 1px solid rgba(245, 158, 11, 0.14);
+            background: rgba(245, 158, 11, 0.07);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
             text-align: right;
-            background: linear-gradient(to top, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.55) 55%, transparent);
         }
-        .feature-card--ad .ad-title { display: block; color: #f1f5f9; font-weight: 800; font-size: 0.9rem; }
-        .feature-card--ad .ad-desc { display: block; color: #cbd5e1; font-size: 0.72rem; margin-top: 2px; }
+        .gateway-card-sponsor__text { min-width: 0; }
+        .gateway-card-sponsor__label { display: block; color: #fbbf24; font-size: 0.62rem; font-weight: 900; margin-bottom: 2px; }
+        .gateway-card-sponsor__title { display: block; color: #e2e8f0; font-size: 0.72rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .gateway-card-sponsor__cta { color: #fbbf24; font-size: 0.68rem; font-weight: 900; white-space: nowrap; cursor:pointer; }
 
         /* زر الخصم العائم — واحد فقط داخل السلايدر، يتبع الشركة النشطة */
         .promo-float {
@@ -1558,34 +1548,6 @@
         </div>
         
         <!-- ============================================ -->
-        <!--  FEATURE CARDS (بطاقات المميزات)            -->
-        <!-- ============================================ -->
-        {% if feature_cards %}
-        <div class="max-w-7xl mx-auto px-4 pt-6 md:pt-8">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                {% for f in feature_cards %}
-                {% with is_ad=f.image %}
-                {% if is_ad or f.link %}<a href="{{ f.link|default:'#' }}" class="feature-card feature-card--ad" {% if not f.link %}aria-disabled="true"{% endif %}>{% else %}<div class="feature-card">{% endif %}
-                    {% if is_ad or f.link %}<span class="ad-badge">إعلان</span>{% endif %}
-                    {% if f.image %}
-                        <span class="ad-media" style="background-image:url('{{ f.image.url }}')"></span>
-                        <span class="ad-caption">
-                            {% if f.title %}<span class="ad-title">{{ f.title }}</span>{% endif %}
-                            {% if f.description %}<span class="ad-desc">{{ f.description }}</span>{% endif %}
-                        </span>
-                    {% else %}
-                        <span class="feature-icon">{{ f.icon }}</span>
-                        <span class="feature-title">{{ f.title }}</span>
-                        {% if f.description %}<span class="feature-desc">{{ f.description }}</span>{% endif %}
-                    {% endif %}
-                {% if is_ad or f.link %}</a>{% else %}</div>{% endif %}
-                {% endwith %}
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-        
-        <!-- ============================================ -->
         <!--  GATEWAY CARDS                              -->
         <!-- ============================================ -->
         <div class="max-w-7xl mx-auto px-4 pt-4 md:pt-5 pb-4">
@@ -1596,7 +1558,30 @@
                     <h2 class="text-base md:text-lg font-black text-white mb-1">ابحث عن سيارتك</h2>
                     <p class="text-slate-400 text-xs leading-relaxed">المواصفات الكاملة: الزيت، الفلاتر، المحرك.</p>
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">ابدأ البحث ←</span>
+                    {% if gateway_card_ad %}
+                    <span class="gateway-card-sponsor">
+                        <span class="gateway-card-sponsor__text">
+                            <span class="gateway-card-sponsor__label">برعاية</span>
+                            <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
+                        </span>
+                        {% if gateway_card_ad.sponsor %}<span class="gateway-card-sponsor__cta promo-trigger" data-sponsor-slug="{{ gateway_card_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_card_ad.sponsor.name }}" data-discount="{{ gateway_card_ad.sponsor.discount }}">خصم</span>{% else %}<span class="gateway-card-sponsor__cta">رعاية</span>{% endif %}
+                    </span>
+                    {% endif %}
                 </a>
+
+                {% if gateway_grid_ad %}
+                <div class="glass-card gateway-ad-card rounded-2xl p-5 text-center relative overflow-hidden">
+                    <span class="ad-badge">إعلان</span>
+                    {% if gateway_grid_ad.image %}<div class="gateway-ad-card__media" style="background-image:url('{{ gateway_grid_ad.image.url }}')"></div>{% endif %}
+                    <div class="gateway-ad-card__label">مساحة إعلانية مختارة</div>
+                    <h2 class="gateway-ad-card__title">{{ gateway_grid_ad.title }}</h2>
+                    {% if gateway_grid_ad.subtitle %}<p class="gateway-ad-card__desc">{{ gateway_grid_ad.subtitle }}</p>{% endif %}
+                    <div class="gateway-ad-card__actions">
+                        {% if gateway_grid_ad.button_url and gateway_grid_ad.button_url != '#' %}<a class="gateway-ad-card__link" href="{{ gateway_grid_ad.button_url }}" target="_blank" rel="noopener noreferrer">{{ gateway_grid_ad.button_text|default:"اعرف المزيد" }}</a>{% endif %}
+                        {% if gateway_grid_ad.sponsor %}<button type="button" class="gateway-ad-card__promo promo-trigger" data-sponsor-slug="{{ gateway_grid_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_grid_ad.sponsor.name }}" data-discount="{{ gateway_grid_ad.sponsor.discount }}">احصل على خصم</button>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
 
                 <a href="{% url 'mix_calculator' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
                     <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
@@ -1604,6 +1589,15 @@
                     <h2 class="text-base md:text-lg font-black text-white mb-1">حاسبة الوقود</h2>
                     <p class="text-slate-400 text-xs leading-relaxed">النسب المثالية لرقم الأوكتان المناسب.</p>
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">احسب الآن ←</span>
+                    {% if gateway_card_ad %}
+                    <span class="gateway-card-sponsor">
+                        <span class="gateway-card-sponsor__text">
+                            <span class="gateway-card-sponsor__label">برعاية</span>
+                            <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
+                        </span>
+                        {% if gateway_card_ad.sponsor %}<span class="gateway-card-sponsor__cta promo-trigger" data-sponsor-slug="{{ gateway_card_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_card_ad.sponsor.name }}" data-discount="{{ gateway_card_ad.sponsor.discount }}">خصم</span>{% else %}<span class="gateway-card-sponsor__cta">رعاية</span>{% endif %}
+                    </span>
+                    {% endif %}
                 </a>
 
                 {% if site_settings.show_dealers_card %}
@@ -1613,6 +1607,15 @@
                     <h2 class="text-base md:text-lg font-black text-white mb-1">وكلاء الزيوت وقطع الغيار</h2>
                     <p class="text-slate-400 text-xs leading-relaxed">دليل وكلاء الزيوت وقطع الغيار في العراق.</p>
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">اعرض الوكلاء ←</span>
+                    {% if gateway_card_ad %}
+                    <span class="gateway-card-sponsor">
+                        <span class="gateway-card-sponsor__text">
+                            <span class="gateway-card-sponsor__label">برعاية</span>
+                            <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
+                        </span>
+                        {% if gateway_card_ad.sponsor %}<span class="gateway-card-sponsor__cta promo-trigger" data-sponsor-slug="{{ gateway_card_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_card_ad.sponsor.name }}" data-discount="{{ gateway_card_ad.sponsor.discount }}">خصم</span>{% else %}<span class="gateway-card-sponsor__cta">رعاية</span>{% endif %}
+                    </span>
+                    {% endif %}
                 </a>
                 {% endif %}
 
@@ -1623,6 +1626,15 @@
                     <h2 class="text-base md:text-lg font-black text-white mb-1">الصيانة والأعطال</h2>
                     <p class="text-slate-400 text-xs leading-relaxed">ترجم كود العطل، افهم الأعراض، واعرف صيانة الممشى.</p>
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">افحص الآن ←</span>
+                    {% if gateway_card_ad %}
+                    <span class="gateway-card-sponsor">
+                        <span class="gateway-card-sponsor__text">
+                            <span class="gateway-card-sponsor__label">برعاية</span>
+                            <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
+                        </span>
+                        {% if gateway_card_ad.sponsor %}<span class="gateway-card-sponsor__cta promo-trigger" data-sponsor-slug="{{ gateway_card_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_card_ad.sponsor.name }}" data-discount="{{ gateway_card_ad.sponsor.discount }}">خصم</span>{% else %}<span class="gateway-card-sponsor__cta">رعاية</span>{% endif %}
+                    </span>
+                    {% endif %}
                 </a>
                 {% endif %}
             </div>
@@ -1875,7 +1887,7 @@
             }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
             
             function initReveal() {
-                var selectors = ['.glass-card', '.feature-card', '.cta-section', '.car-card'];
+                var selectors = ['.glass-card', '.cta-section', '.car-card'];
                 selectors.forEach(function(sel) {
                     document.querySelectorAll(sel + ':not([data-rv])').forEach(function(el) {
                         el.setAttribute('data-rv', '1');

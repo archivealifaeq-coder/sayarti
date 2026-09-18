@@ -10,7 +10,7 @@ from django.middleware.csrf import get_token
 from django.db.models import Count, Sum
 from django.db import models as db_models
 from .models import (
-    CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer,
+    CarSpecification, AdBanner, SiteSettings, Sponsor, PromoCode, Dealer,
     AppInstallMetric, DealerClickMetric, OBDCode, CarSymptom, SymptomCause, MaintenanceTask,
 )
 from .services.excel_importer import import_cars_from_excel
@@ -670,7 +670,7 @@ class AdBannerAdmin(admin.ModelAdmin):
         }),
         ('🖼️ الصور', {
             'fields': ('image', 'image_mobile'),
-            'description': '📸 سطح المكتب: 1920×820 بكسل (21:9) | 📱 الهاتف: 800×600 بكسل (4:3)',
+            'description': '📸 السلايدر: 1920×820 بكسل | الهاتف: 800×600. مواضع بطاقات الرئيسية تقبل صوراً مربعة أو أفقية صغيرة وتُعرض ككرت أنيق.',
             'classes': ('collapse',),
         }),
         ('🎨 الألوان (احتياطي)', {
@@ -738,55 +738,6 @@ class AdBannerAdmin(admin.ModelAdmin):
         form = super().get_form(request, obj=None, **kwargs)
         form.base_fields['image'].help_text = '🖼️ الأبعاد الموصى بها: 1920 × 820 بكسل (21:9) — الصورة تُقص تلقائياً'
         form.base_fields['image_mobile'].help_text = '📱 الأبعاد الموصى بها: 800 × 600 بكسل (4:3)'
-        return form
-
-
-@admin.register(FeatureCard)
-class FeatureCardAdmin(admin.ModelAdmin):
-    list_display = (
-        'card_preview',
-        'type_badge',
-        'order',
-        'is_active',
-        'created_at_display',
-    )
-    list_editable = ('order', 'is_active')
-    list_filter = ('is_active',)
-    search_fields = ('title', 'description')
-    ordering = ('order', 'created_at')
-    list_per_page = 20
-    fieldsets = (
-        ('📝 المحتوى', {
-            'fields': ('title', 'description', 'icon')
-        }),
-        ('📢 إعلان (اختياري)', {
-            'fields': ('image', 'link', 'sponsor'),
-            'description': '📸 ضع صورة لتتحول البطاقة إلى إعلان، وأضف رابطاً لتصبح قابلة للنقر. الأبعاد الموصى بها: 400×400 بكسل. وعند اختيار شركة راعية يظهر فيها زر «احصل على خصم».'
-        }),
-        ('⚙️ الإعدادات', {
-            'fields': ('order', 'is_active')
-        }),
-    )
-
-    def card_preview(self, obj):
-        color = '#b45309' if obj.is_active else '#475569'
-        icon = obj.icon or '🖼️'
-        return format_html('<span style="color: {};">{} <b>{}</b></span>', color, icon, obj.title[:40])
-    card_preview.short_description = 'البطاقة'
-
-    def type_badge(self, obj):
-        if obj.image:
-            return mark_safe('<span style="background: #fee2e2; padding: 2px 12px; border-radius: 12px; color: #dc2626;">📢 إعلان</span>')
-        return mark_safe('<span style="background: #dcfce7; padding: 2px 12px; border-radius: 12px; color: #15803d;">⭐ مميزة</span>')
-    type_badge.short_description = 'النوع'
-
-    def created_at_display(self, obj):
-        return format_html('<span style="color: #64748b; font-size: 0.8rem;">{}</span>', obj.created_at.strftime('%Y-%m-%d'))
-    created_at_display.short_description = 'التاريخ'
-
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        form.base_fields['icon'].help_text = '🚗 🔧 🧮 ⭐ 💧 🛢️ ⚡ — اتركه فارغاً عند استخدام صورة'
         return form
 
 

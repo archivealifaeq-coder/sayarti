@@ -252,6 +252,8 @@ class AdBanner(models.Model):
     POSITION_CHOICES = [
         ('ticker', '📢 شريط متحرك علوي (5%) - أعلى الصفحة'),
         ('slider', '🎠 سلايدر رئيسي (35%) - وسط الصفحة'),
+        ('gateway_grid', '💎 إعلان بين بطاقات الرئيسية'),
+        ('gateway_card', '🏷️ رعاية صغيرة داخل بطاقات الرئيسية'),
     ]
 
     sponsor = models.ForeignKey(
@@ -331,61 +333,6 @@ class AdBanner(models.Model):
         ordering = ['order', '-created_at']
         verbose_name = "بنر إعلاني"
         verbose_name_plural = "البنرات الإعلانية"
-
-
-class FeatureCard(models.Model):
-    title = models.CharField(max_length=100, verbose_name="العنوان")
-    description = models.CharField(
-        max_length=200,
-        blank=True,
-        verbose_name="الوصف"
-    )
-    icon = models.CharField(
-        max_length=16,
-        blank=True,
-        verbose_name="الأيقونة",
-        help_text="إيموجي مثل 🚗 🔧 🧮 ⭐ — اتركه فارغاً إذا استخدمت صورة إعلان"
-    )
-    image = models.ImageField(
-        upload_to='feature_ads/%Y/%m/',
-        blank=True,
-        null=True,
-        verbose_name="صورة إعلان",
-        help_text="إن وُجدت تُعرض بدل الأيقونة — مثالي لإعلانات الرعاة"
-    )
-    link = models.URLField(
-        blank=True,
-        verbose_name="رابط البطاقة",
-        help_text="عند تعبئته تصبح البطاقة قابلة للنقر (إعلان)"
-    )
-    sponsor = models.ForeignKey(
-        Sponsor,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        verbose_name="الشركة الراعية",
-        related_name='feature_cards',
-        help_text="اربط البطاقة بشركة راعية ليظهر فيها زر «احصل على خصم»"
-    )
-    order = models.IntegerField(
-        default=0,
-        verbose_name="الترتيب",
-        help_text="0 = تظهر أولاً"
-    )
-    is_active = models.BooleanField(
-        default=True,
-        verbose_name="مفعلة",
-        help_text="✔️ ظاهرة في الموقع | ❌ مخفية"
-    )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ الإنشاء")
-
-    def __str__(self):
-        return self.title
-
-    class Meta:
-        ordering = ['order', 'created_at']
-        verbose_name = "بطاقة مميزات"
-        verbose_name_plural = "بطاقات المميزات"
 
 
 class Dealer(models.Model):

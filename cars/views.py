@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 from django import forms
 from django.core.cache import cache, caches
 from .models import (
-    CarSpecification, AdBanner, FeatureCard, SiteSettings, Sponsor, PromoCode, Dealer,
+    CarSpecification, AdBanner, SiteSettings, Sponsor, PromoCode, Dealer,
     AppInstallMetric, DealerClickMetric, OBDCode, CarSymptom, MaintenanceTask,
 )
 from .services.textnorm import fold_ar, fold_engine
@@ -300,10 +300,10 @@ def _search_context(request):
 
 def index_view(request):
     banners = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
-    feature_cards = FeatureCard.objects.filter(is_active=True).order_by('order', 'created_at')
     context = {
         'banners': banners,
-        'feature_cards': feature_cards,
+        'gateway_grid_ad': banners.filter(position='gateway_grid').first(),
+        'gateway_card_ad': banners.filter(position='gateway_card').first(),
     }
     return render(request, 'cars/index.html', context)
 
