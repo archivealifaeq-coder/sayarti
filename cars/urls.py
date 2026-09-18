@@ -7,7 +7,6 @@ urlpatterns = [
     path('search/', views.search_view, name='search'),
     path('dealers/', views.dealers_view, name='dealers'),
     path('maintenance/', views.maintenance_view, name='maintenance'),
-    path('maintenance/obd/<str:code>/', views.obd_code_detail, name='obd_code_detail'),
     path('maintenance/symptom/<slug:slug>/', views.symptom_detail, name='symptom_detail'),
     path('mix/', views.mix_calculator_view, name='mix_calculator'),
     path('get-suggestions/', views.get_suggestions, name='get_suggestions'),
@@ -24,5 +23,4 @@ urlpatterns = [
     path('services/', views.services_login, name='services_login'),
     path('services/dashboard/', views.services_dashboard, name='services_dashboard'),
     path('services/logout/', views.services_logout, name='services_logout'),
-    path('import-obd/', views.import_obd_view, name='import_obd'),
 ]

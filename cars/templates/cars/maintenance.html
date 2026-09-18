@@ -45,36 +45,12 @@
         <section class="text-center mb-8">
             <div class="text-5xl mb-3">🛠️</div>
             <h1 class="text-3xl md:text-5xl font-black text-white mb-3">الصيانة والأعطال</h1>
-            <p class="text-slate-400 max-w-3xl mx-auto leading-8">ترجم كود العطل، افهم أعراض السيارة، واعرف الصيانة المطلوبة حسب الممشى والظروف الشاقة.</p>
+            <p class="text-slate-400 max-w-3xl mx-auto leading-8">افهم أعراض السيارة، واعرف الصيانة المطلوبة حسب الممشى والظروف الشاقة.</p>
         </section>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <section class="maint-card">
-                <h2 class="text-xl font-black text-amber-300 mb-2">1) مترجم كودات الأعطال</h2>
-                <p class="text-slate-400 text-sm mb-4">اكتب الكود كما يظهر بجهاز الفحص، مثل P0300.</p>
-                <form method="get" class="space-y-3">
-                    <input class="maint-input" name="code" value="{{ code_query }}" placeholder="مثال: P0300" maxlength="10">
-                    <button class="maint-btn w-full" type="submit">ترجم الكود</button>
-                </form>
-                {% if code_query %}
-                    <div class="mt-5 maint-card p-4" id="obd-result">
-                        {% if obd_result %}
-                            <div class="flex flex-wrap gap-2 mb-3">
-                                <span class="chip sev-{{ obd_result.severity }}">{{ obd_result.get_severity_display }}</span>
-                                <span class="chip sev-medium">{{ obd_result.get_safety_status_display }}</span>
-                            </div>
-                            <h3 class="font-black text-white text-lg">{{ obd_result.code }} - {{ obd_result.title }}</h3>
-                            <p class="text-slate-300 text-sm leading-7 mt-2">{{ obd_result.local_explanation|default:obd_result.plain_explanation }}</p>
-                            <a class="inline-block mt-3 text-amber-300 font-bold text-sm" href="{% url 'obd_code_detail' obd_result.code %}">التفاصيل الكاملة ←</a>
-                        {% else %}
-                            <p class="text-slate-300">لم نجد هذا الكود حالياً. يمكن إضافته من لوحة الإدارة.</p>
-                        {% endif %}
-                    </div>
-                {% endif %}
-            </section>
-
-            <section class="maint-card">
-                <h2 class="text-xl font-black text-amber-300 mb-2">2) مستكشف الأعراض</h2>
+                <h2 class="text-xl font-black text-amber-300 mb-2">1) مستكشف الأعراض</h2>
                 <p class="text-slate-400 text-sm mb-4">اختر العرض الذي يظهر في السيارة.</p>
                 <form method="get" class="space-y-3">
                     <select class="maint-select" name="symptom">
@@ -100,7 +76,7 @@
             </section>
 
             <section class="maint-card">
-                <h2 class="text-xl font-black text-amber-300 mb-2">3) جدول الصيانة حسب الممشى</h2>
+                <h2 class="text-xl font-black text-amber-300 mb-2">2) جدول الصيانة حسب الممشى</h2>
                 <p class="text-slate-400 text-sm mb-4">أدخل قراءة العداد حسب الظروف الشاقة: حرارة، غبار، ازدحام.</p>
                 <form method="get" class="space-y-3">
                     <input class="maint-input" type="number" name="odometer" value="{{ odometer }}" min="0" placeholder="مثال: 85000">
@@ -151,10 +127,10 @@
     </main>
     <script>
         (function() {
-            var hasResult = {% if code_query or selected_symptom or maintenance_rows %}true{% else %}false{% endif %};
+            var hasResult = {% if selected_symptom or maintenance_rows %}true{% else %}false{% endif %};
             if (!hasResult) return;
             window.addEventListener('load', function() {
-                var target = document.getElementById('obd-result') || document.getElementById('symptom-result') || document.getElementById('maintenance-results');
+                var target = document.getElementById('symptom-result') || document.getElementById('maintenance-results');
                 if (target) {
                     setTimeout(function() {
                         target.scrollIntoView({ behavior: 'smooth', block: 'start' });

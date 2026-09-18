@@ -535,52 +535,6 @@ class DrivingSafety(models.TextChoices):
     TOW_REQUIRED = 'tow_required', 'يفضل سطحة'
 
 
-class OBDCode(models.Model):
-    SYSTEM_CHOICES = [
-        ('engine', 'المحرك'),
-        ('transmission', 'ناقل الحركة'),
-        ('emissions', 'الانبعاثات'),
-        ('electrical', 'الكهرباء'),
-        ('fuel', 'الوقود'),
-        ('cooling', 'التبريد'),
-        ('other', 'أخرى'),
-    ]
-
-    code = models.CharField(max_length=10, unique=True, db_index=True, verbose_name='كود العطل')
-    title = models.CharField(max_length=180, verbose_name='العنوان')
-    slug = models.SlugField(max_length=220, unique=True, verbose_name='رابط SEO')
-    system = models.CharField(max_length=30, choices=SYSTEM_CHOICES, default='engine', verbose_name='النظام')
-    severity = models.CharField(max_length=20, choices=MaintenanceSeverity.choices, default=MaintenanceSeverity.MEDIUM, verbose_name='درجة الخطورة')
-    safety_status = models.CharField(max_length=30, choices=DrivingSafety.choices, default=DrivingSafety.CHECK_SOON, verbose_name='مؤشر الأمان')
-    plain_explanation = models.TextField(verbose_name='شرح مبسط')
-    local_explanation = models.TextField(blank=True, verbose_name='شرح باللهجة المحلية')
-    common_causes = models.TextField(blank=True, verbose_name='الأسباب الشائعة')
-    local_causes = models.TextField(blank=True, verbose_name='أسباب شائعة محلياً')
-    symptoms = models.TextField(blank=True, verbose_name='الأعراض المتوقعة')
-    self_check_steps = models.TextField(blank=True, verbose_name='خطوات فحص ذاتي')
-    mechanic_advice = models.TextField(blank=True, verbose_name='نصيحة مراجعة المختص')
-    dont_do = models.TextField(blank=True, verbose_name='أشياء لا تفعلها')
-    estimated_cost_note = models.TextField(blank=True, verbose_name='ملاحظة التكلفة')
-    seo_title = models.CharField(max_length=220, blank=True, verbose_name='عنوان SEO')
-    seo_description = models.CharField(max_length=320, blank=True, verbose_name='وصف SEO')
-    is_active = models.BooleanField(default=True, verbose_name='ظاهر في الموقع')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['code']
-        verbose_name = 'كود عطل OBD'
-        verbose_name_plural = 'أكواد الأعطال OBD'
-        indexes = [models.Index(fields=['code']), models.Index(fields=['slug']), models.Index(fields=['system'])]
-
-    def save(self, *args, **kwargs):
-        self.code = (self.code or '').upper().strip()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f'{self.code} - {self.title}'
-
-
 class CarSymptom(models.Model):
     CATEGORY_CHOICES = [
         ('engine', 'المحرك'),
@@ -633,7 +587,6 @@ class SymptomCause(models.Model):
     likelihood = models.CharField(max_length=20, choices=LIKELIHOOD_CHOICES, default='medium', verbose_name='الاحتمالية')
     check_method = models.TextField(blank=True, verbose_name='طريقة الفحص')
     solution_hint = models.TextField(blank=True, verbose_name='إشارة للحل')
-    related_obd_codes = models.CharField(max_length=120, blank=True, verbose_name='أكواد مرتبطة')
     is_active = models.BooleanField(default=True, verbose_name='ظاهر')
 
     class Meta:

@@ -9,15 +9,12 @@ from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
-from django import forms
 from django.core.cache import cache, caches
 from .models import (
     CarSpecification, AdBanner, SiteSettings, Sponsor, PromoCode, Dealer,
-    AppInstallMetric, DealerClickMetric, OBDCode, CarSymptom, MaintenanceTask,
+    AppInstallMetric, DealerClickMetric, CarSymptom, MaintenanceTask,
 )
 from .services.textnorm import fold_ar, fold_engine
-from .forms import OBDImportForm
-from .services.excel_importer import import_obd_codes_from_excel
 
 
 SW_FILE = Path(__file__).resolve().parent / 'static' / 'shared' / 'sw.js'
@@ -77,16 +74,11 @@ def _maintenance_due_status(task, odometer):
 
 
 def maintenance_view(request):
-    code_query = request.GET.get('code', '').strip().upper()
     symptom_slug = request.GET.get('symptom', '').strip()
     odometer = _safe_int(request.GET.get('odometer'))
     maintenance_brand = request.GET.get('maintenance_brand', '').strip()
     engine_type = request.GET.get('engine_type', 'all').strip() or 'all'
     transmission = request.GET.get('transmission', 'all').strip() or 'all'
-
-    obd_result = None
-    if code_query:
-        obd_result = OBDCode.objects.filter(code=code_query, is_active=True).first()
 
     symptoms = CarSymptom.objects.filter(is_active=True).prefetch_related('causes')
     selected_symptom = None
@@ -130,8 +122,6 @@ def maintenance_view(request):
         maintenance_rows.sort(key=lambda row: (status_order.get(row['status'], 9), row['task'].category, row['task'].name))
 
     return render(request, 'cars/maintenance.html', {
-        'code_query': code_query,
-        'obd_result': obd_result,
         'symptoms': symptoms,
         'selected_symptom': selected_symptom,
         'odometer': odometer or '',
@@ -143,13 +133,6 @@ def maintenance_view(request):
         'transmission_choices': MaintenanceTask.TRANSMISSION_CHOICES,
         'maintenance_rows': maintenance_rows,
     })
-
-
-def obd_code_detail(request, code):
-    code_obj = OBDCode.objects.filter(code=code.upper(), is_active=True).first()
-    if not code_obj:
-        return redirect(f'{reverse("maintenance")}?code={code.upper()}')
-    return render(request, 'cars/maintenance_obd_detail.html', {'code_obj': code_obj})
 
 
 def symptom_detail(request, slug):
@@ -545,8 +528,6 @@ def sitemap_view(request):
         urls.append({'loc': host + reverse('dealers'), 'priority': '0.8', 'freq': 'weekly'})
     if settings_obj.show_maintenance_card:
         urls.append({'loc': host + reverse('maintenance'), 'priority': '0.8', 'freq': 'weekly'})
-        for code in OBDCode.objects.filter(is_active=True).values_list('code', flat=True)[:1000]:
-            urls.append({'loc': host + reverse('obd_code_detail', args=[code]), 'priority': '0.6', 'freq': 'monthly'})
         for slug in CarSymptom.objects.filter(is_active=True).values_list('slug', flat=True)[:1000]:
             urls.append({'loc': host + reverse('symptom_detail', args=[slug]), 'priority': '0.6', 'freq': 'monthly'})
 
@@ -1227,23 +1208,4 @@ def admin_codes_report(request):
         'rows': rows,
         'total': total,
         'used': used,
-    })
-
-
-def import_obd_view(request):
-    if request.method == 'POST':
-        form = OBDImportForm(request.POST, request.FILES)
-        if form.is_valid():
-            result = import_obd_codes_from_excel(form.cleaned_data['excel_file'])
-            messages.success(request, f"تم الاستيراد: إضافة {result['created']} وتحديث {result['updated']}.")
-            if result['failed']:
-                messages.warning(request, f"فشل {result['failed']} صف.")
-            for error in result['errors']:
-                messages.error(request, error)
-            return redirect('import_obd')
-    else:
-        form = OBDImportForm()
-    return render(request, 'cars/import_obd.html', {
-        'form': form,
-        'columns': 'code,title,slug,system,severity,safety_status,plain_explanation,local_explanation,common_causes,local_causes,symptoms,self_check_steps,mechanic_advice,dont_do,estimated_cost_note,seo_title,seo_description,is_active',
     })

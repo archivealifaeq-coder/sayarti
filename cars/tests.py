@@ -9,7 +9,7 @@ from django.test import Client, TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from cars.models import CarSpecification, Dealer, OBDCode, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.models import CarSpecification, Dealer, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
 from cars.services.deepseek_service import _provider_chain
 from cars.views import _client_ip
 
@@ -215,18 +215,6 @@ class PageSmokeTests(TestCase):
         for path in ['/', '/mix/', '/search/', '/maintenance/', '/services/', '/sitemap.xml']:
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
-
-    def test_maintenance_obd_lookup(self):
-        OBDCode.objects.create(
-            code='P0999',
-            title='اختلال احتراق عشوائي',
-            slug='p0999-test-code',
-            plain_explanation='شرح تجريبي',
-            local_explanation='رجة وتقطيع بالمحرك',
-        )
-        response = self.client.get('/maintenance/', {'code': 'p0999'})
-        self.assertContains(response, 'P0999')
-        self.assertContains(response, 'رجة وتقطيع بالمحرك')
 
     def test_dealers_page_hidden_by_default(self):
         settings = SiteSettings.load()

@@ -11,7 +11,7 @@ from django.db.models import Count, Sum
 from django.db import models as db_models
 from .models import (
     CarSpecification, AdBanner, SiteSettings, Sponsor, PromoCode, Dealer,
-    AppInstallMetric, DealerClickMetric, OBDCode, CarSymptom, SymptomCause, MaintenanceTask,
+    AppInstallMetric, DealerClickMetric, CarSymptom, SymptomCause, MaintenanceTask,
 )
 from .services.excel_importer import import_cars_from_excel
 
@@ -94,54 +94,6 @@ def _pick_sheet(sheets, names):
     return []
 
 
-def import_obd_codes_from_excel(excel_file):
-    rows = _sheet_rows(excel_file, ['OBDCode', 'OBD', 'Codes'])
-    created = updated = failed = 0
-    errors = []
-    valid_systems = {key for key, _ in OBDCode.SYSTEM_CHOICES}
-    valid_severity = {key for key, _ in OBDCode._meta.get_field('severity').choices}
-    valid_safety = {key for key, _ in OBDCode._meta.get_field('safety_status').choices}
-
-    for index, row in enumerate(rows, start=2):
-        code = _text_value(row, 'code', 'Code', 'OBD Code').upper()
-        title = _text_value(row, 'title', 'Title')
-        slug = _text_value(row, 'slug', 'Slug')
-        if not code or not title or not slug:
-            failed += 1
-            errors.append(f'صف {index}: code و title و slug مطلوبة')
-            continue
-        system = _text_value(row, 'system', 'System') or 'engine'
-        severity = _text_value(row, 'severity', 'Severity') or 'medium'
-        safety_status = _text_value(row, 'safety_status', 'Safety Status') or 'check_soon'
-        if system not in valid_systems or severity not in valid_severity or safety_status not in valid_safety:
-            failed += 1
-            errors.append(f'صف {index}: قيمة system/severity/safety_status غير صحيحة')
-            continue
-        defaults = {
-            'title': title,
-            'slug': slug,
-            'system': system,
-            'severity': severity,
-            'safety_status': safety_status,
-            'plain_explanation': _text_value(row, 'plain_explanation', 'Plain Explanation'),
-            'local_explanation': _text_value(row, 'local_explanation', 'Local Explanation'),
-            'common_causes': _text_value(row, 'common_causes', 'Common Causes'),
-            'local_causes': _text_value(row, 'local_causes', 'Local Causes'),
-            'symptoms': _text_value(row, 'symptoms', 'Symptoms'),
-            'self_check_steps': _text_value(row, 'self_check_steps', 'Self Check Steps'),
-            'mechanic_advice': _text_value(row, 'mechanic_advice', 'Mechanic Advice'),
-            'dont_do': _text_value(row, 'dont_do', 'Dont Do', "Don't Do"),
-            'estimated_cost_note': _text_value(row, 'estimated_cost_note', 'Estimated Cost Note'),
-            'seo_title': _text_value(row, 'seo_title', 'SEO Title'),
-            'seo_description': _text_value(row, 'seo_description', 'SEO Description'),
-            'is_active': _bool_value(row, 'is_active', True),
-        }
-        _, was_created = OBDCode.objects.update_or_create(code=code, defaults=defaults)
-        created += int(was_created)
-        updated += int(not was_created)
-    return {'created': created, 'updated': updated, 'failed': failed, 'errors': errors[:10]}
-
-
 def import_symptoms_from_excel(excel_file):
     sheets = _workbook_sheets(excel_file)
     symptom_rows = _pick_sheet(sheets, ['CarSymptom', 'Symptoms', 'اعطال', 'الأعطال']) or next(iter(sheets.values()), [])
@@ -207,7 +159,6 @@ def import_symptoms_from_excel(excel_file):
                     'likelihood': likelihood,
                     'check_method': _text_value(row, f'cause{priority}_check_method', f'Cause {priority} Check Method'),
                     'solution_hint': _text_value(row, f'cause{priority}_solution_hint', f'Cause {priority} Solution Hint'),
-                    'related_obd_codes': _text_value(row, f'cause{priority}_related_obd_codes', f'Cause {priority} Related OBD Codes'),
                     'is_active': True,
                 },
             )
@@ -238,7 +189,6 @@ def import_symptoms_from_excel(excel_file):
             'likelihood': likelihood,
             'check_method': _text_value(row, 'check_method', 'Check Method'),
             'solution_hint': _text_value(row, 'solution_hint', 'Solution Hint'),
-            'related_obd_codes': _text_value(row, 'related_obd_codes', 'Related OBD Codes'),
             'is_active': _bool_value(row, 'is_active', True),
         }
         _, was_created = SymptomCause.objects.update_or_create(symptom=symptom, priority=priority, defaults=defaults)
@@ -966,56 +916,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     settings_summary.short_description = 'Status'
 
 
-@admin.register(OBDCode)
-class OBDCodeAdmin(admin.ModelAdmin):
-    change_list_template = 'admin/obd_changelist.html'
-    list_display = ('code', 'title', 'system', 'severity', 'safety_status', 'is_active', 'updated_at')
-    list_filter = ('system', 'severity', 'safety_status', 'is_active')
-    search_fields = ('code', 'title', 'plain_explanation', 'local_explanation', 'common_causes')
-    prepopulated_fields = {'slug': ('code', 'title')}
-    list_editable = ('is_active',)
-    fieldsets = (
-        ('المعلومات الأساسية', {'fields': ('code', 'title', 'slug', 'system', 'severity', 'safety_status', 'is_active')}),
-        ('شرح الكود', {'fields': ('plain_explanation', 'local_explanation', 'common_causes', 'local_causes', 'symptoms')}),
-        ('الفحص والأمان', {'fields': ('self_check_steps', 'mechanic_advice', 'dont_do', 'estimated_cost_note')}),
-        ('SEO', {'fields': ('seo_title', 'seo_description'), 'classes': ('collapse',)}),
-    )
-
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='obd_import_excel')]
-        return custom_urls + urls
-
-    def import_excel_view(self, request):
-        form = MaintenanceImportForm(request.POST or None, request.FILES or None)
-        if request.method == 'POST' and form.is_valid():
-            result = import_obd_codes_from_excel(form.cleaned_data['excel_file'])
-            msg = f"تم الاستيراد: إضافة {result['created']} وتحديث {result['updated']}."
-            if result['failed']:
-                msg += f" فشل {result['failed']} صف."
-            self.message_user(request, msg, messages.WARNING if result['failed'] else messages.SUCCESS)
-            for error in result['errors']:
-                self.message_user(request, error, messages.ERROR)
-            return redirect('../')
-
-        html_template = """
-        {% extends "admin/base_site.html" %}
-        {% block content %}
-        <div class="section-card" style="max-width: 900px; margin: 20px auto;">
-            <h3>استيراد أكواد OBD من Excel</h3>
-            <p style="line-height:1.9; color:#475569;">الأعمدة المطلوبة: code, title, slug. باقي الأعمدة اختيارية ومطابقة لقاعدة البيانات.</p>
-            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">code,title,slug,system,severity,safety_status,plain_explanation,local_explanation,common_causes,local_causes,symptoms,self_check_steps,mechanic_advice,dont_do,estimated_cost_note,seo_title,seo_description,is_active</p>
-            <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-primary" style="border:0;">استيراد</button> <a href="../">إلغاء</a></form>
-        </div>
-        {% endblock %}
-        """
-        return HttpResponse(Template(html_template).render(RequestContext(request, {'form': form, 'opts': self.model._meta})))
-
-
 class SymptomCauseInline(admin.TabularInline):
     model = SymptomCause
     extra = 1
-    fields = ('priority', 'title', 'likelihood', 'related_obd_codes', 'is_active')
+    fields = ('priority', 'title', 'likelihood', 'is_active')
 
 
 @admin.register(CarSymptom)
@@ -1058,8 +962,8 @@ class CarSymptomAdmin(admin.ModelAdmin):
             <h3>استيراد أعراض الأعطال وأسبابها من Excel</h3>
             <p style="line-height:1.9; color:#475569;">يمكنك استخدام ورقة واحدة باسم <b>CarSymptom</b> تحتوي الأعطال وأسبابها في نفس الصف. ما زال يدعم ورقة <b>SymptomCause</b> اختيارياً إذا أردت فصل الأسباب لاحقاً.</p>
             <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">CarSymptom: name,slug,category,description,severity,safety_status,driver_questions,self_check_steps,urgent_warning,seo_title,seo_description,is_active</p>
-            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">أعمدة الأسباب داخل نفس الورقة: cause1_title,cause1_description,cause1_likelihood,cause1_check_method,cause1_solution_hint,cause1_related_obd_codes ثم cause2_... حتى cause5_...</p>
-            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">اختياري للفصل المتقدم - SymptomCause: symptom_slug,priority,title,description,likelihood,check_method,solution_hint,related_obd_codes,is_active</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">أعمدة الأسباب داخل نفس الورقة: cause1_title,cause1_description,cause1_likelihood,cause1_check_method,cause1_solution_hint ثم cause2_... حتى cause5_...</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">اختياري للفصل المتقدم - SymptomCause: symptom_slug,priority,title,description,likelihood,check_method,solution_hint,is_active</p>
             <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-primary" style="border:0;">استيراد</button> <a href="../">إلغاء</a></form>
         </div>
         {% endblock %}
