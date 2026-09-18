@@ -338,12 +338,14 @@ def dealers_view(request):
     if category == 'parts' and parts_region != 'all':
         dealers = dealers.filter(Q(parts_region=parts_region) | Q(parts_region='all'))
 
+    dealer_card_ad = AdBanner.objects.filter(is_active=True, position='dealer_card').first()
     return render(request, 'cars/dealers.html', {
         'dealers': dealers,
         'category': category,
         'parts_region': parts_region,
         'dealer_type_choices': Dealer.DEALER_TYPE_CHOICES,
         'parts_region_choices': Dealer.PARTS_REGION_CHOICES,
+        'dealer_card_ad': dealer_card_ad,
     })
 
 

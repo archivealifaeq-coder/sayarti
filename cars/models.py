@@ -253,7 +253,8 @@ class AdBanner(models.Model):
         ('ticker', '📢 شريط متحرك علوي (5%) - أعلى الصفحة'),
         ('slider', '🎠 سلايدر رئيسي (35%) - وسط الصفحة'),
         ('gateway_grid', '💎 إعلان بين بطاقات الرئيسية'),
-        ('gateway_card', '🏷️ رعاية صغيرة داخل بطاقات الرئيسية'),
+        ('gateway_card', '🏷️ رعاية داخل بطاقات الرئيسية'),
+        ('dealer_card', '🏪 رعاية داخل بطاقة كل وكيل'),
     ]
 
     sponsor = models.ForeignKey(

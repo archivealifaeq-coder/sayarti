@@ -881,8 +881,7 @@
         .gateway-ad-card__title { color:#f8fafc; font-weight:900; font-size:.98rem; margin-top:4px; }
         .gateway-ad-card__desc { color:#cbd5e1; font-size:.76rem; line-height:1.7; margin-top:5px; }
         .gateway-ad-card__actions { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
-        .gateway-ad-card__link,
-        .gateway-ad-card__promo {
+        .gateway-ad-card__link {
             display:inline-flex;
             align-items:center;
             justify-content:center;
@@ -894,7 +893,6 @@
             color:#fbbf24;
             background:rgba(245, 158, 11, .08);
         }
-        .gateway-ad-card__promo { cursor:pointer; }
 
         .gateway-card-sponsor {
             margin-top: 12px;
@@ -902,16 +900,10 @@
             border-radius: 14px;
             border: 1px solid rgba(245, 158, 11, 0.14);
             background: rgba(245, 158, 11, 0.07);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
             text-align: right;
         }
-        .gateway-card-sponsor__text { min-width: 0; }
         .gateway-card-sponsor__label { display: block; color: #fbbf24; font-size: 0.62rem; font-weight: 900; margin-bottom: 2px; }
         .gateway-card-sponsor__title { display: block; color: #e2e8f0; font-size: 0.72rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .gateway-card-sponsor__cta { color: #fbbf24; font-size: 0.68rem; font-weight: 900; white-space: nowrap; cursor:pointer; }
 
         /* زر الخصم العائم — واحد فقط داخل السلايدر، يتبع الشركة النشطة */
         .promo-float {
@@ -1564,21 +1556,19 @@
                             <span class="gateway-card-sponsor__label">برعاية</span>
                             <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
                         </span>
-                        {% if gateway_card_ad.sponsor %}<span class="gateway-card-sponsor__cta promo-trigger" data-sponsor-slug="{{ gateway_card_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_card_ad.sponsor.name }}" data-discount="{{ gateway_card_ad.sponsor.discount }}">خصم</span>{% else %}<span class="gateway-card-sponsor__cta">رعاية</span>{% endif %}
-                    </span>
-                    {% endif %}
-                </a>
-
-                {% if gateway_grid_ad %}
+</span>
+                     {% endif %}
+                 </a>
+ 
+                 {% if gateway_grid_ad %}
                 <div class="glass-card gateway-ad-card rounded-2xl p-5 text-center relative overflow-hidden">
                     <span class="ad-badge">إعلان</span>
                     {% if gateway_grid_ad.image %}<div class="gateway-ad-card__media" style="background-image:url('{{ gateway_grid_ad.image.url }}')"></div>{% endif %}
                     <div class="gateway-ad-card__label">مساحة إعلانية مختارة</div>
                     <h2 class="gateway-ad-card__title">{{ gateway_grid_ad.title }}</h2>
                     {% if gateway_grid_ad.subtitle %}<p class="gateway-ad-card__desc">{{ gateway_grid_ad.subtitle }}</p>{% endif %}
-                    <div class="gateway-ad-card__actions">
+<div class="gateway-ad-card__actions">
                         {% if gateway_grid_ad.button_url and gateway_grid_ad.button_url != '#' %}<a class="gateway-ad-card__link" href="{{ gateway_grid_ad.button_url }}" target="_blank" rel="noopener noreferrer">{{ gateway_grid_ad.button_text|default:"اعرف المزيد" }}</a>{% endif %}
-                        {% if gateway_grid_ad.sponsor %}<button type="button" class="gateway-ad-card__promo promo-trigger" data-sponsor-slug="{{ gateway_grid_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_grid_ad.sponsor.name }}" data-discount="{{ gateway_grid_ad.sponsor.discount }}">احصل على خصم</button>{% endif %}
                     </div>
                 </div>
                 {% endif %}
@@ -1595,7 +1585,7 @@
                             <span class="gateway-card-sponsor__label">برعاية</span>
                             <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
                         </span>
-                        {% if gateway_card_ad.sponsor %}<span class="gateway-card-sponsor__cta promo-trigger" data-sponsor-slug="{{ gateway_card_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_card_ad.sponsor.name }}" data-discount="{{ gateway_card_ad.sponsor.discount }}">خصم</span>{% else %}<span class="gateway-card-sponsor__cta">رعاية</span>{% endif %}
+                        
                     </span>
                     {% endif %}
                 </a>
@@ -1613,7 +1603,7 @@
                             <span class="gateway-card-sponsor__label">برعاية</span>
                             <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
                         </span>
-                        {% if gateway_card_ad.sponsor %}<span class="gateway-card-sponsor__cta promo-trigger" data-sponsor-slug="{{ gateway_card_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_card_ad.sponsor.name }}" data-discount="{{ gateway_card_ad.sponsor.discount }}">خصم</span>{% else %}<span class="gateway-card-sponsor__cta">رعاية</span>{% endif %}
+                        
                     </span>
                     {% endif %}
                 </a>
@@ -1632,7 +1622,7 @@
                             <span class="gateway-card-sponsor__label">برعاية</span>
                             <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
                         </span>
-                        {% if gateway_card_ad.sponsor %}<span class="gateway-card-sponsor__cta promo-trigger" data-sponsor-slug="{{ gateway_card_ad.sponsor.slug }}" data-sponsor-name="{{ gateway_card_ad.sponsor.name }}" data-discount="{{ gateway_card_ad.sponsor.discount }}">خصم</span>{% else %}<span class="gateway-card-sponsor__cta">رعاية</span>{% endif %}
+                        
                     </span>
                     {% endif %}
                 </a>
