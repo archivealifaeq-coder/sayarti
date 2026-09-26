@@ -36,6 +36,7 @@ def manifest_view(request):
         "categories": ["automotive", "utilities"],
         "icons": [
             {"src": "/static/shared/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": "/static/shared/icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any"},
             {"src": "/static/shared/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
             {"src": "/static/shared/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
         ],
@@ -61,7 +62,15 @@ def _safe_int(value, default=0):
 
 def _maintenance_due_status(task, odometer):
     if odometer < task.start_km:
+        km_to_stage = task.start_km - odometer
+        if km_to_stage <= 3000:
+            return 'soon', f'قريبة بعد حوالي {km_to_stage:,} كم'
         return 'later', f'تبدأ عادة قرب {task.start_km:,} كم'
+    if (task.interval_km or 0) >= 999999 and (task.severe_interval_km or 0) >= 999999:
+        km_after_stage = odometer - task.start_km
+        if km_after_stage <= 3000:
+            return 'due', 'مستحقة ضمن مرحلة الصيانة الحالية'
+        return 'ok', 'مرحلة صيانة سابقة'
     interval = task.severe_interval_km or task.interval_km or 1
     distance_since_start = odometer - task.start_km
     remainder = distance_since_start % interval
@@ -71,6 +80,105 @@ def _maintenance_due_status(task, odometer):
     if km_to_next <= 3000:
         return 'soon', f'قريبة بعد حوالي {km_to_next:,} كم'
     return 'ok', f'المراجعة القادمة بعد حوالي {km_to_next:,} كم'
+
+
+def _maintenance_display_level(task):
+    text = f'{task.category} {task.name} {task.condition_type}'.lower()
+    conditional_words = ('دبل', 'دفرنشل', 'كورنة', 'ترانسفير', 'درايم', 'كردان', 'هايبرد', 'تيربو', 'ديزل', 'cvt')
+    check_due_words = ('قير', 'كير', 'ناقل', 'بواجي', 'كويل', 'قايش', 'سير', 'رولات', 'سائل')
+    if task.condition_type in {'drivetrain', 'hybrid', 'turbo', 'diesel', 'cvt', 'engine', 'transmission'} or any(word in text for word in conditional_words):
+        return 'conditional'
+    if task.condition_type == 'manufacturer_schedule' or task.category in {'transmission', 'belts', 'ignition'} or any(word in text for word in check_due_words):
+        return 'check_due'
+    return task.display_level or 'essential'
+
+
+def _unique_texts(values):
+    seen = set()
+    result = []
+    for value in values:
+        text = str(value).strip()
+        key = text.lower()
+        if text and key not in seen:
+            seen.add(key)
+            result.append(text)
+    return result
+
+
+def _build_maintenance_summary(odometer, nearest_km, engine_type, transmission, stage_tasks=None):
+    if not odometer:
+        return None
+    stage_title = f'صيانة قريبة من {nearest_km:,} كم' if nearest_km else f'صيانة حسب ممشى {odometer:,} كم'
+    delta = odometer - nearest_km if nearest_km else 0
+    if nearest_km and delta == 0:
+        stage_note = 'أنت على مرحلة الصيانة نفسها تقريباً.'
+    elif nearest_km and delta > 0:
+        stage_note = f'أقرب مرحلة صيانة أقل من ممشاك بفارق {delta:,} كم.'
+    elif nearest_km:
+        stage_note = f'أقرب مرحلة صيانة جاية بعد {abs(delta):,} كم.'
+    else:
+        stage_note = 'هذه توصيات عامة لأن بيانات المرحلة التفصيلية غير متوفرة.'
+
+    essential = [
+        'بدّل زيت المحرك وفلتر الزيت إذا وصل موعدهما، ولا تطوّل أكثر من 5,000 كم بالاستخدام الشاق داخل العراق إلا إذا توصية الشركة أقصر.',
+        'افحص الفرامل والإطارات وضغط الهواء، ودوّر الإطارات تقريباً كل 10,000 كم إذا يسمح تصميم السيارة ونمط التآكل.',
+        'افحص مستوى سائل التبريد والدبة والرديتر والخراطيم، ولا تفتح غطاء التبريد والمحرك حار.',
+        'افحص البطارية ونظام الشحن خصوصاً قبل الصيف، لأن الحرارة تقصر عمر البطارية بشكل واضح.',
+        'استبدل فلتر هواء المحرك وفلتر المكيف عند الاتساخ، التنظيف ما يعوض الفلتر إذا ضعفت كفاءة الفلترة.',
+    ]
+
+    stage_tasks = stage_tasks or []
+    stage_check_due = _unique_texts(
+        task.name for task in stage_tasks
+        if _maintenance_display_level(task) == 'check_due' or str(task.action_type).strip() == 'فحص'
+    )
+    stage_conditional = _unique_texts(
+        task.name for task in stage_tasks if _maintenance_display_level(task) == 'conditional'
+    )
+
+    if stage_check_due:
+        check_due = [
+            f'{name}: تحقق من جدول الشركة وحالة القطعة قبل التبديل.'
+            for name in stage_check_due
+        ]
+    else:
+        check_due = []
+
+    conditional = [
+        f'{name}: يظهر فقط إذا كانت هذه المنظومة موجودة بسيارتك أو تنطبق على نوع محركك/الكير.'
+        for name in stage_conditional
+    ]
+    if engine_type == 'gasoline_turbo':
+        conditional.append('إذا سيارتك تيربو، افحص صوندات التيربو والانتركولر وأي تهريب هواء أو زيت مع ضعف العزم.')
+    if engine_type == 'hybrid':
+        conditional.append('إذا سيارتك هايبرد، تابع فلتر/مجرى تبريد بطارية الهايبرد ونظافة فتحات التهوية.')
+    if engine_type == 'diesel':
+        conditional.append('إذا سيارتك ديزل، تابع فلتر الوقود/فاصل الماء وجودة الوقود لأن تأثيرها مباشر على البخاخات.')
+    if transmission == 'cvt':
+        conditional.append('إذا الكير CVT، لا تستخدم زيت عام، اتبع مواصفة الشركة حرفياً لأن حساسية هذا الكير عالية.')
+    elif transmission in {'automatic', 'dct', 'ecvt', 'amt'}:
+        conditional.append('إذا الكير أوتوماتيك أو DCT/e-CVT، فحص الزيت يكون حسب طريقة الشركة ودرجة الحرارة المحددة، مو بقياس عشوائي.')
+    if not stage_conditional:
+        conditional.append('إذا سيارتك دبل/دفرنس/ترانسفير، افحص التسريبات والأصوات واستحقاق الزيت حسب جدول الشركة.')
+
+    fixed_notes = [
+        'الزيت والفلاتر: بدّل زيت المحرك وفلتر الزيت كل 5,000 كم بالاستخدام الشاق في العراق أو حسب توصية الشركة إذا كانت أقصر، واستبدل فلاتر الهواء والمكيف عند الاتساخ بدل الاكتفاء بتنظيفها إذا ضعفت كفاءتها.',
+        'الإطارات: افحص ضغط الإطارات وهي باردة، ودوّر أماكن الإطارات تقريباً كل 10,000 كم إذا يسمح تصميم السيارة ونمط التآكل. أي تآكل غير متساوٍ يحتاج فحص زوايا وتعليق.',
+        'التبريد: تابع مستوى سائل التبريد في الدبة وافحص الرديتر والخراطيم والمراوح، ولا تفتح غطاء الرديتر والمحرك حار. استخدم سائل تبريد مطابق لمواصفة السيارة.',
+        'البطارية والشحن: افحص البطارية والدينمو والتوصيلات خصوصاً قبل الصيف، حرارة العراق تقلل عمر البطارية وتزيد حساسية نقاط التأريض والشحن.',
+        'هذه التوصيات عامة ومقصودها تساعدك ترتب الأولويات، دليل الشركة يبقى المرجع الأول للمواصفات والفترات الدقيقة.',
+        'أجواء العراق تعتبر استخدام شاق: حرارة، غبار، ازدحام، وتشغيل مكيف طويل، لذلك الفحص المبكر أفضل من الانتظار لنهاية الفترة.',
+        'إذا ظهرت لمبة زيت، حرارة عالية، دخان كثيف، رائحة وقود، أو فقدان قوي بالعزم، أوقف السيارة وراجع مختص فوراً.',
+    ]
+
+    return {
+        'stage_title': stage_title,
+        'stage_note': stage_note,
+        'essential': essential,
+        'check_due': check_due,
+        'conditional': conditional,
+        'fixed_notes': fixed_notes,
+    }
 
 
 def maintenance_view(request):
@@ -86,10 +194,11 @@ def maintenance_view(request):
         selected_symptom = symptoms.filter(slug=symptom_slug).first()
 
     maintenance_rows = []
+    maintenance_summary = None
     brand_values = set()
     for item in MaintenanceTask.objects.filter(is_active=True).values('brand_ar', 'brand_en').distinct():
         brand = item.get('brand_ar') or item.get('brand_en')
-        if brand:
+        if brand and brand != 'عام':
             brand_values.add(brand)
     maintenance_brand_choices = sorted(brand_values)
 
@@ -98,7 +207,7 @@ def maintenance_view(request):
         if maintenance_brand:
             tasks = tasks.filter(Q(brand_ar='') | Q(brand_en='') | Q(brand_ar=maintenance_brand) | Q(brand_en=maintenance_brand))
         else:
-            tasks = tasks.filter(brand_ar='', brand_en='')
+            tasks = tasks.filter(Q(brand_ar='', brand_en='') | Q(brand_ar='عام'))
         tasks = tasks.filter(
             Q(applies_to_engine_type='all') | Q(applies_to_engine_type=engine_type)
         ).filter(
@@ -110,16 +219,65 @@ def maintenance_view(request):
             for task in task_list
             if maintenance_brand and (task.brand_ar or task.brand_en)
         }
+        candidate_tasks = []
         for task in task_list:
             task_key = (task.name.strip().lower(), task.category, task.applies_to_engine_type, task.applies_to_transmission)
             if maintenance_brand and not (task.brand_ar or task.brand_en) and task_key in specific_keys:
                 continue
-            status, note = _maintenance_due_status(task, odometer)
-            if status not in ('due', 'soon'):
-                continue
-            maintenance_rows.append({'task': task, 'status': status, 'status_note': note})
-        status_order = {'due': 0, 'soon': 1}
-        maintenance_rows.sort(key=lambda row: (status_order.get(row['status'], 9), row['task'].category, row['task'].name))
+            candidate_tasks.append(task)
+
+        if candidate_tasks:
+            stage_values = {task.start_km for task in candidate_tasks}
+            nearest_km = min(stage_values, key=lambda km: (abs(km - odometer), 0 if km >= odometer else 1, km))
+            distance = odometer - nearest_km
+            if distance == 0:
+                status = 'due'
+                note = 'مرحلة الممشى الحالية'
+            elif distance > 0:
+                status = 'due'
+                note = f'أقرب مرحلة للممشى بفارق {distance:,} كم'
+            else:
+                status = 'soon'
+                note = f'أقرب مرحلة للممشى بفارق {abs(distance):,} كم'
+            for task in candidate_tasks:
+                if task.start_km == nearest_km:
+                    maintenance_rows.append({'task': task, 'status': status, 'status_note': note})
+            maintenance_rows.sort(key=lambda row: (row['task'].category, row['task'].name))
+            maintenance_summary = _build_maintenance_summary(
+                odometer,
+                nearest_km,
+                engine_type,
+                transmission,
+                [row['task'] for row in maintenance_rows],
+            )
+        else:
+            maintenance_summary = _build_maintenance_summary(odometer, None, engine_type, transmission)
+
+    maintenance_groups = []
+    grouped = {}
+    for row in maintenance_rows:
+        task = row['task']
+        title = task.stage_title or f'مرحلة {task.start_km:,} كم'
+        key = (title, row['status'], row['status_note'])
+        if key not in grouped:
+            grouped[key] = {
+                'title': title,
+                'status': row['status'],
+                'status_note': row['status_note'],
+                'tasks': [],
+                'essential_tasks': [],
+                'check_due_tasks': [],
+                'conditional_tasks': [],
+            }
+            maintenance_groups.append(grouped[key])
+        grouped[key]['tasks'].append(task)
+        display_level = _maintenance_display_level(task)
+        if display_level == 'check_due':
+            grouped[key]['check_due_tasks'].append(task)
+        elif display_level == 'conditional':
+            grouped[key]['conditional_tasks'].append(task)
+        else:
+            grouped[key]['essential_tasks'].append(task)
 
     return render(request, 'cars/maintenance.html', {
         'symptoms': symptoms,
@@ -132,6 +290,8 @@ def maintenance_view(request):
         'transmission': transmission,
         'transmission_choices': MaintenanceTask.TRANSMISSION_CHOICES,
         'maintenance_rows': maintenance_rows,
+        'maintenance_groups': maintenance_groups,
+        'maintenance_summary': maintenance_summary,
     })
 
 
@@ -285,10 +445,18 @@ def _search_context(request):
 
 def index_view(request):
     banners = AdBanner.objects.filter(is_active=True).order_by('order', '-created_at')
+    gateway_card_ads = {
+        ad.gateway_card_target: ad
+        for ad in banners.filter(position='gateway_card').exclude(gateway_card_target='')
+    }
+    gateway_card_fallback = banners.filter(position='gateway_card', gateway_card_target='').first()
     context = {
         'banners': banners,
         'gateway_grid_ad': banners.filter(position='gateway_grid').first(),
-        'gateway_card_ad': banners.filter(position='gateway_card').first(),
+        'gateway_search_card_ad': gateway_card_ads.get('search') or gateway_card_fallback,
+        'gateway_mix_card_ad': gateway_card_ads.get('mix') or gateway_card_fallback,
+        'gateway_dealers_card_ad': gateway_card_ads.get('dealers') or gateway_card_fallback,
+        'gateway_maintenance_card_ad': gateway_card_ads.get('maintenance') or gateway_card_fallback,
     }
     return render(request, 'cars/index.html', context)
 
@@ -322,15 +490,29 @@ def dealers_view(request):
     dealers = Dealer.objects.filter(dealer_type=category, is_active=True)
     if category == 'parts' and parts_region != 'all':
         dealers = dealers.filter(Q(parts_region=parts_region) | Q(parts_region='all'))
+    dealers = list(dealers)
 
-    dealer_card_ad = AdBanner.objects.filter(is_active=True, position='dealer_card').first()
+    dealer_card_fallback = AdBanner.objects.filter(
+        is_active=True,
+        position='dealer_card',
+        target_dealer__isnull=True,
+    ).first()
+    dealer_ads = {
+        ad.target_dealer_id: ad
+        for ad in AdBanner.objects.filter(
+            is_active=True,
+            position='dealer_card',
+            target_dealer__in=dealers,
+        ).select_related('target_dealer')
+    }
+    for dealer in dealers:
+        dealer.card_ad = dealer_ads.get(dealer.id) or dealer_card_fallback
     return render(request, 'cars/dealers.html', {
         'dealers': dealers,
         'category': category,
         'parts_region': parts_region,
         'dealer_type_choices': Dealer.DEALER_TYPE_CHOICES,
         'parts_region_choices': Dealer.PARTS_REGION_CHOICES,
-        'dealer_card_ad': dealer_card_ad,
     })
 
 
@@ -480,7 +662,43 @@ def recommendations_view(request, car_id):
     except CarSpecification.DoesNotExist:
         messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0633\u064a\u0627\u0631\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629")
         return redirect('index')
-    return render(request, 'cars/recommendations.html', {'car': car})
+    return render(request, 'cars/recommendations.html', {
+        'car': car,
+        'display_recommendations': _unique_recommendation_lines(car.recommendations),
+    })
+
+
+def _unique_recommendation_lines(text):
+    if not text:
+        return ''
+    lines = []
+    seen = set()
+    for raw_line in str(text).replace('؛', '\n').splitlines():
+        line = raw_line.strip(" \t\r\n-•*،,.؛")
+        key = ' '.join(line.split()).lower()
+        if line and key not in seen and not _is_repeated_spec_line(key):
+            seen.add(key)
+            lines.append(line)
+    return '\n'.join(lines)
+
+
+def _is_repeated_spec_line(normalized_line):
+    repeated_fields = (
+        'السنة', 'سنة الصنع', 'year',
+        'المحرك', 'سعة المحرك', 'كود المحرك', 'engine', 'engine code',
+        'نوع الوقود', 'الوقود', 'fuel',
+        'الأوكتان', 'اوكتان', 'رقم الأوكتان', 'رقم اوكتان', 'octane',
+        'لزوجة الزيت', 'زيت المحرك', 'oil viscosity', 'oil visc',
+        'سعة الزيت', 'سعة زيت المحرك', 'oil capacity',
+        'ماركات الزيت', 'ماركة الزيت', 'oil brands',
+    )
+    separators = (':', '：', '-', '–', '—', '=')
+    return any(
+        normalized_line == field or
+        any(normalized_line.startswith(field + sep) for sep in separators) or
+        any(normalized_line.startswith(field + ' ' + sep) for sep in separators)
+        for field in repeated_fields
+    )
 
 
 def privacy_view(request):
@@ -513,12 +731,13 @@ def sitemap_view(request):
     from django.utils import timezone
     from xml.sax.saxutils import escape
 
-    host = request.build_absolute_uri('/').rstrip('/')
+    root_url = request.build_absolute_uri('/')
+    host = root_url.rstrip('/')
     today = timezone.localdate().isoformat()
     settings_obj = SiteSettings.load()
 
     urls = [
-        {'loc': host, 'priority': '1.0', 'freq': 'daily'},
+        {'loc': root_url, 'priority': '1.0', 'freq': 'daily'},
         {'loc': host + reverse('search'), 'priority': '0.9', 'freq': 'daily'},
         {'loc': host + reverse('mix_calculator'), 'priority': '0.8', 'freq': 'weekly'},
         {'loc': host + reverse('about'), 'priority': '0.5', 'freq': 'monthly'},
@@ -530,16 +749,6 @@ def sitemap_view(request):
         urls.append({'loc': host + reverse('maintenance'), 'priority': '0.8', 'freq': 'weekly'})
         for slug in CarSymptom.objects.filter(is_active=True).values_list('slug', flat=True)[:1000]:
             urls.append({'loc': host + reverse('symptom_detail', args=[slug]), 'priority': '0.6', 'freq': 'monthly'})
-
-    car_ids = (CarSpecification.objects
-               .order_by('-year', 'brand_ar', 'model_ar', 'id')
-               .values_list('id', flat=True)[:1000])
-    for car_id in car_ids:
-        urls.append({
-            'loc': host + reverse('recommendations', args=[car_id]),
-            'priority': '0.5',
-            'freq': 'monthly',
-        })
 
     chunk = '\n'.join(
         f"   <url><loc>{escape(u['loc'])}</loc><lastmod>{today}</lastmod>"

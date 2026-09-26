@@ -33,8 +33,8 @@
         <div class="quick-db-head">
             <span class="text-xl" aria-hidden="true">🏆</span>
             <div>
-                <h4 class="text-white font-bold text-sm">نتائج حقيقية ومدقّقة من قاعدة بياناتنا</h4>
-                <p class="text-slate-500 text-xs">نفس السيارة بمحركات ومواصفات مناطق مختلفة — {{ db_results|length }} مواصفة</p>
+                <h4 class="text-white font-bold text-sm">نتائج من قاعدة بياناتنا</h4>
+                <p class="text-slate-500 text-xs">نعرض الموثق أولاً، والقطع الحساسة تحتاج تحقق قبل الشراء — {{ db_results|length }} مواصفة</p>
             </div>
         </div>
         <div class="quick-db-grid">
@@ -52,15 +52,11 @@
                 </div>
                 <div class="quick-db-specs">
                     {% if car.octane %}<span><b>⭕</b> أوكتان {{ car.octane }}</span>{% endif %}
-                    {% if car.engine_code %}<span><b>🔢</b> {{ car.engine_code }}</span>{% endif %}
                     {% if car.oil_visc %}<span><b>🛢️</b> {{ car.oil_visc }}</span>{% endif %}
                     {% if car.oil_capacity %}<span><b>🧴</b> {{ car.oil_capacity }}</span>{% endif %}
-                    {% if car.spark %}<span><b>⚡</b> {{ car.spark }}</span>{% endif %}
-                    {% if car.tire_size %}<span><b>🛞</b> {{ car.tire_size }}</span>{% endif %}
-                    {% if car.battery %}<span><b>🔋</b> {{ car.battery }}</span>{% endif %}
-                    {% if car.transmission_type %}<span><b>⚙️</b> {{ car.transmission_type }}</span>{% endif %}
-                    {% if car.transmission_oil_spec %}<span><b>🛢️</b> ناقل: {{ car.transmission_oil_spec }}</span>{% endif %}
                     {% if car.oil_brands %}<span><b>🏷️</b> زيت: {{ car.oil_brands }}</span>{% endif %}
+                    {% if car.tire_size %}<span><b>تحقق</b> إطارات: {{ car.tire_size }}</span>{% endif %}
+                    {% if car.spark %}<span><b>تحقق</b> بلكات: {{ car.spark }}</span>{% endif %}
                 </div>
                 <span class="quick-db-go">عرض التوصيات والتفاصيل ←</span>
             </a>
@@ -73,7 +69,7 @@
             <span class="text-2xl" aria-hidden="true">🤖</span>
             <div>
                 <h4 class="text-amber-400 font-extrabold text-base">نتائج مختارة بعناية لك</h4>
-                <p class="text-slate-500 text-xs">تفاصيل مدققة من الشركة المصنعة — معلومات حقيقية وموثوقة</p>
+                <p class="text-slate-500 text-xs">اقتراحات مساعدة، تحقق من القطع الحساسة قبل الشراء</p>
             </div>
         </div>
         <div class="ai-suggest-grid">
@@ -86,17 +82,17 @@
                 <table class="ai-spec-table">
                     {% if car.year %}<tr><td class="ai-spec-key">📅 السنة</td><td>{{ car.year }}</td></tr>{% endif %}
                     {% if car.engine %}<tr><td class="ai-spec-key">⚙️ المحرك</td><td>{{ car.engine }}</td></tr>{% endif %}
-                    {% if car.engine_code %}<tr><td class="ai-spec-key">🔢 كود المحرك</td><td>{{ car.engine_code }}</td></tr>{% endif %}
                     {% if car.fuel %}<tr><td class="ai-spec-key">🛢️ الوقود</td><td>{{ car.fuel }}</td></tr>{% endif %}
                     {% if car.oil_visc %}<tr><td class="ai-spec-key">🧴 لزوجة الزيت</td><td>{{ car.oil_visc }}</td></tr>{% endif %}
                     {% if car.oil_capacity %}<tr><td class="ai-spec-key">⭕ سعة الزيت</td><td>{{ car.oil_capacity }}</td></tr>{% endif %}
-                    {% if car.spark %}<tr><td class="ai-spec-key">⚡ شمعات القدح</td><td>{{ car.spark }}</td></tr>{% endif %}
-                    {% if car.battery %}<tr><td class="ai-spec-key">🔋 البطارية الصغيرة</td><td>{{ car.battery }}</td></tr>{% endif %}
-                    {% if car.hybrid_battery %}<tr><td class="ai-spec-key">🔋 بطارية الهايبرد</td><td>{{ car.hybrid_battery }}</td></tr>{% endif %}
+                    {% if car.engine_code %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>كود المحرك: {{ car.engine_code }}</td></tr>{% endif %}
+                    {% if car.spark %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>البلكات: {{ car.spark }}</td></tr>{% endif %}
+                    {% if car.battery %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>البطارية الصغيرة: {{ car.battery }}</td></tr>{% endif %}
+                    {% if car.hybrid_battery %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>بطارية الهايبرد: {{ car.hybrid_battery }}</td></tr>{% endif %}
                     {% if car.battery_notes %}<tr><td class="ai-spec-key">🪫 ملاحظة البطارية</td><td>{{ car.battery_notes }}</td></tr>{% endif %}
-                    {% if car.tire_size %}<tr><td class="ai-spec-key">🛞 حجم الإطار</td><td>{{ car.tire_size }}</td></tr>{% endif %}
-                    {% if car.transmission %}<tr><td class="ai-spec-key">⚙️ ناقل الحركة</td><td>{{ car.transmission }}</td></tr>{% endif %}
-                    {% if car.transmission_oil_spec %}<tr><td class="ai-spec-key">🛢️ زيت الناقل</td><td>{{ car.transmission_oil_spec }}</td></tr>{% endif %}
+                    {% if car.tire_size %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>الإطارات: {{ car.tire_size }}</td></tr>{% endif %}
+                    {% if car.transmission %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>الكير: {{ car.transmission }}</td></tr>{% endif %}
+                    {% if car.transmission_oil_spec %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>زيت الكير: {{ car.transmission_oil_spec }}</td></tr>{% endif %}
                 </table>
                 {% if car.driver_tip %}<p class="ai-recommend">💡 {{ car.driver_tip }}</p>{% endif %}
                 {% if car.specs %}<p class="ai-recommend">{{ car.specs }}</p>{% endif %}
@@ -108,8 +104,8 @@
     <div class="quick-results-head quick-results-error">
         <div class="quick-ai-avatar">😔</div>
         <div>
-            <h4 class="text-slate-300 font-bold text-sm">لم أجد نتائج دقيقة لهذا الطلب</h4>
-            <p class="text-slate-500 text-xs">جرّب صياغة أخرى مثل: «هايلكس 2020 ديزل» أو «كامري هايبرد»</p>
+            <h4 class="text-slate-300 font-bold text-sm">سيارتك غير متوفرة حالياً في قاعدة البيانات</h4>
+            <p class="text-slate-500 text-xs">نعمل على تضمين موديلات وماركات جديدة باستمرار. جرّب صياغة أبسط مثل: «هايلكس 2020» أو عد لاحقاً فقد تتم إضافتها قريباً.</p>
         </div>
     </div>
     {% endif %}

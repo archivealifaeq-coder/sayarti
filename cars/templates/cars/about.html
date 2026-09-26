@@ -5,6 +5,7 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta name="robots" content="index, follow"/>
+    <link rel="canonical" href="{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/about/"/>
     <title>من نحن | سيارتي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -13,7 +14,7 @@
     <link rel="manifest" href="/manifest.json"/>
     <meta name="theme-color" content="#0f172a"/>
     <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
-    <link rel="apple-touch-icon" sizes="192x192" href="/static/shared/icons/icon-192.png"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/shared/icons/apple-touch-icon.png"/>
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -68,12 +69,12 @@
             <div class="glass rounded-2xl p-5 text-center">
                 <div class="text-3xl mb-2">📚</div>
                 <h3 class="font-extrabold text-white mb-1">مصادرنا</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">بيانات موثقة من أدلة الصيانة الرسمية للشركات المصنعة، محدثة باستمرار.</p>
+                <p class="text-slate-400 text-sm leading-relaxed">نعرض المعلومات الأساسية بوضوح، ونميّز القطع الحساسة التي تحتاج تحقق قبل الشراء حسب رقم الشاصي والفئة.</p>
             </div>
             <div class="glass rounded-2xl p-5 text-center">
                 <div class="text-3xl mb-2">🧮</div>
                 <h3 class="font-extrabold text-white mb-1">أدواتنا</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">حاسبة خلط الوقود الذكية وتوصيات صيانة معتمدة لكل موديل وسنة.</p>
+                <p class="text-slate-400 text-sm leading-relaxed">حاسبة خلط الوقود وتوصيات صيانة مبسطة تساعدك ترتب الأولويات بدون تعقيد.</p>
             </div>
         </div>
 

@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/maintenance/">
     <title>الصيانة والأعطال - سيارتي</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -11,6 +13,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{% static 'css/app.css' %}"/>
     <link rel="manifest" href="/manifest.json"/>
+    <meta name="theme-color" content="#0f172a"/>
+    <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/shared/icons/apple-touch-icon.png"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="سيارتي"/>
     <style>
         body { font-family: 'Cairo', sans-serif; background:#0f172a; color:#f1f5f9; }
         .maint-card { background:rgba(30,41,59,.68); border:1px solid rgba(245,158,11,.14); border-radius:24px; padding:22px; box-shadow:0 18px 50px rgba(0,0,0,.35); }
@@ -25,6 +34,21 @@
         .row-due { border-color:rgba(239,68,68,.38); }
         .row-soon { border-color:rgba(251,191,36,.38); }
         .row-ok { border-color:rgba(34,197,94,.22); }
+        .maint-item { border:1px solid rgba(148,163,184,.16); background:rgba(15,23,42,.42); border-radius:18px; padding:14px 16px; }
+        .maint-item + .maint-item { margin-top:10px; }
+        .task-section { margin-top:14px; }
+        .task-section-title { display:flex; align-items:center; gap:8px; color:#f8fafc; font-weight:900; margin-bottom:8px; }
+        .task-section-hint { color:#94a3b8; font-size:.78rem; line-height:1.8; margin-bottom:8px; }
+        .task-title-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; }
+        .task-title { border:1px solid rgba(148,163,184,.16); background:rgba(30,41,59,.55); color:#e2e8f0; border-radius:14px; padding:10px 12px; font-size:.9rem; font-weight:800; line-height:1.7; }
+        .task-title.check { color:#fde68a; border-color:rgba(251,191,36,.18); background:rgba(251,191,36,.08); }
+        .task-title.conditional { color:#bfdbfe; border-color:rgba(96,165,250,.18); background:rgba(96,165,250,.08); }
+        .notes-toggle summary { cursor:pointer; display:inline-flex; margin-top:14px; border-radius:999px; padding:8px 14px; background:rgba(245,158,11,.14); color:#fbbf24; font-weight:900; }
+        .note-item { border-top:1px solid rgba(148,163,184,.14); padding-top:10px; margin-top:10px; color:#cbd5e1; font-size:.86rem; line-height:1.9; }
+        .fixed-maint-note { margin-top:14px; border:1px solid rgba(251,191,36,.22); background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(15,23,42,.35)); border-radius:18px; padding:14px 16px; color:#fde68a; line-height:1.9; }
+        .summary-list { display:grid; gap:9px; margin-top:10px; }
+        .summary-list li { list-style:none; border:1px solid rgba(148,163,184,.14); background:rgba(15,23,42,.38); border-radius:14px; padding:10px 12px; color:#e2e8f0; line-height:1.85; }
+        .summary-list li::before { content:'•'; color:#fbbf24; font-weight:900; margin-left:8px; }
     </style>
 </head>
 <body>
@@ -95,24 +119,30 @@
             </section>
         </div>
 
-        {% if maintenance_rows %}
+        {% if maintenance_summary %}
         <section class="maint-card mt-6" id="maintenance-results">
-            <h2 class="text-2xl font-black text-white mb-4">قائمة الصيانة المقترحة للممشى {{ odometer }} كم</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {% for row in maintenance_rows %}
-                <div class="maint-card p-4 row-{{ row.status }}">
-                    <div class="flex flex-wrap justify-between gap-2 mb-2">
-                        <h3 class="font-black text-white">{{ row.task.name }}</h3>
-                        <span class="chip sev-{{ row.task.importance }}">{{ row.task.get_importance_display }}</span>
-                    </div>
-                    <p class="text-amber-200 text-sm font-bold">{{ row.status_note }}</p>
-                    {% if row.task.brand_ar or row.task.brand_en %}<p class="text-slate-300 text-xs mt-2">الشركة: {{ row.task.brand_ar|default:row.task.brand_en }}</p>{% endif %}
-                    {% if row.task.manufacturer_note %}<p class="text-amber-100 text-sm mt-2 leading-7">توصية الشركة: {{ row.task.manufacturer_note }}</p>{% endif %}
-                    <p class="text-slate-400 text-sm mt-2 leading-7">{{ row.task.description }}</p>
-                    {% if row.task.iraq_note %}<p class="text-slate-300 text-xs mt-2">ملاحظة محلية: {{ row.task.iraq_note }}</p>{% endif %}
-                </div>
-                {% endfor %}
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h2 class="text-2xl font-black text-white">{{ maintenance_summary.stage_title }}</h2>
             </div>
+            <article class="maint-item row-due">
+                <p class="text-amber-200 font-bold leading-8">{{ maintenance_summary.stage_note }}</p>
+
+                <div class="task-section">
+                    <h4 class="task-section-title">تحقق من الاستحقاق</h4>
+                    <p class="task-section-hint">هذه مو أوامر تبديل مباشرة؛ افحص واستند على جدول الشركة وحالة السيارة.</p>
+                    <ul class="summary-list">{% for item in maintenance_summary.check_due %}<li>{{ item }}</li>{% endfor %}</ul>
+                </div>
+
+                <div class="task-section">
+                    <h4 class="task-section-title">إذا موجود بسيارتك</h4>
+                    <ul class="summary-list">{% for item in maintenance_summary.conditional %}<li>{{ item }}</li>{% endfor %}</ul>
+                </div>
+
+                <div class="fixed-maint-note">
+                    <b class="text-amber-200">ملاحظات ثابتة مهمة:</b>
+                    <ul class="summary-list">{% for item in maintenance_summary.fixed_notes %}<li>{{ item }}</li>{% endfor %}</ul>
+                </div>
+            </article>
         </section>
         {% elif odometer %}
         <section class="maint-card mt-6" id="maintenance-results">

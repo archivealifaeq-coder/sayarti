@@ -5,25 +5,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="description" content="سيارتي - دليل مواصفات السيارات الذكي. ابحث عن مواصفات سيارتك من حيث الزيت، الإطارات، الأوكتان، والمزيد."/>
-    <meta name="keywords" content="سيارات, مواصفات, زيت, إطارات, أوكتان, صيانة, سيارتي"/>
+    <meta name="description" content="سيارتي العراق موقع عراقي يساعدك تعرف مواصفات سيارتك، الزيت المناسب، الفلاتر، الأوكتان، والصيانة حسب الممشى."/>
+    <meta name="keywords" content="سيارتي العراق, موقع سيارتي, دليل السيارات العراقي, سيارات, مواصفات, زيت, إطارات, أوكتان, صيانة, سيارتي"/>
     <meta name="robots" content="index, follow"/>
     <meta name="language" content="Arabic"/>
-    <title>سيارتي - دليل مواصفات السيارات الذكي</title>
+    <title>سيارتي العراق - دليل مواصفات السيارات والصيانة</title>
 
     {% with request.build_absolute_uri as abs_url %}{% with request.META.HTTP_HOST as site_host %}
     {% if abs_url and site_host %}
     <link rel="canonical" href="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="سيارتي" />
-    <meta property="og:title" content="سيارتي - دليل مواصفات السيارات الذكي" />
-    <meta property="og:description" content="ابحث عن مواصفات سيارتك من حيث الزيت، الإطارات، الأوكتان، والمزيد." />
+    <meta property="og:site_name" content="سيارتي العراق" />
+    <meta property="og:title" content="سيارتي العراق - دليل مواصفات السيارات والصيانة" />
+    <meta property="og:description" content="موقع عراقي يساعدك تعرف مواصفات سيارتك، الزيت المناسب، الفلاتر، الأوكتان، والصيانة حسب الممشى." />
     <meta property="og:url" content="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/" />
     <meta property="og:image" content="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/static/shared/icons/icon-512.png" />
     <meta property="og:locale" content="ar_AR" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="سيارتي - دليل مواصفات السيارات الذكي" />
-    <meta name="twitter:description" content="ابحث عن مواصفات سيارتك من حيث الزيت، الإطارات، الأوكتان، والمزيد." />
+    <meta name="twitter:title" content="سيارتي العراق - دليل مواصفات السيارات والصيانة" />
+    <meta name="twitter:description" content="موقع عراقي يساعدك تعرف مواصفات سيارتك، الزيت المناسب، الفلاتر، الأوكتان، والصيانة حسب الممشى." />
     {% endif %}
     {% endwith %}{% endwith %}
 
@@ -31,8 +31,9 @@
     {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "سيارتي",
-        "description": "دليل مواصفات السيارات الذكي - الزيت، الإطارات، الأوكتان، والتوصيات.",
+        "name": "سيارتي العراق",
+        "alternateName": "سيارتي",
+        "description": "موقع عراقي لمعرفة مواصفات السيارات، الزيت المناسب، الفلاتر، الأوكتان، والصيانة حسب الممشى.",
         "url": "{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/",
         "inLanguage": "ar"
     }
@@ -51,7 +52,7 @@
     <link rel="manifest" href="/manifest.json"/>
     <meta name="theme-color" content="#0f172a"/>
     <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
-    <link rel="apple-touch-icon" sizes="192x192" href="/static/shared/icons/icon-192.png"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/shared/icons/apple-touch-icon.png"/>
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -1543,17 +1544,17 @@
         <!-- ============================================ -->
         <div class="max-w-7xl mx-auto px-4 pt-4 md:pt-5 pb-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5" id="gateway-cards">
-                <a href="{% url 'search' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                <a href="{% if site_settings.lock_search_card %}#{% else %}{% url 'search' %}{% endif %}" {% if site_settings.lock_search_card %}data-lock-message="{{ site_settings.search_lock_message|default:'هذه الخدمة غير متاحة حالياً، ترقبوها قريباً.'|escape }}"{% endif %} class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block{% if site_settings.lock_search_card %} locked-service-card{% endif %}">
                     <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
                     <div class="text-3xl mb-2">🔍</div>
                     <h2 class="text-base md:text-lg font-black text-white mb-1">ابحث عن سيارتك</h2>
                     <p class="text-slate-400 text-xs leading-relaxed">المواصفات الكاملة: الزيت، الفلاتر، المحرك.</p>
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">ابدأ البحث ←</span>
-                    {% if gateway_card_ad %}
+                    {% if gateway_search_card_ad %}
                     <span class="gateway-card-sponsor">
                         <span class="gateway-card-sponsor__text">
                             <span class="gateway-card-sponsor__label">برعاية</span>
-                            <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
+                            <span class="gateway-card-sponsor__title">{{ gateway_search_card_ad.title }}</span>
                         </span>
 </span>
                      {% endif %}
@@ -1572,17 +1573,17 @@
                 </div>
                 {% endif %}
 
-                <a href="{% url 'mix_calculator' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                <a href="{% if site_settings.lock_mix_card %}#{% else %}{% url 'mix_calculator' %}{% endif %}" {% if site_settings.lock_mix_card %}data-lock-message="{{ site_settings.mix_lock_message|default:'هذه الخدمة غير متاحة حالياً، ترقبوها قريباً.'|escape }}"{% endif %} class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block{% if site_settings.lock_mix_card %} locked-service-card{% endif %}">
                     <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
                     <div class="text-3xl mb-2">🧮</div>
                     <h2 class="text-base md:text-lg font-black text-white mb-1">حاسبة الوقود</h2>
                     <p class="text-slate-400 text-xs leading-relaxed">النسب المثالية لرقم الأوكتان المناسب.</p>
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">احسب الآن ←</span>
-                    {% if gateway_card_ad %}
+                    {% if gateway_mix_card_ad %}
                     <span class="gateway-card-sponsor">
                         <span class="gateway-card-sponsor__text">
                             <span class="gateway-card-sponsor__label">برعاية</span>
-                            <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
+                            <span class="gateway-card-sponsor__title">{{ gateway_mix_card_ad.title }}</span>
                         </span>
                         
                     </span>
@@ -1590,17 +1591,17 @@
                 </a>
 
                 {% if site_settings.show_dealers_card %}
-                <a href="{% url 'dealers' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                <a href="{% if site_settings.lock_dealers_card %}#{% else %}{% url 'dealers' %}{% endif %}" {% if site_settings.lock_dealers_card %}data-lock-message="{{ site_settings.dealers_lock_message|default:'هذه الخدمة غير متاحة حالياً، ترقبوها قريباً.'|escape }}"{% endif %} class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block{% if site_settings.lock_dealers_card %} locked-service-card{% endif %}">
                     <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
                     <div class="text-3xl mb-2">🛢️</div>
                     <h2 class="text-base md:text-lg font-black text-white mb-1">وكلاء الزيوت وقطع الغيار</h2>
                     <p class="text-slate-400 text-xs leading-relaxed">دليل وكلاء الزيوت وقطع الغيار في العراق.</p>
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">اعرض الوكلاء ←</span>
-                    {% if gateway_card_ad %}
+                    {% if gateway_dealers_card_ad %}
                     <span class="gateway-card-sponsor">
                         <span class="gateway-card-sponsor__text">
                             <span class="gateway-card-sponsor__label">برعاية</span>
-                            <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
+                            <span class="gateway-card-sponsor__title">{{ gateway_dealers_card_ad.title }}</span>
                         </span>
                         
                     </span>
@@ -1609,17 +1610,17 @@
                 {% endif %}
 
                 {% if site_settings.show_maintenance_card %}
-                <a href="{% url 'maintenance' %}" class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block">
+                <a href="{% if site_settings.lock_maintenance_card %}#{% else %}{% url 'maintenance' %}{% endif %}" {% if site_settings.lock_maintenance_card %}data-lock-message="{{ site_settings.maintenance_lock_message|default:'هذه الخدمة غير متاحة حالياً، ترقبوها قريباً.'|escape }}"{% endif %} class="glass-card rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform relative overflow-hidden group block{% if site_settings.lock_maintenance_card %} locked-service-card{% endif %}">
                     <span class="absolute top-0 left-0 w-14 h-14 rounded-full bg-amber-500/10 blur-xl"></span>
                     <div class="text-3xl mb-2">🛠️</div>
                     <h2 class="text-base md:text-lg font-black text-white mb-1">الصيانة والأعطال</h2>
                     <p class="text-slate-400 text-xs leading-relaxed">ترجم كود العطل، افهم الأعراض، واعرف صيانة الممشى.</p>
                     <span class="inline-block mt-2 text-amber-400 text-xs font-bold">افحص الآن ←</span>
-                    {% if gateway_card_ad %}
+                    {% if gateway_maintenance_card_ad %}
                     <span class="gateway-card-sponsor">
                         <span class="gateway-card-sponsor__text">
                             <span class="gateway-card-sponsor__label">برعاية</span>
-                            <span class="gateway-card-sponsor__title">{{ gateway_card_ad.title }}</span>
+                            <span class="gateway-card-sponsor__title">{{ gateway_maintenance_card_ad.title }}</span>
                         </span>
                         
                     </span>
@@ -1662,6 +1663,14 @@
     </footer>
     
     <button class="back-top" id="backTopBtn" aria-label="العودة إلى الأعلى">↑</button>
+
+    <div id="serviceLockModal" class="pwa-modal-overlay" style="display:none;" aria-hidden="true">
+        <div class="pwa-modal-box">
+            <h3>تنبيه</h3>
+            <p id="serviceLockMessage"></p>
+            <button class="pwa-modal-close" type="button" id="serviceLockClose">حسناً</button>
+        </div>
+    </div>
     
     <!-- ============================================ -->
     <!--  JAVASCRIPT                               -->
@@ -1679,6 +1688,31 @@
                     navbar.classList.toggle('scrolled', scrollY > 50);
                 });
             }, { passive: true });
+
+            var serviceLockModal = document.getElementById('serviceLockModal');
+            var serviceLockMessage = document.getElementById('serviceLockMessage');
+            var serviceLockClose = document.getElementById('serviceLockClose');
+            document.addEventListener('click', function(event) {
+                var card = event.target.closest('.locked-service-card');
+                if (!card) return;
+                event.preventDefault();
+                if (serviceLockMessage) serviceLockMessage.textContent = card.getAttribute('data-lock-message') || 'هذه الخدمة غير متاحة حالياً، ترقبوها قريباً.';
+                if (serviceLockModal) {
+                    serviceLockModal.style.display = 'flex';
+                    serviceLockModal.setAttribute('aria-hidden', 'false');
+                }
+            });
+            function closeServiceLockModal() {
+                if (!serviceLockModal) return;
+                serviceLockModal.style.display = 'none';
+                serviceLockModal.setAttribute('aria-hidden', 'true');
+            }
+            if (serviceLockClose) serviceLockClose.addEventListener('click', closeServiceLockModal);
+            if (serviceLockModal) {
+                serviceLockModal.addEventListener('click', function(event) {
+                    if (event.target === serviceLockModal) closeServiceLockModal();
+                });
+            }
             
             var tickerTrack = document.getElementById('tickerTrack');
             if (tickerTrack) {
@@ -1916,6 +1950,8 @@
             // ============================================ */
             var deferredPrompt = null;
             var installBtn = document.getElementById('installBtn');
+            var isIosDevice = /iphone|ipad|ipod/i.test(window.navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
             function trackInstallEvent(eventName) {
                 try {
@@ -1928,11 +1964,19 @@
 
             function openPwaModal() {
                 var modal = document.getElementById('pwaModal');
+                var message = document.getElementById('pwaModalMessage');
+                if (message && isIosDevice) {
+                    message.textContent = 'على iPhone لا يمكن للزر تثبيت التطبيق مباشرة. افتح الموقع من Safari، ثم استخدم زر المشاركة، وبعدها إضافة إلى الشاشة الرئيسية.';
+                }
                 if (modal) modal.classList.add('open');
             }
 
             function doInstall() {
                 trackInstallEvent('prompt_click');
+                if (isIosDevice) {
+                    openPwaModal();
+                    return;
+                }
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     deferredPrompt.userChoice.then(function(choiceResult) {
@@ -1947,6 +1991,7 @@
                 }
             }
 
+            if (isStandalone && installBtn) installBtn.style.display = 'none';
             if (installBtn) installBtn.addEventListener('click', doInstall);
 
             window.addEventListener('beforeinstallprompt', function(e) {
@@ -1977,11 +2022,14 @@
         <div class="pwa-modal-overlay" onclick="if(event.target===this)this.parentElement.classList.remove('open')">
             <div class="pwa-modal-box" role="dialog" aria-modal="true" aria-label="طريقة تثبيت التطبيق">
                 <h3>📲 تثبيت تطبيق سيارتي</h3>
-                <p>أضف سيارتي إلى شاشتك الرئيسية لتستخدمه كتطبيق كامل أونلاين وأوفلاين:</p>
-                <div class="pwa-modal-steps">
-                    <div>1️⃣ اضغط زر المشاركة <b>⬆️</b> في المتصفح</div>
-                    <div>2️⃣ اختر <b>"إضافة إلى الشاشة الرئيسية"</b></div>
-                    <div>3️⃣ اضغط <b>"إضافة"</b> — وسيظهر تطبيق 🚗</div>
+                <p id="pwaModalMessage">أضف سيارتي إلى شاشتك الرئيسية لتستخدمه كتطبيق من شاشة الهاتف:</p>
+<div class="pwa-modal-steps">
+                    <div style="margin-bottom:6px;color:#cbd5e1;font-size:0.86rem;">إذا iPhone ولا تنجح زر التثبيت، استخدم الطريقة التالية:</div>
+                    <div>1️⃣ افتح <b>Safari</b> (متصفح Apple فقط)</div>
+                    <div>2️⃣ اضغط زر <b>⬆️ المشاركة</b> أسفل الشاشة</div>
+                    <div>3️⃣ اختر <b>إضافة إلى الشاشة الرئيسية</b></div>
+                    <div>4️⃣ اضغط <b>إضافة</b> — سيظهر تطبيق سيارتي</div>
+                    <div style="margin-top:6px;color:#94a3b8;font-size:0.78rem;">ملاحظة: Chrome وFacebook وGoogle لا يدعمون التثبيت على iPhone.</div>
                 </div>
                 <button type="button" class="pwa-modal-close" id="pwaModalClose">حسناً، فهمت</button>
             </div>

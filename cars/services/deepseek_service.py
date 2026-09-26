@@ -9,16 +9,13 @@ from ..models import SiteSettings
 
 logger = logging.getLogger('cars')
 
-GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-GROQ_MODEL = 'qwen/qwen3.8-27b'
 TIMEOUT = 35
+AI_CACHE_VERSION = 'deepseek-only-v1'
 
 DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
 DEEPSEEK_MODEL = getattr(settings, 'DEEPSEEK_MODEL', 'deepseek-chat')
 if DEEPSEEK_MODEL == 'deepseek-v4-flash':
     DEEPSEEK_MODEL = 'deepseek-chat'
-GEMINI_MODEL = getattr(settings, 'GEMINI_MODEL', 'gemini-3.6-flash')
-GEMINI_API_URL = f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent'
 
 PREMIUM_AI_PER_IP_HOURLY_LIMIT = 5
 
@@ -53,7 +50,10 @@ def _normalize_for_cache(value):
 
 
 def _cache_key(prefix, payload):
-    raw = json.dumps(_normalize_for_cache(payload), ensure_ascii=False, sort_keys=True, default=str)
+    raw = json.dumps({
+        'version': AI_CACHE_VERSION,
+        'payload': _normalize_for_cache(payload),
+    }, ensure_ascii=False, sort_keys=True, default=str)
     digest = hashlib.sha256(raw.encode('utf-8')).hexdigest()
     return f'ai:{prefix}:{digest}'
 
@@ -85,45 +85,20 @@ def _premium_ai_allowed(client_ip):
 
 def _provider_chain(client_ip=None):
     if _premium_ai_allowed(client_ip):
-        return [
-            ('DeepSeek', _call_deepseek),
-            ('Gemini', _call_gemini),
-            ('Groq', _call_groq),
-        ]
-    return [('Groq', _call_groq)]
+        return [('DeepSeek', _call_deepseek)]
+    return []
 
 
 def _json_list(content, key='cars'):
+    content = _clean_json(content)
+    if '[' in content and ']' in content:
+        content = content[content.find('['):content.rfind(']') + 1]
     data = json.loads(content)
     if isinstance(data, list):
         return data
     if isinstance(data, dict) and isinstance(data.get(key), list):
         return data[key]
     return []
-
-
-def _call_groq(prompt, max_tokens=900, temperature=0.25):
-    api_key = _get_key('groq_api_key', 'GROQ_API_KEY')
-    if not api_key:
-        raise RuntimeError('GROQ_API_KEY not configured')
-
-    resp = requests.post(
-        GROQ_API_URL,
-        headers={
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json',
-        },
-        json={
-            'model': GROQ_MODEL,
-            'messages': [{'role': 'user', 'content': prompt}],
-            'temperature': temperature,
-            'max_tokens': max_tokens,
-        },
-        timeout=TIMEOUT,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    return _clean_json(data['choices'][0]['message']['content'])
 
 
 def _call_deepseek(prompt, max_tokens=900, temperature=0.25):
@@ -148,27 +123,6 @@ def _call_deepseek(prompt, max_tokens=900, temperature=0.25):
     resp.raise_for_status()
     data = resp.json()
     return _clean_json(data['choices'][0]['message']['content'])
-
-
-def _call_gemini(prompt, max_tokens=900, temperature=0.25):
-    api_key = _get_key('gemini_api_key', 'GEMINI_API_KEY')
-    if not api_key:
-        raise RuntimeError('GEMINI_API_KEY not configured')
-
-    url = f'{GEMINI_API_URL}?key={api_key}'
-    resp = requests.post(
-        url,
-        headers={'Content-Type': 'application/json'},
-        json={
-            'contents': [{'parts': [{'text': prompt}]}],
-            'generationConfig': {'temperature': temperature, 'maxOutputTokens': max_tokens},
-        },
-        timeout=TIMEOUT,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    text = data['candidates'][0]['content']['parts'][0]['text']
-    return _clean_json(text)
 
 
 SEARCH_PROMPT = """أنت مستشار سيارات محترف ومتخصص في سوق السيارات العراقي.
@@ -230,28 +184,21 @@ def suggest_cars_ai(brand='', model='', year='', engine=''):
 
     prompt = _build_search_prompt(brand, model, year, engine)
 
-    providers = [
-        ('DeepSeek', _call_deepseek),
-        ('Gemini', _call_gemini),
-        ('Groq', _call_groq),
-    ]
-
-    for name, call in providers:
-        try:
-            content = call(prompt, max_tokens=1000, temperature=0.2)
-            cars = json.loads(content)
-            if isinstance(cars, list) and cars:
-                result = {'success': True, 'cars': cars, 'provider': name}
-                _cache_set(key, result, 60 * 60 * 24 * 7)
-                return result
-        except requests.exceptions.Timeout:
-            logger.warning(f'{name} API timeout (search suggest)')
-        except requests.exceptions.RequestException as e:
-            logger.error('%s API error (search suggest): %s', name, e.__class__.__name__)
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            logger.error(f'{name} parse error (search suggest): {e}')
-        except RuntimeError:
-            logger.warning(f'{name} not configured')
+    try:
+        content = _call_deepseek(prompt, max_tokens=2200, temperature=0.2)
+        cars = _json_list(content)
+        if isinstance(cars, list) and cars:
+            result = {'success': True, 'cars': cars, 'provider': 'DeepSeek'}
+            _cache_set(key, result, 60 * 60 * 24 * 7)
+            return result
+    except requests.exceptions.Timeout:
+        logger.warning('DeepSeek API timeout (search suggest)')
+    except requests.exceptions.RequestException as e:
+        logger.error('DeepSeek API error (search suggest): %s', e.__class__.__name__)
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        logger.error('DeepSeek parse error (search suggest): %s', e)
+    except RuntimeError:
+        logger.warning('DeepSeek not configured')
 
     return {'success': False}
 
@@ -279,7 +226,7 @@ QUICK_PARSE_PROMPT = """أنت مساعد ذكي متخصص في فك رموز �
 def parse_free_query(query):
     """يفكّ جملة البحث الحر إلى حقول منظمة (ماركة، موديل، سنة، محرك...)
 
-    المزوّد الأساسي: DeepSeek، والاحتياطيات: Gemini ثم Groq. تُجرب حتى ينجح أحدها.
+    المزوّد الوحيد: DeepSeek.
     """
     key = _cache_key('parse', {'query': query})
     cached = _cache_get(key)
@@ -287,24 +234,18 @@ def parse_free_query(query):
         return cached
 
     prompt = QUICK_PARSE_PROMPT.format(query=query)
-    providers = [
-        ('DeepSeek', _call_deepseek),
-        ('Gemini', _call_gemini),
-        ('Groq', _call_groq),
-    ]
-    for name, call in providers:
-        try:
-            content = call(prompt, max_tokens=220, temperature=0.0)
-            data = json.loads(content)
-            if isinstance(data, dict):
-                _cache_set(key, data, 60 * 60 * 24 * 30)
-                return data
-        except requests.exceptions.Timeout:
-            logger.warning(f'{name} timeout (parse_free_query)')
-        except requests.exceptions.RequestException as e:
-            logger.error('%s error (parse_free_query): %s', name, e.__class__.__name__)
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            logger.error(f'{name} parse error (parse_free_query): {e}')
-        except RuntimeError:
-            logger.warning(f'{name} not configured (parse_free_query)')
+    try:
+        content = _call_deepseek(prompt, max_tokens=220, temperature=0.0)
+        data = json.loads(content)
+        if isinstance(data, dict):
+            _cache_set(key, data, 60 * 60 * 24 * 30)
+            return data
+    except requests.exceptions.Timeout:
+        logger.warning('DeepSeek timeout (parse_free_query)')
+    except requests.exceptions.RequestException as e:
+        logger.error('DeepSeek error (parse_free_query): %s', e.__class__.__name__)
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        logger.error('DeepSeek parse error (parse_free_query): %s', e)
+    except RuntimeError:
+        logger.warning('DeepSeek not configured (parse_free_query)')
     return {}

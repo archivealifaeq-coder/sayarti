@@ -10,7 +10,7 @@
     <link rel="manifest" href="/manifest.json"/>
     <meta name="theme-color" content="#0f172a"/>
     <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
-    <link rel="apple-touch-icon" sizes="192x192" href="/static/shared/icons/icon-192.png"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/shared/icons/apple-touch-icon.png"/>
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -357,180 +357,72 @@
                     <span class="trim-pill">{{ car.trim }}</span>
                     {% endif %}
                 </div>
-                <div class="flex items-center gap-3 mt-1 flex-wrap">
-                    <p class="text-slate-400 text-sm font-semibold">
-                        {{ car.brand_en }} {{ car.model_en }}
-                    </p>
-                    <span class="text-slate-600 text-lg">·</span>
-                    <span class="text-white font-bold text-lg bg-slate-800/60 px-3 py-0.5 rounded-lg border border-slate-700/60">
-                        {{ car.year }}
-                    </span>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="car-badge">
-                    <span>⚙️</span> {{ car.get_engine_type_display }}
-                </span>
-                <span class="car-badge" style="background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.2); color:#93c5fd;">
-                    <span>🌍</span> {{ car.get_spec_region_display }}
-                </span>
+                <p class="text-slate-400 text-sm font-semibold mt-1">{{ car.brand_en }} {{ car.model_en }}</p>
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!--  TABS                                        -->
-        <!-- ============================================ -->
-        <div class="tabs-wrap" id="tabsWrap" data-active="1">
-            <div class="tab-indicator"></div>
-            <button class="tab-btn active" data-tab="1" type="button">
-                <span>🔧</span> المواصفات
-            </button>
-            <button class="tab-btn" data-tab="2" type="button">
-                <span>🛠️</span> التوصيات
-            </button>
-        </div>
+        {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_top %}
 
-        <!-- ============================================ -->
-        <!--  TAB 1 - SPECIFICATIONS                     -->
-        <!-- ============================================ -->
-        <div class="tab-content active" id="tab1">
-            {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_top %}
-
-            <div class="spec-group">
-                <div class="spec-group-title">🔥 المحرك والوقود</div>
-                <div class="spec-grid">
-                    <div class="spec-chip">
-                        <span class="chip-label">🛞 المحرك / السعة</span>
-                        <span class="chip-value">{{ car.engine|default:"غير محدد" }}</span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">🔢 كود المحرك</span>
-                        <span class="chip-value">{{ car.engine_code|default:"غير محدد" }}</span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">⛽ رقم الأوكتان</span>
-                        <span class="chip-value highlight">{{ car.octane }} <span class="chip-value muted">RON</span></span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">🧪 نوع الوقود</span>
-                        <span class="chip-value">{{ car.fuel|default:"بنزين" }}</span>
-                    </div>
+        <details class="spec-group mt-6" open>
+            <summary class="spec-group-title" style="cursor:pointer;">التفاصيل الإضافية <span class="text-xs text-red-300 bg-red-400/10 px-3 py-1 rounded-full border border-red-400/20">تحقق قبل الشراء</span></summary>
+            <p class="text-slate-400 text-sm leading-8 mb-4">قد تختلف هذه المعلومات حسب رقم الشاصي، المحرك، الفئة، والسوق. تحقق من دليل السيارة أو الوكيل أو مختص قبل شراء القطعة.</p>
+            <div class="spec-grid">
+                <div class="spec-chip">
+                    <span class="chip-label">الإطارات</span>
+                    <span class="chip-value">{{ car.tire_size|default:"غير محدد" }}</span>
                 </div>
-            </div>
-
-            <div class="spec-group">
-                <div class="spec-group-title">⚙️ ناقل الحركة والكهرباء</div>
-                <div class="spec-grid">
-                    <div class="spec-chip">
-                        <span class="chip-label">ناقل الحركة</span>
-                        <span class="chip-value">{{ car.transmission_type|default:"غير محدد" }}</span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">🛢️ زيت الناقل</span>
-                        <span class="chip-value">{{ car.transmission_oil_spec|default:"غير محدد" }}</span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">🔋 البطارية</span>
-                        <span class="chip-value">{{ car.battery|default:"غير محدد" }}</span>
-                    </div>
+                <div class="spec-chip">
+                    <span class="chip-label">البلكات</span>
+                    <span class="chip-value">{{ car.spark|default:"غير محدد" }}</span>
                 </div>
-            </div>
-
-            <div class="spec-group">
-                <div class="spec-group-title">🧴 زيوت الصيانة والإطارات</div>
-                <div class="spec-grid">
-                    <div class="spec-chip">
-                        <span class="chip-label">🛢️ لزوجة الزيت (قياسي)</span>
-                        <span class="chip-value highlight">{{ car.oil_visc|default:"-" }}</span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">📈 لزوجة الزيت (+100 ألف كم)</span>
-                        <span class="chip-value highlight">{{ car.oil_visc_high_km|default:"غير محدد" }}</span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">🧴 سعة الزيت</span>
-                        <span class="chip-value">{{ car.oil_capacity|default:"-" }}</span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">🛞 حجم الإطار</span>
-                        <span class="chip-value">{{ car.tire_size|default:"غير محدد" }}</span>
-                    </div>
-                    <div class="spec-chip">
-                        <span class="chip-label">⚡ شمعات القدح</span>
-                        <span class="chip-value">{{ car.spark|default:"غير محدد" }}</span>
-                    </div>
+                <div class="spec-chip">
+                    <span class="chip-label">البطارية</span>
+                    <span class="chip-value">{{ car.battery|default:"غير محدد" }}</span>
                 </div>
+                <div class="spec-chip">
+                    <span class="chip-label">نوع الكير</span>
+                    <span class="chip-value">{{ car.transmission_type|default:"غير محدد" }}</span>
+                </div>
+                <div class="spec-chip">
+                    <span class="chip-label">زيت الكير</span>
+                    <span class="chip-value">{{ car.transmission_oil_spec|default:"غير محدد" }}</span>
+                </div>
+                <div class="spec-chip">
+                    <span class="chip-label">ماركات زيت الكير</span>
+                    <span class="chip-value">{{ car.transmission_oil_brands|default:"غير محدد" }}</span>
+                </div>
+                <div class="spec-chip">
+                    <span class="chip-label">كود المحرك</span>
+                    <span class="chip-value">{{ car.engine_code|default:"غير محدد" }}</span>
+                </div>
+                <div class="spec-chip">
+                    <span class="chip-label">المنطقة/المواصفة</span>
+                    <span class="chip-value">{{ car.get_spec_region_display|default:"غير محدد" }}</span>
+                </div>
+                {% if car.trim %}
+                <div class="spec-chip">
+                    <span class="chip-label">الفئة</span>
+                    <span class="chip-value">{{ car.trim }}</span>
+                </div>
+                {% endif %}
             </div>
+        </details>
 
-            {% if car.spec %}
-            <div class="spec-group">
-                <div class="spec-group-title">📝 ملاحظات المواصفات</div>
-                <p class="text-slate-300 text-sm leading-relaxed">{{ car.spec }}</p>
+        <div class="rec-box">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="text-2xl">📋</span>
+                <h3 class="text-xl font-black text-white tracking-wide">التوصيات</h3>
+                <span class="flex-1"></span>
+                <span class="text-xs text-red-300 bg-red-400/10 px-3 py-1 rounded-full border border-red-400/20 text-center">تحقق قبل الشراء</span>
             </div>
+            {% if display_recommendations %}
+                <p>{{ display_recommendations }}</p>
+            {% else %}
+                <p class="text-slate-400 text-center py-2">لا توجد توصيات إضافية لهذه السيارة حالياً.</p>
             {% endif %}
         </div>
 
-        <!-- ============================================ -->
-        <!--  TAB 2 - RECOMMENDATIONS                    -->
-        <!-- ============================================ -->
-        <div class="tab-content" id="tab2">
-            <div class="rec-box">
-                <div class="flex items-center gap-3 mb-3">
-                    <span class="text-2xl">📋</span>
-                    <h3 class="text-xl font-black text-white tracking-wide">توصيات الصيانة المعتمدة</h3>
-                    <span class="flex-1"></span>
-                    <span class="text-xs text-amber-400/70 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20 text-center">الزيوت المتوافقة مع محرك سيارتك</span>
-                </div>
-                {% if car.recommendations %}
-                    <p>{{ car.recommendations }}</p>
-                {% else %}
-                    <p class="text-slate-400 text-center py-2">
-                        😕 لا توجد توصيات محددة لهذه السيارة حالياً.<br/>
-                        <span class="text-xs text-slate-600">يمكنك إضافة توصيات من لوحة التحكم (Admin)</span>
-                    </p>
-                {% endif %}
-            </div>
-
-            <div class="rec-oil-grid">
-                <div class="rec-oil-item">
-                    <div class="rec-oil-icon">🛢️</div>
-                    <div class="rec-oil-body">
-                        <div class="rec-oil-title">زيت المحرك (قياسي)</div>
-                        <div class="rec-oil-value">{{ car.oil_visc|default:"-" }}</div>
-                        {% if car.oil_brands %}
-                        <div class="rec-oil-brand oil-brands-tag">
-                            <span>{{ car.oil_brands }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% if car.oil_visc_high_km %}
-                <div class="rec-oil-item">
-                    <div class="rec-oil-icon">📈</div>
-                    <div class="rec-oil-body">
-                        <div class="rec-oil-title">زيت المحرك (+100 ألف كم)</div>
-                        <div class="rec-oil-value">{{ car.oil_visc_high_km }}</div>
-                    </div>
-                </div>
-                {% endif %}
-                {% if car.transmission_oil_spec %}
-                <div class="rec-oil-item">
-                    <div class="rec-oil-icon">⚙️</div>
-                    <div class="rec-oil-body">
-                        <div class="rec-oil-title">زيت ناقل الحركة</div>
-                        <div class="rec-oil-value">{{ car.transmission_oil_spec }}</div>
-                        {% if car.transmission_oil_brands %}
-                        <div class="rec-oil-brand">
-                            <span>{{ car.transmission_oil_brands }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-
-            {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_bottom %}
-        </div>
+        {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_recommend_bottom %}
 
         <div class="flex flex-wrap items-center justify-between gap-4 mt-8 pt-4 border-t border-slate-700/40">
             <div class="flex gap-3">

@@ -71,11 +71,10 @@ class CarSpecification(models.Model):
     oil_visc_high_km = models.CharField(max_length=50, blank=True, null=True)
     fuel = models.CharField(max_length=50)
     
-    octane = models.IntegerField(
-        validators=[
-            MinValueValidator(80, message="رقم الأوكتان يجب أن يكون 80 أو أكثر"),
-            MaxValueValidator(120, message="رقم الأوكتان يجب أن يكون 120 أو أقل")
-        ]
+    octane = models.CharField(
+        max_length=50,
+        verbose_name="الأوكتان",
+        help_text="مثال: 91، 95، 91 RON، 91 أو أعلى"
     )
     
     tire_size = models.CharField(
@@ -257,6 +256,14 @@ class AdBanner(models.Model):
         ('dealer_card', '🏪 رعاية داخل بطاقة كل وكيل'),
     ]
 
+    GATEWAY_CARD_TARGET_CHOICES = [
+        ('', 'عام لكل بطاقات الرئيسية'),
+        ('search', 'بطاقة ابحث عن سيارتك'),
+        ('mix', 'بطاقة حاسبة الوقود'),
+        ('dealers', 'بطاقة وكلاء الزيوت وقطع الغيار'),
+        ('maintenance', 'بطاقة الصيانة والأعطال'),
+    ]
+
     sponsor = models.ForeignKey(
         Sponsor,
         null=True,
@@ -314,6 +321,23 @@ class AdBanner(models.Model):
         choices=POSITION_CHOICES,
         default='ticker',
         verbose_name="الموقع"
+    )
+    gateway_card_target = models.CharField(
+        max_length=20,
+        choices=GATEWAY_CARD_TARGET_CHOICES,
+        blank=True,
+        default='',
+        verbose_name="بطاقة الرئيسية المستهدفة",
+        help_text="يستخدم فقط مع موقع: رعاية داخل بطاقات الرئيسية. اتركه عاماً ليظهر كاحتياطي عند عدم وجود إعلان مخصص."
+    )
+    target_dealer = models.ForeignKey(
+        'Dealer',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='card_banners',
+        verbose_name="الوكيل المستهدف",
+        help_text="يستخدم فقط مع موقع: رعاية داخل بطاقة كل وكيل. اتركه فارغاً ليظهر كاحتياطي عام."
     )
     order = models.IntegerField(
         default=0,
@@ -449,15 +473,55 @@ class SiteSettings(models.Model):
         verbose_name="رقم الوحدة: أسفل صفحة التوصيات",
         help_text="data-ad-slot من لوحة AdSense"
     )
+    lock_search_card = models.BooleanField(
+        default=False,
+        verbose_name="قفل بطاقة البحث مع بقائها ظاهرة",
+        help_text="عند التفعيل تبقى البطاقة ظاهرة، لكن يظهر نص مخصص عند الضغط عليها بدلاً من فتح الصفحة."
+    )
+    search_lock_message = models.TextField(
+        blank=True,
+        verbose_name="رسالة قفل بطاقة البحث",
+        help_text="النص الذي يظهر للمستخدم عند الضغط على بطاقة البحث المقفولة."
+    )
+    lock_mix_card = models.BooleanField(
+        default=False,
+        verbose_name="قفل بطاقة حاسبة الوقود مع بقائها ظاهرة",
+        help_text="عند التفعيل تبقى البطاقة ظاهرة، لكن يظهر نص مخصص عند الضغط عليها بدلاً من فتح الصفحة."
+    )
+    mix_lock_message = models.TextField(
+        blank=True,
+        verbose_name="رسالة قفل بطاقة حاسبة الوقود",
+        help_text="النص الذي يظهر للمستخدم عند الضغط على بطاقة حاسبة الوقود المقفولة."
+    )
     show_dealers_card = models.BooleanField(
         default=False,
         verbose_name="إظهار بطاقة وكلاء الزيوت وقطع الغيار",
         help_text="فعّلها لإظهار بطاقة الوكلاء في واجهة الموقع، وألغها لإخفائها."
     )
+    lock_dealers_card = models.BooleanField(
+        default=False,
+        verbose_name="قفل بطاقة الوكلاء مع بقائها ظاهرة",
+        help_text="عند التفعيل تبقى البطاقة ظاهرة، لكن يظهر نص مخصص عند الضغط عليها بدلاً من فتح الصفحة."
+    )
+    dealers_lock_message = models.TextField(
+        blank=True,
+        verbose_name="رسالة قفل بطاقة الوكلاء",
+        help_text="النص الذي يظهر للمستخدم عند الضغط على بطاقة الوكلاء المقفولة."
+    )
     show_maintenance_card = models.BooleanField(
         default=False,
         verbose_name="إظهار بطاقة الصيانة والأعطال",
         help_text="فعّلها لإظهار بطاقة الصيانة والأعطال في واجهة الموقع، وألغها لإخفائها أثناء تجهيز البيانات."
+    )
+    lock_maintenance_card = models.BooleanField(
+        default=False,
+        verbose_name="قفل بطاقة الصيانة مع بقائها ظاهرة",
+        help_text="عند التفعيل تبقى البطاقة ظاهرة، لكن يظهر نص مخصص عند الضغط عليها بدلاً من فتح الصفحة."
+    )
+    maintenance_lock_message = models.TextField(
+        blank=True,
+        verbose_name="رسالة قفل بطاقة الصيانة",
+        help_text="النص الذي يظهر للمستخدم عند الضغط على بطاقة الصيانة المقفولة."
     )
     ads_txt = models.TextField(
         blank=True,
@@ -481,23 +545,11 @@ class SiteSettings(models.Model):
         verbose_name="مفتاح الخدمة (Service Account JSON)",
         help_text="الصق محتوى ملف JSON لخدمة الحساب بعد تفعيل Analytics Data API — يسمح بعرض عدد الزوار في لوحة الإدارة"
     )
-    groq_api_key = models.CharField(
-        max_length=200,
-        blank=True,
-        verbose_name="مفتاح Groq (حائط صد أخير)",
-        help_text="من console.groq.com — يستخدم في ميزات البحث الذكي فقط"
-    )
-    gemini_api_key = models.CharField(
-        max_length=200,
-        blank=True,
-        verbose_name="مفتاح Gemini (احتياطي)",
-        help_text="من aistudio.google.com — يستخدم في ميزات البحث الذكي فقط"
-    )
     deepseek_api_key = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="مفتاح DeepSeek API (الأساسي)",
-        help_text="مفتاح API من platform.deepseek.com — يستخدم في ميزات البحث الذكي فقط"
+        help_text="مفتاح API من platform.deepseek.com — مزود الذكاء الوحيد للموقع"
     )
     def __str__(self):
         return "إعدادات الموقع"
@@ -602,12 +654,20 @@ class MaintenanceTask(models.Model):
     CATEGORY_CHOICES = [
         ('oil', 'زيوت'),
         ('filters', 'فلاتر'),
+        ('engine', 'محرك'),
         ('spark', 'شمعات القدح'),
         ('cooling', 'تبريد'),
         ('transmission', 'ناقل الحركة'),
         ('brakes', 'فرامل'),
         ('electrical', 'كهرباء'),
         ('tires', 'إطارات'),
+        ('suspension', 'تعليق'),
+        ('steering', 'دركسون'),
+        ('drivetrain', 'دفرنس ودفع'),
+        ('belts', 'سيور'),
+        ('battery', 'بطارية'),
+        ('ac', 'مكيف'),
+        ('ignition', 'اشتعال'),
         ('inspection', 'فحص عام'),
     ]
     APPLIES_CHOICES = [
@@ -627,8 +687,26 @@ class MaintenanceTask(models.Model):
         ('amt', 'AMT'),
         ('manual', 'عادي'),
     ]
+    DISPLAY_LEVEL_CHOICES = [
+        ('essential', 'المهم الآن'),
+        ('check_due', 'تحقق من الاستحقاق'),
+        ('conditional', 'إذا موجود بسيارتك'),
+    ]
+    CONDITION_TYPE_CHOICES = [
+        ('all', 'عام'),
+        ('manufacturer_schedule', 'حسب جدول الشركة'),
+        ('engine', 'حسب نوع المحرك'),
+        ('transmission', 'حسب نوع ناقل الحركة'),
+        ('drivetrain', 'حسب منظومة الدفع'),
+        ('hybrid', 'هايبرد'),
+        ('turbo', 'تيربو'),
+        ('diesel', 'ديزل'),
+        ('cvt', 'CVT'),
+    ]
 
     name = models.CharField(max_length=180, verbose_name='اسم المهمة')
+    stage_title = models.CharField(max_length=180, blank=True, verbose_name='عنوان المرحلة')
+    action_type = models.CharField(max_length=60, blank=True, verbose_name='نوع الإجراء')
     brand_ar = models.CharField(max_length=100, blank=True, verbose_name='الشركة بالعربي')
     brand_en = models.CharField(max_length=100, blank=True, verbose_name='الشركة بالإنكليزي')
     category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='inspection', verbose_name='التصنيف')
@@ -641,6 +719,8 @@ class MaintenanceTask(models.Model):
     description = models.TextField(blank=True, verbose_name='شرح المهمة')
     manufacturer_note = models.TextField(blank=True, verbose_name='توصية الشركة الأم')
     iraq_note = models.TextField(blank=True, verbose_name='ملاحظة للظروف العراقية')
+    display_level = models.CharField(max_length=20, choices=DISPLAY_LEVEL_CHOICES, default='essential', verbose_name='مستوى العرض')
+    condition_type = models.CharField(max_length=30, choices=CONDITION_TYPE_CHOICES, default='all', verbose_name='نوع الشرط')
     applies_to_engine_type = models.CharField(max_length=20, choices=APPLIES_CHOICES, default='all', verbose_name='نوع المحرك')
     applies_to_transmission = models.CharField(max_length=20, choices=TRANSMISSION_CHOICES, default='all', verbose_name='نوع ناقل الحركة')
     is_active = models.BooleanField(default=True, verbose_name='ظاهر في الموقع')

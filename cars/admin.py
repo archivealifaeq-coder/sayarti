@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from django.urls import path
+from django.urls import path, reverse
 from django.shortcuts import redirect
 from django import forms
 from django.http import HttpResponse
@@ -203,57 +203,104 @@ def import_symptoms_from_excel(excel_file):
 
 
 def import_maintenance_tasks_from_excel(excel_file):
-    rows = _sheet_rows(excel_file, ['MaintenanceTask', 'Maintenance', 'صيانة'])
+    rows = _sheet_rows(excel_file, ['Database_Structure', 'MaintenanceTask', 'Maintenance', 'صيانة'])
     created = updated = failed = 0
     errors = []
     valid_categories = {key for key, _ in MaintenanceTask.CATEGORY_CHOICES}
     valid_importance = {key for key, _ in MaintenanceTask._meta.get_field('importance').choices}
     valid_engines = {key for key, _ in MaintenanceTask.APPLIES_CHOICES}
     valid_transmissions = {key for key, _ in MaintenanceTask.TRANSMISSION_CHOICES}
+    valid_display_levels = {key for key, _ in MaintenanceTask.DISPLAY_LEVEL_CHOICES}
+    valid_condition_types = {key for key, _ in MaintenanceTask.CONDITION_TYPE_CHOICES}
+
+    def engine_targets(row):
+        if _text_value(row, 'applies_to_engine_type', 'Engine Type'):
+            return [_text_value(row, 'applies_to_engine_type', 'Engine Type')]
+        pairs = [
+            ('engine_regular', 'gasoline'),
+            ('engine_turbo', 'gasoline_turbo'),
+            ('engine_hybrid', 'hybrid'),
+            ('engine_diesel', 'diesel'),
+        ]
+        selected = [value for column, value in pairs if _bool_value(row, column, False)]
+        return ['all'] if len(selected) == len(pairs) or not selected else selected
+
+    def transmission_targets(row):
+        if _text_value(row, 'applies_to_transmission', 'Transmission'):
+            return [_text_value(row, 'applies_to_transmission', 'Transmission')]
+        if _bool_value(row, 'transmission_all', False):
+            return ['all']
+        pairs = [
+            ('transmission_automatic', 'automatic'),
+            ('transmission_cvt', 'cvt'),
+            ('transmission_manual', 'manual'),
+        ]
+        selected = [value for column, value in pairs if _bool_value(row, column, False)]
+        return ['all'] if len(selected) == len(pairs) or not selected else selected
 
     for index, row in enumerate(rows, start=2):
-        name = _text_value(row, 'name', 'Name')
+        name = _text_value(row, 'name', 'Name', 'task_name')
         if not name:
             failed += 1
-            errors.append(f'صف {index}: name مطلوب')
+            errors.append(f'صف {index}: name أو task_name مطلوب')
             continue
         category = _text_value(row, 'category', 'Category') or 'inspection'
+        category = {'chassis': 'suspension'}.get(category, category)
         importance = _text_value(row, 'importance', 'Importance') or 'medium'
-        engine_type = _text_value(row, 'applies_to_engine_type', 'Engine Type') or 'all'
-        transmission = _text_value(row, 'applies_to_transmission', 'Transmission') or 'all'
-        if category not in valid_categories or importance not in valid_importance or engine_type not in valid_engines or transmission not in valid_transmissions:
+        display_level = _text_value(row, 'display_level', 'Display Level') or 'essential'
+        condition_type = _text_value(row, 'condition_type', 'Condition Type') or 'all'
+        engines = engine_targets(row)
+        transmissions = transmission_targets(row)
+        if category not in valid_categories or importance not in valid_importance or display_level not in valid_display_levels or condition_type not in valid_condition_types or any(engine not in valid_engines for engine in engines) or any(transmission not in valid_transmissions for transmission in transmissions):
             failed += 1
-            errors.append(f'صف {index}: category/importance/engine/transmission غير صحيحة')
+            errors.append(f'صف {index}: category/importance/display_level/condition_type/engine/transmission غير صحيحة')
             continue
         brand_ar = _text_value(row, 'brand_ar', 'Brand AR')
         brand_en = _text_value(row, 'brand_en', 'Brand EN')
-        defaults = {
-            'brand_ar': brand_ar,
-            'brand_en': brand_en,
-            'category': category,
-            'interval_km': _int_value(row, 'interval_km', 10000),
-            'interval_months': _int_value(row, 'interval_months', 12),
-            'severe_interval_km': _int_value(row, 'severe_interval_km', 5000),
-            'severe_interval_months': _int_value(row, 'severe_interval_months', 6),
-            'start_km': _int_value(row, 'start_km', 0),
-            'importance': importance,
-            'description': _text_value(row, 'description', 'Description'),
-            'manufacturer_note': _text_value(row, 'manufacturer_note', 'Manufacturer Note'),
-            'iraq_note': _text_value(row, 'iraq_note', 'Iraq Note'),
-            'applies_to_engine_type': engine_type,
-            'applies_to_transmission': transmission,
-            'is_active': _bool_value(row, 'is_active', True),
-        }
-        _, was_created = MaintenanceTask.objects.update_or_create(
-            name=name,
-            brand_ar=brand_ar,
-            brand_en=brand_en,
-            applies_to_engine_type=engine_type,
-            applies_to_transmission=transmission,
-            defaults=defaults,
-        )
-        created += int(was_created)
-        updated += int(not was_created)
+        action_type = _text_value(row, 'action_type', 'Action Type')
+        description = ''
+        stage_title = _text_value(row, 'stage_title', 'Stage Title')
+        manufacturer_note = _text_value(row, 'manufacturer_note', 'Manufacturer Note') or stage_title
+        iraq_note = _text_value(row, 'iraq_note', 'Iraq Note', 'condition_note')
+        start_km = _int_value(row, 'start_km', 0) or _int_value(row, 'stage_km', 0)
+        interval_km = _int_value(row, 'interval_km', 999999)
+        severe_interval_km = _int_value(row, 'severe_interval_km', interval_km)
+
+        for engine_type in engines:
+            for transmission in transmissions:
+                defaults = {
+                    'brand_ar': brand_ar,
+                    'brand_en': brand_en,
+                    'stage_title': stage_title,
+                    'action_type': action_type,
+                    'category': category,
+                    'interval_km': interval_km,
+                    'interval_months': _int_value(row, 'interval_months', 12),
+                    'severe_interval_km': severe_interval_km,
+                    'severe_interval_months': _int_value(row, 'severe_interval_months', 6),
+                    'start_km': start_km,
+                    'importance': importance,
+                    'description': description,
+                    'manufacturer_note': manufacturer_note,
+                    'iraq_note': iraq_note,
+                    'display_level': display_level,
+                    'condition_type': condition_type,
+                    'applies_to_engine_type': engine_type,
+                    'applies_to_transmission': transmission,
+                    'is_active': _bool_value(row, 'is_active', True),
+                }
+                _, was_created = MaintenanceTask.objects.update_or_create(
+                    name=name,
+                    brand_ar=brand_ar,
+                    brand_en=brand_en,
+                    category=category,
+                    start_km=start_km,
+                    applies_to_engine_type=engine_type,
+                    applies_to_transmission=transmission,
+                    defaults=defaults,
+                )
+                created += int(was_created)
+                updated += int(not was_created)
     return {'created': created, 'updated': updated, 'failed': failed, 'errors': errors[:10]}
 
 
@@ -603,21 +650,26 @@ class AdBannerAdmin(admin.ModelAdmin):
         'title_preview', 
         'position_badge', 
         'sponsor_display',
+        'target_display',
         'order',
         'is_active',
         'created_at_display'
     )
     
     list_editable = ('order', 'is_active')
-    list_filter = ('position', 'is_active', 'sponsor')
-    search_fields = ('title', 'subtitle', 'button_text', 'sponsor__name')
+    list_filter = ('position', 'gateway_card_target', 'target_dealer', 'is_active', 'sponsor')
+    search_fields = ('title', 'subtitle', 'button_text', 'sponsor__name', 'target_dealer__name')
     ordering = ('position', 'order', '-created_at')
     list_per_page = 20
-    list_select_related = ('sponsor',)
+    list_select_related = ('sponsor', 'target_dealer')
 
     fieldsets = (
         ('📝 المحتوى', {
             'fields': ('title', 'subtitle', 'position')
+        }),
+        ('🎯 الاستهداف', {
+            'fields': ('gateway_card_target', 'target_dealer'),
+            'description': 'اختر بطاقة رئيسية محددة لإعلانات gateway_card، أو وكيلاً محدداً لإعلانات dealer_card. اترك الحقول فارغة لجعل الإعلان احتياطياً عاماً.',
         }),
         ('🎟️ ربط كود الخصم (اختياري)', {
             'fields': ('sponsor',),
@@ -659,6 +711,14 @@ class AdBannerAdmin(admin.ModelAdmin):
         return mark_safe('<span style="color:#475569;">—</span>')
     sponsor_display.short_description = 'الشركة'
 
+    def target_display(self, obj):
+        if obj.position == 'gateway_card' and obj.gateway_card_target:
+            return obj.get_gateway_card_target_display()
+        if obj.position == 'dealer_card' and obj.target_dealer_id:
+            return obj.target_dealer.name
+        return mark_safe('<span style="color:#475569;">عام</span>')
+    target_display.short_description = 'الاستهداف'
+
     def created_at_display(self, obj):
         return format_html('<span style="color: #64748b; font-size: 0.8rem;">{}</span>', obj.created_at.strftime('%Y-%m-%d %H:%M'))
     created_at_display.short_description = 'تاريخ الإضافة'
@@ -668,6 +728,9 @@ class AdBannerAdmin(admin.ModelAdmin):
             kwargs['widget'] = forms.Select(choices=[
                 ('ticker', '📢 شريط متحرك علوي (5%) - أعلى الصفحة'),
                 ('slider', '🎠 سلايدر رئيسي (35%) - وسط الصفحة'),
+                ('gateway_grid', '💎 إعلان بين بطاقات الرئيسية'),
+                ('gateway_card', '🏷️ رعاية داخل بطاقات الرئيسية'),
+                ('dealer_card', '🏪 رعاية داخل بطاقة كل وكيل'),
             ])
         elif db_field.name == 'background_color':
             kwargs['widget'] = forms.Select(choices=[
@@ -869,30 +932,37 @@ class DealerClickMetricAdmin(admin.ModelAdmin):
 class SiteSettingsAdmin(admin.ModelAdmin):
     list_display = ('settings_summary',)
     fieldsets = (
-        ('📢 إعلانات Google AdSense', {
-            'fields': ('show_ads', 'adsense_client_id'),
-            'description': '1) سجّل في adsense.google.com بعد نشر الموقع 2) الصق معرف الناشر هنا 3) فعّل الإعلانات'
+        ('إدارة واجهة الموقع', {
+            'fields': (
+                'lock_search_card', 'search_lock_message',
+                'lock_mix_card', 'mix_lock_message',
+                'show_dealers_card', 'lock_dealers_card', 'dealers_lock_message',
+                'show_maintenance_card', 'lock_maintenance_card', 'maintenance_lock_message',
+            ),
+            'description': 'تحكم ببطاقات الصفحة الرئيسية: إظهار، إخفاء، أو قفل البطاقة مع رسالة واضحة للزائر.'
         }),
-        ('🎯 مواضع الوحدات الإعلانية', {
+        ('الذكاء الاصطناعي', {
+            'fields': ('deepseek_api_key',),
+            'description': 'DeepSeek هو مزود الذكاء الوحيد لميزات البحث الذكي.'
+        }),
+        ('إحصاءات الزوار', {
+            'fields': ('ga4_id', 'ga4_property_id', 'ga_service_account_json'),
+            'classes': ('collapse',),
+            'description': 'إعدادات Google Analytics لعرض أعداد الزوار في لوحة الإدارة.'
+        }),
+        ('إعلانات Google AdSense', {
+            'fields': ('show_ads', 'adsense_client_id'),
+            'classes': ('collapse',),
+            'description': 'قسم مستقل للإعلانات فقط: فعّل الإعلانات بعد قبول الموقع ثم أضف معرف الناشر.'
+        }),
+        ('مواضع الوحدات الإعلانية', {
             'fields': ('ad_slot_results', 'ad_slot_recommend_top', 'ad_slot_recommend_bottom'),
             'classes': ('collapse',),
-            'description': 'أنشئ وحدات إعلانية (Display ads) في لوحة AdSense والصق أرقامها data-ad-slot هنا — اتركها فارغة لإخفاء الموضع'
+            'description': 'الصق أرقام data-ad-slot من لوحة AdSense، واترك الموضع فارغاً لإخفائه.'
         }),
-        ('🧩 بطاقات الواجهة', {
-            'fields': ('show_dealers_card', 'show_maintenance_card'),
-            'description': 'تحكم بظهور بطاقات الواجهة في الصفحة الرئيسية.'
-        }),
-        ('📄 ملف ads.txt', {
+        ('ملف ads.txt', {
             'fields': ('ads_txt',),
             'classes': ('collapse',),
-        }),
-        ('📊 إحصاءات الزوار Google Analytics', {
-            'fields': ('ga4_id', 'ga4_property_id', 'ga_service_account_json'),
-            'description': 'GA4 ID: من analytics.google.com (Data Streams). Property ID وفاتح الخدمة: فعّل Analytics Data API في Google Cloud واصنع Service Account بحق Viewer على الخاصية ثم الصق ملف JSON هنا — لعرض عدد الزوار في لوحة الإدارة'
-        }),
-        ('🤖 مفاتيح الذكاء الاصطناعي', {
-            'fields': ('deepseek_api_key', 'gemini_api_key', 'groq_api_key'),
-            'description': 'هذه المفاتيح تستخدم لميزات البحث الذكي فقط.'
         }),
     )
 
@@ -902,18 +972,28 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+    def get_model_perms(self, request):
+        return {}
+
+    def changelist_view(self, request, extra_context=None):
+        obj = SiteSettings.load()
+        return redirect(f'{obj.pk}/change/')
+
     def save_model(self, request, obj, form, change):
         from django.core.cache import cache
         cache.delete_many(['ga_visitor_stats', 'lookup_data'])
         super().save_model(request, obj, form, change)
 
     def settings_summary(self, obj):
-        if obj.show_ads and obj.adsense_client_id:
-            return format_html('<span style="color: #15803d; font-weight:700;">✅ Ads enabled — {}</span>', obj.adsense_client_id)
-        if obj.adsense_client_id:
-            return mark_safe('<span style="color: #b45309;">⚠️ ID exists but ads disabled</span>')
-        return mark_safe('<span style="color: #475569;">⚪ AdSense not linked yet</span>')
-    settings_summary.short_description = 'Status'
+        ai_status = 'DeepSeek مفعل' if obj.deepseek_api_key else 'DeepSeek غير مضبوط'
+        ads_status = 'الإعلانات مفعلة' if obj.show_ads and obj.adsense_client_id else 'الإعلانات غير مفعلة'
+        return format_html(
+            '<strong style="color:#0f172a;">إعدادات الموقع العامة</strong>'
+            '<span style="color:#64748b; margin-inline-start:10px;">{} · {}</span>',
+            ai_status,
+            ads_status,
+        )
+    settings_summary.short_description = 'لوحة الإعدادات'
 
 
 class SymptomCauseInline(admin.TabularInline):
@@ -974,13 +1054,13 @@ class CarSymptomAdmin(admin.ModelAdmin):
 @admin.register(MaintenanceTask)
 class MaintenanceTaskAdmin(admin.ModelAdmin):
     change_list_template = 'admin/maintenance_changelist.html'
-    list_display = ('name', 'brand_display', 'category', 'start_km', 'severe_interval_km', 'importance', 'applies_to_engine_type', 'is_active')
-    list_filter = ('category', 'importance', 'applies_to_engine_type', 'applies_to_transmission', 'is_active', 'brand_ar', 'brand_en')
-    search_fields = ('name', 'brand_ar', 'brand_en', 'description', 'manufacturer_note', 'iraq_note')
+    list_display = ('name', 'stage_title', 'display_level', 'condition_type', 'brand_display', 'category', 'start_km', 'importance', 'applies_to_engine_type', 'is_active')
+    list_filter = ('display_level', 'condition_type', 'category', 'importance', 'applies_to_engine_type', 'applies_to_transmission', 'is_active', 'brand_ar', 'brand_en')
+    search_fields = ('name', 'stage_title', 'action_type', 'brand_ar', 'brand_en', 'description', 'manufacturer_note', 'iraq_note')
     list_editable = ('is_active',)
     fieldsets = (
         ('نطاق التوصية', {'fields': ('brand_ar', 'brand_en', 'applies_to_engine_type')}),
-        ('المهمة', {'fields': ('name', 'category', 'importance', 'is_active')}),
+        ('المهمة', {'fields': ('name', 'stage_title', 'action_type', 'category', 'importance', 'display_level', 'condition_type', 'is_active')}),
         ('الفترات', {'fields': ('interval_km', 'interval_months', 'severe_interval_km', 'severe_interval_months', 'start_km')}),
         ('التطبيق المتقدم', {'fields': ('applies_to_transmission',), 'classes': ('collapse',)}),
         ('الشرح', {'fields': ('manufacturer_note', 'description', 'iraq_note')}),
@@ -1012,9 +1092,9 @@ class MaintenanceTaskAdmin(admin.ModelAdmin):
         {% block content %}
         <div class="section-card" style="max-width: 980px; margin: 20px auto;">
             <h3>استيراد مهام الصيانة من Excel</h3>
-            <p style="line-height:1.9; color:#475569;">كل صف هو توصية صيانة عامة أو خاصة بشركة. اترك brand_ar و brand_en فارغين إذا كانت المهمة عامة لكل الشركات.</p>
-            <p style="line-height:1.9; color:#475569;">نوع المحرك: all, gasoline, gasoline_turbo, hybrid, diesel, electric. نوع القير: all, automatic, cvt, ecvt, dct, amt, manual. عند وجود مهمة مخصصة للشركة بنفس الاسم والنطاق، تُقدّم على المهمة العامة.</p>
-            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">name,brand_ar,brand_en,category,interval_km,interval_months,severe_interval_km,severe_interval_months,start_km,importance,manufacturer_note,description,iraq_note,applies_to_engine_type,applies_to_transmission,is_active</p>
+            <p style="line-height:1.9; color:#475569;">يعتمد الاستيراد على بنية ملف الصيانة الجديد كما هي. لا تحتاج إلى تغيير task_name إلى name.</p>
+            <p style="line-height:1.9; color:#475569;">الورقة الأساسية: <b>Database_Structure</b>. يتم حفظ stage_km كمرحلة الصيانة، و task_name كاسم المهمة، و condition_note كملاحظة الظروف.</p>
+            <p style="direction:ltr; text-align:left; background:#f8fafc; padding:12px; border-radius:10px; overflow:auto;">stage_km,stage_title,category,task_name,action_type,condition_note,display_level,condition_type,importance,engine_regular,engine_turbo,engine_hybrid,engine_diesel,transmission_all,transmission_automatic,transmission_cvt,transmission_manual,brand_ar,brand_en,is_active</p>
             <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-primary" style="border:0;">استيراد</button> <a href="../">إلغاء</a></form>
         </div>
         {% endblock %}
@@ -1181,6 +1261,22 @@ admin.site.index_template = 'admin/custom_index.html'
 admin.site.site_header = 'سيارتي · لوحة الإدارة'
 admin.site.site_title = 'سيارتي'
 admin.site.index_title = 'لوحة التحكم'
+
+
+_default_get_app_list = admin.site.get_app_list
+
+
+def get_admin_app_list_with_direct_settings_link(request, app_label=None):
+    app_list = _default_get_app_list(request, app_label)
+    for app in app_list:
+        for model in app.get('models', []):
+            if model.get('object_name') == 'SiteSettings':
+                model['admin_url'] = reverse('admin:cars_sitesettings_change', args=(SiteSettings.load().pk,))
+                model['name'] = 'إعدادات الموقع العامة'
+    return app_list
+
+
+admin.site.get_app_list = get_admin_app_list_with_direct_settings_link
 
 
 DASH_STATS_CACHE_KEY = 'admin_dash_stats'

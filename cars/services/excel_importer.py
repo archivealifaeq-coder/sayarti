@@ -27,6 +27,16 @@ def _year_value(row):
     return int(float(raw))
 
 
+def _octane_value(row):
+    """حفظ الأوكتان كنص لمنع فشل الاستيراد عند وجود صيغ مثل '91 RON'."""
+    raw = _cell(row, 'Octane')
+    if raw == '':
+        return ''
+    if isinstance(raw, float) and raw.is_integer():
+        return str(int(raw))
+    return str(raw).strip()
+
+
 def validate_excel_file(file):
     """
     التحقق من صحة ملف Excel قبل البدء في الاستيراد
@@ -149,7 +159,7 @@ def import_cars_from_excel(file):
                     'oil_visc': _cell(row, 'Oil Visc'),
                     'oil_visc_high_km': _cell(row, 'Oil Visc (>100k)'),
                     'fuel': _cell(row, 'Fuel'),
-                    'octane': _cell(row, 'Octane'),
+                    'octane': _octane_value(row),
                     'tire_size': tire_size_val,
                     'spark': _cell(row, 'Spark'),
                     'oil_capacity': _cell(row, 'Oil Capacity'),

@@ -20,6 +20,9 @@ cd "$APP_DIR"
 # ---- 0.5) إعدادات GitHub (من .env) ------------------------------------------
 GH_REPO="$(grep -E '^BACKUP_GITHUB_REPO=' .env | head -n1 | cut -d= -f2- | tr -d '"' || true)"
 GH_TOKEN="$(grep -E '^GITHUB_BACKUP_TOKEN=' .env | head -n1 | cut -d= -f2- | tr -d '"' || true)"
+ENC_PASS="$(grep -E '^BACKUP_ENCRYPTION_PASSPHRASE=' .env | head -n1 | cut -d= -f2- | tr -d '"' || true)"
+ALLOW_LOCAL_ONLY="$(grep -E '^BACKUP_ALLOW_LOCAL_ONLY=' .env | head -n1 | cut -d= -f2- | tr -d '"' || true)"
+ALLOW_UNENCRYPTED="$(grep -E '^BACKUP_ALLOW_UNENCRYPTED=' .env | head -n1 | cut -d= -f2- | tr -d '"' || true)"
 KEEP_LAST="${BACKUP_KEEP_LAST:-7}"   # كم عدد النسخ المحفوظة في git (افتراضي 7)
 
 # ---- 1) تجهيز -----------------------------------------------------------------
@@ -67,16 +70,30 @@ cp -r media/* "$BACKUP_DIR/media/" 2>/dev/null || echo "  (فارغ)"
 echo "== 6/7 ضغط النسخة =="
 cd "$WORK_DIR"
 tar -czf "${BACKUP_NAME}_${DATE_STAMP}.tar.gz" artifact
-ls -lh "${BACKUP_NAME}_${DATE_STAMP}.tar.gz"
+BACKUP_FILE="${BACKUP_NAME}_${DATE_STAMP}.tar.gz"
+if [ -n "$ENC_PASS" ]; then
+  echo "  تشفير النسخة قبل الرفع"
+  openssl enc -aes-256-cbc -salt -pbkdf2 -in "$BACKUP_FILE" -out "${BACKUP_FILE}.enc" -pass pass:"$ENC_PASS"
+  rm -f "$BACKUP_FILE"
+  BACKUP_FILE="${BACKUP_FILE}.enc"
+elif [ "${ALLOW_UNENCRYPTED,,}" != "true" ]; then
+  echo "❌ BACKUP_ENCRYPTION_PASSPHRASE غير مضبوط. لن أرفع نسخة غير مشفرة تحتوي .env."
+  echo "   اضبط BACKUP_ENCRYPTION_PASSPHRASE أو BACKUP_ALLOW_UNENCRYPTED=true عن قصد."
+  exit 2
+fi
+ls -lh "$BACKUP_FILE"
 
 # ---- 7) الرفع إلى مستودع GitHub الخاص ------------------------------------------
 echo "== 7/7 الرفع إلى GitHub =="
 if [ -z "$GH_TOKEN" ] || [ -z "$GH_REPO" ]; then
-  echo "  تحذير: توكن/مستودع غير مضبوط — النسخة بقيت محلياً فقط في /tmp (لم تُرفع)."
-  echo "  أضف في .env: BACKUP_GITHUB_REPO و GITHUB_BACKUP_TOKEN (راجع التوثيق 09)."
-  # نشير لمسار النسخة للاستعادة اليدوية
-  echo "  النسخة: /tmp/${BACKUP_NAME}_${DATE_STAMP}.tar.gz"
-  exit 0
+  echo "❌ توكن/مستودع النسخ غير مضبوط — لم تُرفع النسخة."
+  echo "   أضف في .env: BACKUP_GITHUB_REPO و GITHUB_BACKUP_TOKEN."
+  echo "   النسخة المحلية المؤقتة: ${WORK_DIR}/${BACKUP_FILE}"
+  if [ "${ALLOW_LOCAL_ONLY,,}" = "true" ]; then
+    echo "   BACKUP_ALLOW_LOCAL_ONLY=true لذلك لن أعتبرها فشلاً."
+    exit 0
+  fi
+  exit 3
 fi
 
 # مستودع git مؤقت (خاص) للنسخ: نسحب الموجود أولاً حتى لا يرفض GitHub الدفع برسالة fetch first.
@@ -93,10 +110,10 @@ fi
 git -C "$GIT_DIR" config user.email "backup@srv.local"
 git -C "$GIT_DIR" config user.name "Sayarti Backup"
 mkdir -p "$GIT_DIR/backups"
-cp "${BACKUP_NAME}_${DATE_STAMP}.tar.gz" "$GIT_DIR/backups/"
+cp "$BACKUP_FILE" "$GIT_DIR/backups/"
 
 # الحفاظ على آخر KEEP_LAST نسخ فقط (حذف الأقدم في git)
-(cd "$GIT_DIR/backups" && ls -1t *.tar.gz 2>/dev/null | tail -n +$((KEEP_LAST+1)) | while read -r old; do rm -f "$old"; done)
+(cd "$GIT_DIR/backups" && ls -1t *.tar.gz *.tar.gz.enc 2>/dev/null | tail -n +$((KEEP_LAST+1)) | while read -r old; do rm -f "$old"; done)
 
 git -C "$GIT_DIR" add -A
 if git -C "$GIT_DIR" diff --cached --quiet; then
@@ -111,9 +128,9 @@ if [ -z "$BRANCH" ]; then
 fi
 git -C "$GIT_DIR" push -q origin "HEAD:${BRANCH}"
 
-echo "✅ اكتمل: ${BACKUP_NAME}_${DATE_STAMP}.tar.gz رُفع إلى github.com/${GH_REPO}"
+echo "✅ اكتمل: ${BACKUP_FILE} رُفع إلى github.com/${GH_REPO}"
 
 # ---- تنظيف ----------------------------------------------------------------------
 rm -rf "$WORK_DIR"
-find /tmp -maxdepth 1 -name "${BACKUP_NAME}_*.tar.gz" -mtime +$KEEP_LAST -delete 2>/dev/null || true
+find /tmp -maxdepth 1 \( -name "${BACKUP_NAME}_*.tar.gz" -o -name "${BACKUP_NAME}_*.tar.gz.enc" \) -mtime +$KEEP_LAST -delete 2>/dev/null || true
 echo "انتهى."

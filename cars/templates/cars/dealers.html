@@ -3,12 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/dealers/">
     <title>وكلاء الزيوت وقطع الغيار - سيارتي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json"/>
     <meta name="theme-color" content="#0f172a"/>
     <link rel="icon" type="image/png" href="/static/shared/icons/icon-192.png"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/shared/icons/apple-touch-icon.png"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="سيارتي"/>
     <style>
         * { font-family: 'Cairo', sans-serif; }
         body { background: radial-gradient(circle at top, rgba(245,158,11,.12), transparent 34%), #0a0f1a; min-height: 100vh; color: #e2e8f0; }
@@ -123,10 +130,10 @@
                     {% if dealer.whatsapp %}<a href="https://wa.me/{{ dealer.whatsapp }}" class="action-btn action-whatsapp dealer-track" data-track-url="{% url 'track_dealer_click' dealer.id 'whatsapp' %}" target="_blank" rel="noopener">واتساب</a>{% endif %}
                     {% if dealer.website %}<a href="{{ dealer.website }}" class="action-btn action-site dealer-track" data-track-url="{% url 'track_dealer_click' dealer.id 'website' %}" target="_blank" rel="noopener">الموقع</a>{% endif %}
                 </div>
-                {% if dealer_card_ad %}
+                {% if dealer.card_ad %}
                 <div class="dealer-card-ad">
-                    <span class="dealer-card-ad__text">{{ dealer_card_ad.title }}</span>
-                    {% if dealer.website %}<a href="{{ dealer.website }}" class="dealer-card-ad__link">{{ dealer_card_ad.button_text|default:"رعاية" }}</a>{% endif %}
+                    <span class="dealer-card-ad__text">{{ dealer.card_ad.title }}</span>
+                    {% if dealer.website %}<a href="{{ dealer.website }}" class="dealer-card-ad__link">{{ dealer.card_ad.button_text|default:"رعاية" }}</a>{% endif %}
                 </div>
                 {% endif %}
             </article>
