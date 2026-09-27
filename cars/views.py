@@ -329,9 +329,11 @@ def _filters(request):
 
     required = Q()
     if brand:
-        required &= _exact_text_q('brand_norm', 'brand_en', brand)
+        b = fold_ar(brand)
+        required &= Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
     if model:
-        required &= _exact_text_q('model_norm', 'model_en', model)
+        m = fold_ar(model)
+        required &= Q(model_norm__icontains=m) | Q(model_en__icontains=model)
     if year:
         try:
             required &= Q(year=int(year))
@@ -768,6 +770,7 @@ def sitemap_view(request):
 
 
 def search_ai_suggest(request):
+    from .services.deepseek_service import suggest_cars_ai
     if not _rate_limit(request, 'ai_suggest', 30, 3600):
         return HttpResponse('حاول مرة أخرى لاحقاً', status=429)
     brand = request.GET.get('brand', '').strip()
@@ -780,9 +783,17 @@ def search_ai_suggest(request):
 
     db_results = _find_similar_in_db(brand, model, year, engine)
 
+    ai_result = {'success': False}
+    if not db_results:
+        try:
+            ai_result = suggest_cars_ai(brand=brand, model=model, year=year, engine=engine)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error('AI suggest error: %s', e)
+
     context = {
         'db_results': db_results,
-        'ai_result': {'success': False},
+        'ai_result': ai_result,
     }
     return render(request, 'cars/_ai_suggestions.html', context)
 
@@ -824,16 +835,19 @@ def _find_similar_in_db(brand, model, year, engine):
     e = fold_engine(engine)
 
     candidates = None
-    if brand and model:
+    b = fold_ar(brand)
+    m = fold_ar(model)
+
+    if b and m:
         candidates = qs.filter(
-            _exact_text_q('brand_norm', 'brand_en', brand)
+            Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
         ).filter(
-            _exact_text_q('model_norm', 'model_en', model)
+            Q(model_norm__icontains=m) | Q(model_en__icontains=model)
         )
-    elif brand:
-        candidates = qs.filter(_exact_text_q('brand_norm', 'brand_en', brand))
-    elif model:
-        candidates = qs.filter(_exact_text_q('model_norm', 'model_en', model))
+    elif b:
+        candidates = qs.filter(Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand))
+    elif m:
+        candidates = qs.filter(Q(model_norm__icontains=m) | Q(model_en__icontains=model))
 
     if candidates is not None and year:
         try:
@@ -861,9 +875,11 @@ def _quick_db_cars(brand, model, year='', fuel=''):
 
     q = Q()
     if brand:
-        q &= _exact_text_q('brand_norm', 'brand_en', brand)
+        b = fold_ar(brand)
+        q &= Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
     if model:
-        q &= _exact_text_q('model_norm', 'model_en', model)
+        m = fold_ar(model)
+        q &= Q(model_norm__icontains=m) | Q(model_en__icontains=model)
     if year:
         try:
             q &= Q(year=int(year))
@@ -945,6 +961,7 @@ def _quick_parse_from_db(query):
 
 def search_ai_quick(request):
     """البحث السريع: يقرأ مدخل المستخدم ثم يرجع تطابقات قاعدة البيانات فقط."""
+    from .services.deepseek_service import parse_free_query, suggest_cars_ai
 
     q = request.GET.get('q', '').strip()
     if not q:
@@ -956,6 +973,11 @@ def search_ai_quick(request):
         return HttpResponse('حاول مرة أخرى لاحقاً', status=429)
 
     interpreted = _quick_parse_from_db(q)
+    try:
+        if not interpreted:
+            interpreted = parse_free_query(q) or {}
+    except Exception:
+        interpreted = {}
 
     brand = str(interpreted.get('brand') or '').strip()
     model = str(interpreted.get('model') or '').strip()
@@ -964,12 +986,20 @@ def search_ai_quick(request):
 
     db_results = _quick_db_cars(brand, model, year, fuel) if (brand or model) else []
 
+    ai_result = {'success': False}
+    if not db_results:
+        try:
+            ai_result = suggest_cars_ai(brand=brand, model=model, year=year, engine='')
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error('AI quick suggest error: %s', e)
+
     context = {
         'q': q,
         'interpreted': interpreted,
         'has_parse': any((interpreted.get(k) or '') for k in ('brand', 'model', 'year', 'fuel')),
         'db_results': db_results,
-        'ai_result': {'success': False},
+        'ai_result': ai_result,
         'error': None,
     }
     return render(request, 'cars/_quick_results.html', context)
