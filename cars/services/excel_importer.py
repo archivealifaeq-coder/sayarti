@@ -12,11 +12,20 @@ def _cell(row, col, default=''):
         return default
     if val is None:
         return default
-    if isinstance(val, float) and pd.isna(val):
+    if pd.isna(val):
         return default
     if isinstance(val, str) and not val.strip():
         return default
     return val
+
+
+def _cell_any(row, *cols, default=''):
+    """Read the first non-empty value from multiple accepted column names."""
+    for col in cols:
+        val = _cell(row, col, '')
+        if val:
+            return val
+    return default
 
 
 def _year_value(row):
@@ -62,7 +71,8 @@ def validate_excel_file(file):
     optional_columns = [
         'Spec', 'Trim', 'Class', 'Recommendations', 'Oil Brands', 'Oil Visc (>100k)',
         'Battery', 'Battery Size', 'Battery Capacity',
-        'Engine Code', 'Spark', 'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands'
+        'Engine Code', 'Spark', 'Spark Plug', 'Spark Plugs', 'Plugs', 'البواجي', 'بواجي',
+        'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands'
     ]
     
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -133,11 +143,8 @@ def import_cars_from_excel(file):
             if not tire_size_val:
                 tire_size_val = "غير محدد"
 
-            battery_val = _cell(row, 'Battery Capacity')
-            if not battery_val:
-                battery_val = _cell(row, 'Battery')
-            if not battery_val:
-                battery_val = _cell(row, 'Battery Size')
+            battery_val = _cell_any(row, 'Battery Capacity', 'Battery', 'Battery Size')
+            spark_val = _cell_any(row, 'Spark', 'Spark Plug', 'Spark Plugs', 'Plugs', 'البواجي', 'بواجي')
             
             obj, created = CarSpecification.objects.update_or_create(
                 id=int(float(row['id'])),
@@ -161,7 +168,7 @@ def import_cars_from_excel(file):
                     'fuel': _cell(row, 'Fuel'),
                     'octane': _octane_value(row),
                     'tire_size': tire_size_val,
-                    'spark': _cell(row, 'Spark'),
+                    'spark': spark_val,
                     'oil_capacity': _cell(row, 'Oil Capacity'),
                     'recommendations': _cell(row, 'Recommendations'),
                     'oil_brands': _cell(row, 'Oil Brands'),
