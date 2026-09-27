@@ -12,7 +12,7 @@
         <div class="ai-suggest-card ai-suggest-card-db">
             <div class="ai-suggest-top">
                 <h5 class="text-white font-bold text-sm">★ {{ car.name }}{% if car.trim %} <span class="text-pink-400">({{ car.trim }})</span>{% endif %}</h5>
-                <span class="ai-octane">⛽ أوكتان {{ car.octane }}</span>
+                {% if not site_settings.hide_result_octane %}<span class="ai-octane">⛽ أوكتان {{ car.octane }}</span>{% endif %}
             </div>
             <div class="ai-suggest-meta">
                 {% if car.engine_type %}<span class="ai-dot">{{ car.engine_type }}</span>{% endif %}
@@ -23,15 +23,17 @@
                 <tr><td class="ai-spec-key">📅 السنة</td><td>{{ car.year }}</td></tr>
                 <tr><td class="ai-spec-key">⚙️ المحرك</td><td>{{ car.engine }}{% if car.engine_type %} ({{ car.engine_type }}){% endif %}</td></tr>
                 <tr><td class="ai-spec-key">🛢️ الوقود</td><td>{{ car.fuel|default:"غير محدد" }}</td></tr>
+                {% if not site_settings.hide_result_engine_oil %}
                 <tr><td class="ai-spec-key">🧴 لزوجة الزيت</td><td>{{ car.oil_visc }}</td></tr>
                 <tr><td class="ai-spec-key">⭕ سعة الزيت</td><td>{{ car.oil_capacity|default:"غير محدد" }}</td></tr>
-                <tr><td class="ai-spec-key">🏷️ ماركات الزيت</td><td>{{ car.oil_brands|default:"غير محدد" }}</td></tr>
                 {% if car.oil_visc_high_km %}<tr><td class="ai-spec-key">📈 عام</td><td>لزوجة بعد 100 ألف كم: {{ car.oil_visc_high_km }}</td></tr>{% endif %}
-                {% if car.engine_code %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>كود المحرك: {{ car.engine_code }}</td></tr>{% endif %}
-                <tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>الإطارات: {{ car.tire_size|default:"غير محدد" }}</td></tr>
-                {% if car.spark %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>البلكات: {{ car.spark }}</td></tr>{% endif %}
-                <tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>البطارية: {{ car.battery|default:"غير محدد" }}</td></tr>
-                <tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>زيت الكير: {{ car.transmission_oil_spec|default:"غير محدد" }}</td></tr>
+                {% endif %}
+                {% if not site_settings.hide_result_oil_brands %}<tr><td class="ai-spec-key">🏷️ ماركات الزيت</td><td>{{ car.oil_brands|default:"غير محدد" }}</td></tr>{% endif %}
+                {% if car.engine_code and not site_settings.hide_result_engine_code %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>كود المحرك: {{ car.engine_code }}</td></tr>{% endif %}
+                {% if not site_settings.hide_result_tire_size %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>الإطارات: {{ car.tire_size|default:"غير محدد" }}</td></tr>{% endif %}
+                {% if car.spark and not site_settings.hide_result_spark %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>البلكات: {{ car.spark }}</td></tr>{% endif %}
+                {% if not site_settings.hide_result_battery %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>البطارية: {{ car.battery|default:"غير محدد" }}</td></tr>{% endif %}
+                {% if not site_settings.hide_result_transmission %}<tr><td class="ai-spec-key">تحقق قبل الشراء</td><td>زيت الكير: {{ car.transmission_oil_spec|default:"غير محدد" }}</td></tr>{% endif %}
             </table>
             {% if car.recommendations %}<p class="ai-recommend">{{ car.recommendations }}</p>{% endif %}
         </div>

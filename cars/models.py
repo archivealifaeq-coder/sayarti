@@ -523,6 +523,14 @@ class SiteSettings(models.Model):
         verbose_name="رسالة قفل بطاقة الصيانة",
         help_text="النص الذي يظهر للمستخدم عند الضغط على بطاقة الصيانة المقفولة."
     )
+    hide_result_octane = models.BooleanField(default=False, verbose_name="إخفاء الأوكتان من نتائج البحث")
+    hide_result_engine_oil = models.BooleanField(default=False, verbose_name="إخفاء زيت المحرك وسعته من نتائج البحث")
+    hide_result_oil_brands = models.BooleanField(default=False, verbose_name="إخفاء ماركات زيت المحرك من نتائج البحث")
+    hide_result_tire_size = models.BooleanField(default=False, verbose_name="إخفاء مقاس الإطارات من نتائج البحث")
+    hide_result_spark = models.BooleanField(default=False, verbose_name="إخفاء البلكات من نتائج البحث")
+    hide_result_battery = models.BooleanField(default=False, verbose_name="إخفاء البطارية من نتائج البحث")
+    hide_result_transmission = models.BooleanField(default=False, verbose_name="إخفاء نوع الكير وزيته من نتائج البحث")
+    hide_result_engine_code = models.BooleanField(default=False, verbose_name="إخفاء كود المحرك من نتائج البحث")
     ads_txt = models.TextField(
         blank=True,
         verbose_name="محتوى ads.txt",

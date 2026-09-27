@@ -367,19 +367,19 @@
             <summary class="spec-group-title" style="cursor:pointer;">التفاصيل الإضافية <span class="text-xs text-red-300 bg-red-400/10 px-3 py-1 rounded-full border border-red-400/20">تحقق قبل الشراء</span></summary>
             <p class="text-slate-400 text-sm leading-8 mb-4">قد تختلف هذه المعلومات حسب رقم الشاصي، المحرك، الفئة، والسوق. تحقق من دليل السيارة أو الوكيل أو مختص قبل شراء القطعة.</p>
             <div class="spec-grid">
-                <div class="spec-chip">
+                {% if not site_settings.hide_result_tire_size %}<div class="spec-chip">
                     <span class="chip-label">الإطارات</span>
                     <span class="chip-value">{{ car.tire_size|default:"غير محدد" }}</span>
-                </div>
-                <div class="spec-chip">
+                </div>{% endif %}
+                {% if not site_settings.hide_result_spark %}<div class="spec-chip">
                     <span class="chip-label">البلكات</span>
                     <span class="chip-value">{{ car.spark|default:"غير محدد" }}</span>
-                </div>
-                <div class="spec-chip">
+                </div>{% endif %}
+                {% if not site_settings.hide_result_battery %}<div class="spec-chip">
                     <span class="chip-label">البطارية</span>
                     <span class="chip-value">{{ car.battery|default:"غير محدد" }}</span>
-                </div>
-                <div class="spec-chip">
+                </div>{% endif %}
+                {% if not site_settings.hide_result_transmission %}<div class="spec-chip">
                     <span class="chip-label">نوع الكير</span>
                     <span class="chip-value">{{ car.transmission_type|default:"غير محدد" }}</span>
                 </div>
@@ -390,11 +390,11 @@
                 <div class="spec-chip">
                     <span class="chip-label">ماركات زيت الكير</span>
                     <span class="chip-value">{{ car.transmission_oil_brands|default:"غير محدد" }}</span>
-                </div>
-                <div class="spec-chip">
+                </div>{% endif %}
+                {% if not site_settings.hide_result_engine_code %}<div class="spec-chip">
                     <span class="chip-label">كود المحرك</span>
                     <span class="chip-value">{{ car.engine_code|default:"غير محدد" }}</span>
-                </div>
+                </div>{% endif %}
                 <div class="spec-chip">
                     <span class="chip-label">المنطقة/المواصفة</span>
                     <span class="chip-value">{{ car.get_spec_region_display|default:"غير محدد" }}</span>

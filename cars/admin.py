@@ -941,6 +941,14 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             ),
             'description': 'تحكم ببطاقات الصفحة الرئيسية: إظهار، إخفاء، أو قفل البطاقة مع رسالة واضحة للزائر.'
         }),
+        ('تفاصيل نتائج البحث', {
+            'fields': (
+                'hide_result_octane', 'hide_result_engine_oil', 'hide_result_oil_brands',
+                'hide_result_tire_size', 'hide_result_spark', 'hide_result_battery',
+                'hide_result_transmission', 'hide_result_engine_code',
+            ),
+            'description': 'ضع علامة على أي تفصيل تريد إخفاءه مؤقتاً من بطاقات نتائج البحث لكل السيارات، بدون حذف البيانات من قاعدة البيانات.'
+        }),
         ('الذكاء الاصطناعي', {
             'fields': ('deepseek_api_key',),
             'description': 'DeepSeek هو مزود الذكاء الوحيد لميزات البحث الذكي.'
