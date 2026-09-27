@@ -462,8 +462,51 @@ class CarSpecificationAdmin(admin.ModelAdmin):
         custom_urls = [
             path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='car_import_excel'),
             path('export-excel/', self.admin_site.admin_view(self.export_excel_view), name='car_export_excel'),
+            path('clear-all/', self.admin_site.admin_view(self.clear_all_view), name='car_clear_all'),
         ]
         return custom_urls + urls
+
+    def clear_all_view(self, request):
+        if not self.has_delete_permission(request):
+            self.message_user(request, 'ليست لديك صلاحية مسح قاعدة السيارات.', messages.ERROR)
+            return redirect('../')
+
+        total = CarSpecification.objects.count()
+        if request.method == 'POST':
+            confirm = request.POST.get('confirm', '').strip()
+            if confirm != 'مسح':
+                self.message_user(request, 'لم يتم المسح. اكتب كلمة "مسح" للتأكيد.', messages.ERROR)
+                return redirect('clear-all/')
+
+            deleted_count, _ = CarSpecification.objects.all().delete()
+            cache.delete_many(['lookup_data', 'admin_dash_stats'])
+            self.message_user(request, f'تم مسح {deleted_count} سجل من قاعدة بيانات السيارات.', messages.SUCCESS)
+            return redirect('../')
+
+        html_template = """
+        {% extends "admin/base_site.html" %}
+        {% block content %}
+        <div style="max-width:760px; margin:24px auto; background:#fff; border:1px solid #fecaca; border-radius:16px; padding:22px; box-shadow:0 18px 45px rgba(127,29,29,.08);">
+            <h1 style="margin:0 0 12px; color:#991b1b; font-size:24px;">مسح قاعدة بيانات السيارات بالكامل</h1>
+            <p style="color:#475569; line-height:1.9; font-size:15px;">هذا الإجراء سيحذف كل سجلات <b>CarSpecification</b> فقط. لن يتم حذف الإعلانات، الإعدادات، الوكلاء، أو بيانات أخرى.</p>
+            <div style="background:#fef2f2; border:1px solid #fecaca; color:#7f1d1d; padding:14px; border-radius:12px; margin:16px 0;">
+                عدد سجلات السيارات الحالية: <b>{{ total }}</b>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <label style="display:block; color:#334155; font-weight:700; margin-bottom:8px;">للتأكيد اكتب: مسح</label>
+                <input type="text" name="confirm" autocomplete="off" style="width:100%; max-width:320px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px; margin-bottom:16px;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="submit" style="background:#dc2626; color:#fff; border:0; border-radius:10px; padding:10px 16px; font-weight:800; cursor:pointer;">تأكيد المسح الكامل</button>
+                    <a href="../" style="background:#e2e8f0; color:#0f172a; border-radius:10px; padding:10px 16px; font-weight:700; text-decoration:none;">إلغاء</a>
+                </div>
+            </form>
+        </div>
+        {% endblock %}
+        """
+        t = Template(html_template)
+        c = RequestContext(request, {"total": total, "opts": self.model._meta})
+        return HttpResponse(t.render(c))
 
     def _export_rows(self, queryset):
         return [
