@@ -312,6 +312,11 @@ RELAX_LABELS = {
 }
 
 
+def _exact_text_q(ar_field, en_field, value):
+    normalized = fold_ar(value)
+    return Q(**{ar_field: normalized}) | Q(**{f'{en_field}__iexact': value})
+
+
 def _filters(request):
     brand = request.GET.get('brand', '').strip()
     model = request.GET.get('model', '').strip()
@@ -324,30 +329,28 @@ def _filters(request):
 
     required = Q()
     if brand:
-        b = fold_ar(brand)
-        required &= Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
+        required &= _exact_text_q('brand_norm', 'brand_en', brand)
     if model:
-        m = fold_ar(model)
-        required &= Q(model_norm__icontains=m) | Q(model_en__icontains=model)
+        required &= _exact_text_q('model_norm', 'model_en', model)
     if year:
         try:
             required &= Q(year=int(year))
         except ValueError:
-            required &= Q(year__icontains=year)
+            required &= Q(pk__isnull=True)
 
     optional = []
     if engine_type:
-        optional.append(('engine_type', Q(engine_type__icontains=engine_type)))
+        optional.append(('engine_type', Q(engine_type=engine_type)))
     if spec_region:
-        optional.append(('spec_region', Q(spec_region__icontains=spec_region)))
+        optional.append(('spec_region', Q(spec_region=spec_region)))
     if fuel:
         f = fold_ar(fuel)
-        optional.append(('fuel', Q(fuel__icontains=f)))
+        optional.append(('fuel', Q(fuel__iexact=fuel) | Q(fuel=f)))
     if engine:
         e = fold_engine(engine)
-        optional.append(('engine', Q(engine_norm__icontains=e)))
+        optional.append(('engine', Q(engine_norm=e) | Q(engine__iexact=engine)))
     if trim:
-        optional.append(('trim', Q(trim__icontains=trim)))
+        optional.append(('trim', Q(trim__iexact=trim)))
 
     return required, optional
 
@@ -765,7 +768,6 @@ def sitemap_view(request):
 
 
 def search_ai_suggest(request):
-    from .services.deepseek_service import suggest_cars_ai
     if not _rate_limit(request, 'ai_suggest', 30, 3600):
         return HttpResponse('حاول مرة أخرى لاحقاً', status=429)
     brand = request.GET.get('brand', '').strip()
@@ -778,17 +780,9 @@ def search_ai_suggest(request):
 
     db_results = _find_similar_in_db(brand, model, year, engine)
 
-    ai_result = {'success': False}
-    if not db_results:
-        try:
-            ai_result = suggest_cars_ai(brand=brand, model=model, year=year, engine=engine)
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).error('AI suggest error: %s', e)
-
     context = {
         'db_results': db_results,
-        'ai_result': ai_result,
+        'ai_result': {'success': False},
     }
     return render(request, 'cars/_ai_suggestions.html', context)
 
@@ -824,23 +818,30 @@ def _car_base_dict(car):
 
 
 def _find_similar_in_db(brand, model, year, engine):
-    """يبحث في قاعدة البيانات عن السيارة المطلوبة نفسها (النتيجة المهمة)
-    بمعلوماتها الحقيقية والمدققة، أو أقرب تطابق للماركة/الموديل."""
+    """يرجع نتائج مطابقة فقط لما أدخله المستخدم، بدون نتائج مقاربة."""
     qs = CarSpecification.objects.all().order_by('year', 'brand_ar', 'model_ar')
 
-    b = fold_ar(brand)
-    m = fold_ar(model)
     e = fold_engine(engine)
 
     candidates = None
-    if b and m:
+    if brand and model:
         candidates = qs.filter(
-            Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
+            _exact_text_q('brand_norm', 'brand_en', brand)
         ).filter(
-            Q(model_norm__icontains=m) | Q(model_en__icontains=model)
+            _exact_text_q('model_norm', 'model_en', model)
         )
-    elif b:
-        candidates = qs.filter(Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand))
+    elif brand:
+        candidates = qs.filter(_exact_text_q('brand_norm', 'brand_en', brand))
+    elif model:
+        candidates = qs.filter(_exact_text_q('model_norm', 'model_en', model))
+
+    if candidates is not None and year:
+        try:
+            candidates = candidates.filter(year=int(year))
+        except (TypeError, ValueError):
+            return []
+    if candidates is not None and e:
+        candidates = candidates.filter(Q(engine_norm=e) | Q(engine__iexact=engine))
 
     if candidates is not None and not candidates.exists():
         candidates = None
@@ -855,48 +856,37 @@ def _find_similar_in_db(brand, model, year, engine):
 
 
 def _quick_db_cars(brand, model, year='', fuel=''):
-    """للبحث السريع: يجلب حتى 6 مواصفات متنوّعة من قاعدة البيانات
-    لنفس الماركة/الموديل (محركات ومواصفات مناطق مختلفة)."""
+    """للبحث السريع: يرجع فقط السيارات المطابقة للمدخلات، بدون توسيع أو fallback."""
     qs = CarSpecification.objects.all().order_by('-year', 'brand_ar', 'model_ar')
 
-    b = fold_ar(brand)
-    m = fold_ar(model)
+    q = Q()
+    if brand:
+        q &= _exact_text_q('brand_norm', 'brand_en', brand)
+    if model:
+        q &= _exact_text_q('model_norm', 'model_en', model)
+    if year:
+        try:
+            q &= Q(year=int(year))
+        except (ValueError, TypeError):
+            return []
+    if fuel:
+        f = fold_ar(fuel)
+        q &= Q(fuel__iexact=fuel) | Q(fuel=f)
+    if q == Q():
+        return []
 
-    if b:
-        bq = Q(brand_norm__icontains=b) | Q(brand_en__icontains=brand)
-    else:
-        bq = Q()
-    if m:
-        mq = Q(model_norm__icontains=m) | Q(model_en__icontains=model)
-    else:
-        mq = Q()
-
-    combos = [(year, fuel), (year, ''), ('', '')]
     seen_keys = set()
     selected = []
-
-    for try_year, try_fuel in combos:
-        q = bq & mq
-        if try_year:
-            try:
-                q &= Q(year=int(try_year))
-            except (ValueError, TypeError):
-                pass
-        if try_fuel:
-            f = fold_ar(try_fuel)
-            q &= Q(fuel__icontains=f)
-        if q == Q():
+    for car in qs.filter(q)[:400]:
+        if len(selected) >= 6:
+            return selected
+        key = (car.engine_norm, car.spec_region, car.year)
+        if key in seen_keys:
             continue
-        for car in qs.filter(q)[:400]:
-            if len(selected) >= 6:
-                return selected
-            key = (car.engine_norm, car.spec_region, car.year)
-            if key in seen_keys:
-                continue
-            seen_keys.add(key)
-            item = _car_base_dict(car)
-            item['id'] = car.id
-            selected.append(item)
+        seen_keys.add(key)
+        item = _car_base_dict(car)
+        item['id'] = car.id
+        selected.append(item)
 
     return selected
 
@@ -954,8 +944,7 @@ def _quick_parse_from_db(query):
 
 
 def search_ai_quick(request):
-    """البحث السريع الذكي: فهم جملة المستخدم بالذكاء ثم إرجاع نتائج متنوعة."""
-    from .services.deepseek_service import parse_free_query, suggest_cars_ai
+    """البحث السريع: يقرأ مدخل المستخدم ثم يرجع تطابقات قاعدة البيانات فقط."""
 
     q = request.GET.get('q', '').strip()
     if not q:
@@ -967,11 +956,6 @@ def search_ai_quick(request):
         return HttpResponse('حاول مرة أخرى لاحقاً', status=429)
 
     interpreted = _quick_parse_from_db(q)
-    try:
-        if not interpreted:
-            interpreted = parse_free_query(q) or {}
-    except Exception:
-        interpreted = {}
 
     brand = str(interpreted.get('brand') or '').strip()
     model = str(interpreted.get('model') or '').strip()
@@ -980,20 +964,12 @@ def search_ai_quick(request):
 
     db_results = _quick_db_cars(brand, model, year, fuel) if (brand or model) else []
 
-    ai_result = {'success': False}
-    if not db_results:
-        try:
-            ai_result = suggest_cars_ai(brand=brand, model=model, year=year, engine='')
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).error('AI quick suggest error: %s', e)
-
     context = {
         'q': q,
         'interpreted': interpreted,
         'has_parse': any((interpreted.get(k) or '') for k in ('brand', 'model', 'year', 'fuel')),
         'db_results': db_results,
-        'ai_result': ai_result,
+        'ai_result': {'success': False},
         'error': None,
     }
     return render(request, 'cars/_quick_results.html', context)
