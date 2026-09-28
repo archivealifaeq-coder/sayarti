@@ -289,12 +289,14 @@ class PageSmokeTests(TestCase):
         _make_car(
             11, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
             spec_region='american', engine='2.5', engine_code='A25A-FKS',
-            engine_type='regular', oil_visc='0W-16',
+            engine_type='regular', oil_visc='0W-16', trim='LE AWD',
+            tire_size='225/65R17',
         )
         _make_car(
-            12, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            12, 'تويوتا', 'راف فور', model_en='RAV4', spec='USA',
             spec_region='american', engine='2.5 Hybrid', engine_code='A25A-FXS',
-            engine_type='hybrid', oil_visc='0W-16',
+            engine_type='hybrid', oil_visc='0W-16', trim='Limited Hybrid AWD',
+            tire_size='235/55R19',
         )
 
         response = self.client.get('/search/', {
@@ -310,6 +312,15 @@ class PageSmokeTests(TestCase):
         self.assertContains(response, 'A25A-FKS')
         self.assertContains(response, 'A25A-FXS')
         self.assertContains(response, 'توصي بـ')
+
+    def test_search_form_does_not_offer_trim_filter(self):
+        _make_car(13, trim='Limited')
+
+        response = self.client.get('/search/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'id="trimSelect"')
+        self.assertNotContains(response, 'name="trim"')
 
     def test_engine_suggestions_follow_vehicle_year_region_and_show_details(self):
         _make_car(
@@ -332,6 +343,7 @@ class PageSmokeTests(TestCase):
         self.assertEqual(response.json()['engines'], [
             {'value': '2.5', 'detail': 'عادي · A25A-FKS'},
         ])
+        self.assertNotIn('trims', response.json())
 
     def test_trim_can_be_hidden_from_recommendation_card(self):
         car = _make_car(31, trim='Limited')

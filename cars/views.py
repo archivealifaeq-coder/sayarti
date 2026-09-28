@@ -325,7 +325,6 @@ def _filters(request):
     engine_type = request.GET.get('engine_type', '').strip()
     spec_region = request.GET.get('spec_region', '').strip()
     fuel = request.GET.get('fuel', '').strip()
-    trim = request.GET.get('trim', '').strip()
 
     required = Q()
     if brand:
@@ -351,9 +350,6 @@ def _filters(request):
     if engine:
         e = fold_engine(engine)
         optional.append(('engine', Q(engine_norm=e) | Q(engine__iexact=engine)))
-    if trim:
-        optional.append(('trim', Q(trim__iexact=trim)))
-
     return required, optional
 
 
@@ -369,7 +365,7 @@ def _apply(qs, required, keep_keys):
 def _group_search_results(cars):
     """اجمع صفوف المحركات في بطاقة سيارة واحدة من دون تغيير جدول السيارات.
 
-    البطاقة تمثل الماركة/الموديل/السنة/السوق/الفئة، وداخلها تُجمع
+    البطاقة تمثل الماركة/الموديل/السنة/السوق، وداخلها تُجمع
     المحركات التي تحمل التوصية الفنية نفسها. لا تُستنتج أي معلومة جديدة؛
     كل قيمة معروضة مأخوذة من صف CarSpecification موجود فعلاً.
     """
@@ -380,7 +376,7 @@ def _group_search_results(cars):
     for car in cars:
         group_key = (
             car.brand_ar, car.brand_en, car.model_ar, car.model_en,
-            car.year, car.spec_region, car.spec or '', car.trim or '',
+            car.year, car.spec_region,
         )
         group = groups.setdefault(group_key, {
             'id': car.id,
@@ -408,7 +404,6 @@ def _group_search_results(cars):
             car.oil_visc_high_km or '', car.oil_brands or '',
             car.transmission_type or '', car.transmission_oil_spec or '',
             car.transmission_oil_brands or '', car.recommendations or '',
-            car.tire_size or '', car.spark or '', car.battery or '',
         )
         recommendation = group['_recommendation_map'].get(recommendation_key)
         if recommendation is None:
@@ -451,20 +446,10 @@ def _cached_lookup_data():
         {'ar': ar, 'en': en_by_ar.get(ar, '')}
         for ar, _ in brand_counts.most_common(12)
     ]
-    trim_choices = list(
-        CarSpecification.objects
-        .exclude(trim__isnull=True)
-        .exclude(trim='')
-        .values_list('trim', flat=True)
-        .distinct()
-        .order_by('trim')[:300]
-    )
-
     data = {
         'brand_suggestions': brand_suggestions,
         'brand_suggestions_en': brand_suggestions_en,
         'popular_brands': popular_brands,
-        'trim_choices': trim_choices,
     }
     cache.set('lookup_data', data, 3600)
     return data
@@ -479,7 +464,6 @@ def _search_context(request):
     engine_type = request.GET.get('engine_type', '').strip()
     spec_region = request.GET.get('spec_region', '').strip()
     fuel = request.GET.get('fuel', '').strip()
-    trim = request.GET.get('trim', '').strip()
 
     required, optional = _filters(request)
 
@@ -491,7 +475,7 @@ def _search_context(request):
         else:
             cars = _apply(qs, required, [])
         cars = cars.order_by(
-            'brand_ar', 'model_ar', 'year', 'spec_region', 'trim',
+            'brand_ar', 'model_ar', 'year', 'spec_region',
             'engine_type', 'engine_norm', 'engine', 'id',
         )
 
@@ -507,7 +491,6 @@ def _search_context(request):
         'popular_brands': lookup['popular_brands'],
         'engine_type_choices': CarSpecification.ENGINE_TYPE_CHOICES,
         'spec_region_choices': [{'value': v, 'label': l} for v, l in CarSpecification.SPEC_REGION_CHOICES],
-        'trim_choices': lookup['trim_choices'],
         'brand': brand,
         'model': model,
         'year': year,
@@ -515,7 +498,6 @@ def _search_context(request):
         'engine_type': engine_type,
         'spec_region': spec_region,
         'fuel': fuel,
-        'trim': trim,
     }
 
 
@@ -547,7 +529,7 @@ def search_view(request):
     context['has_params'] = bool(
         request.GET.get('brand') or request.GET.get('model') or request.GET.get('year')
         or request.GET.get('engine') or request.GET.get('engine_type')
-        or request.GET.get('spec_region') or request.GET.get('fuel') or request.GET.get('trim')
+        or request.GET.get('spec_region') or request.GET.get('fuel')
     )
     return render(request, 'cars/search.html', context)
 
@@ -674,15 +656,7 @@ def get_suggestions(request):
                 for value, details in engine_details.items()
             ]
 
-        trims = list(
-            narrow(base_qs())
-            .exclude(trim__isnull=True)
-            .exclude(trim='')
-            .values_list('trim', flat=True)
-            .distinct()
-            .order_by('trim')[:200]
-        )
-        return JsonResponse({'models': models, 'engines': engines, 'trims': trims})
+        return JsonResponse({'models': models, 'engines': engines})
 
     return JsonResponse({'models': [], 'engines': []})
 
