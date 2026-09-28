@@ -4,14 +4,11 @@
    يعمل أوفلاين: عند انقطاع النت تُعرض آخر نسخة محفوظة.
    ============================================================ */
 
-var CACHE_NAME = 'sayarti-v1';
+var CACHE_NAME = 'sayarti-v2';
 var CORE_ASSETS = [
   '/',
   '/manifest.json',
-  '/static/css/style.css',
-  '/static/css/home.css',
-  '/static/js/main.js',
-  '/static/js/home.js',
+  '/static/css/app.css',
   '/static/shared/icons/icon-192.png',
   '/static/shared/icons/icon-512.png',
   '/static/shared/icons/icon-maskable-512.png'

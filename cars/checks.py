@@ -9,7 +9,8 @@ def production_configuration_check(app_configs, **kwargs):
     issues = []
 
     allowed_hosts = set(getattr(settings, 'ALLOWED_HOSTS', []))
-    local_hosts = {'localhost', '127.0.0.1', '0.0.0.0'}
+    # هذه قائمة تحقق وليست عنوان bind لخادم؛ 0.0.0.0 لا يُعد نطاق إنتاج.
+    local_hosts = {'localhost', '127.0.0.1', '0.0.0.0'}  # nosec B104
     public_hosts = {host for host in allowed_hosts if host not in local_hosts and not host.startswith('192.168.')}
     if not public_hosts:
         issues.append(Error(

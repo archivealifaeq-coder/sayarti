@@ -325,6 +325,7 @@ def _filters(request):
     engine_type = request.GET.get('engine_type', '').strip()
     spec_region = request.GET.get('spec_region', '').strip()
     fuel = request.GET.get('fuel', '').strip()
+    vehicle_identity_complete = all((brand, model, year, spec_region))
 
     required = Q()
     if brand:
@@ -348,8 +349,15 @@ def _filters(request):
         f = fold_ar(fuel)
         optional.append(('fuel', Q(fuel__iexact=fuel) | Q(fuel=f)))
     if engine:
-        e = fold_engine(engine)
-        optional.append(('engine', Q(engine_norm=e) | Q(engine__iexact=engine)))
+        if not vehicle_identity_complete:
+            # لا يجوز فصل المحرك عن سنته وسوقه حتى عبر رابط GET يدوي.
+            required &= Q(pk__isnull=True)
+        elif engine_type:
+            e = fold_engine(engine)
+            optional.append(('engine', Q(engine__iexact=engine) | Q(engine_norm=e)))
+        else:
+            # اسم الاقتراح الكامل يميّز مثلاً 2.5 العادي عن 2.5 الهايبرد.
+            optional.append(('engine', Q(engine__iexact=engine)))
     return required, optional
 
 
@@ -633,7 +641,7 @@ def get_suggestions(request):
         models = [{'ar': m[0], 'en': m[1]} for m in models_list]
 
         engines = []
-        if model:
+        if model and year and spec_region:
             engine_rows = list(
                 narrow(base_qs())
                 .values('engine', 'engine_code', 'engine_type')
@@ -644,7 +652,8 @@ def get_suggestions(request):
             engine_details = {}
             for row in engine_rows:
                 value = row['engine']
-                details = engine_details.setdefault(value, [])
+                key = (value, row['engine_type'])
+                details = engine_details.setdefault(key, [])
                 detail_parts = [engine_choices.get(row['engine_type'], row['engine_type'])]
                 if row['engine_code']:
                     detail_parts.append(row['engine_code'])
@@ -652,8 +661,12 @@ def get_suggestions(request):
                 if detail and detail not in details:
                     details.append(detail)
             engines = [
-                {'value': value, 'detail': ' / '.join(details)}
-                for value, details in engine_details.items()
+                {
+                    'value': value,
+                    'detail': ' / '.join(details),
+                    'engine_type': engine_type_value,
+                }
+                for (value, engine_type_value), details in engine_details.items()
             ]
 
         return JsonResponse({'models': models, 'engines': engines})
@@ -798,7 +811,7 @@ def robots_view(request):
 def sitemap_view(request):
     from django.urls import reverse
     from django.utils import timezone
-    from xml.sax.saxutils import escape
+    from django.utils.html import escape
 
     root_url = request.build_absolute_uri('/')
     host = root_url.rstrip('/')
@@ -1077,7 +1090,7 @@ def _new_code(sponsor):
     يُستعمل استعلام وجود مفهرس بدل تحميل كل الأكواد في الذاكرة — مهم مع
     تراكم الأكواد.
     """
-    import random
+    import secrets
 
     prefix = (sponsor.code_prefix or '').strip().upper()
     if not prefix:
@@ -1090,12 +1103,12 @@ def _new_code(sponsor):
         return PromoCode.objects.filter(code=code).exists()
 
     for _ in range(40):
-        code = f"{prefix}-{random.randint(1000, 9999)}"
+        code = f"{prefix}-{1000 + secrets.randbelow(9000)}"
         if not _exists(code):
             return code
     # احتياط: أرقام أوسع للتقليل من فرص التصادم تحت بادئة مشتركة
     for _ in range(80):
-        code = f"{prefix}-{random.randint(100000, 999999)}"
+        code = f"{prefix}-{100000 + secrets.randbelow(900000)}"
         if not _exists(code):
             return code
     return None

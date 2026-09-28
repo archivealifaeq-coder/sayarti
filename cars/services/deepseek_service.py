@@ -24,8 +24,8 @@ def _get_key(settings_field, env_field):
         val = getattr(SiteSettings.load(), settings_field)
         if val:
             return val
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning('Could not read AI key from site settings: %s', exc)
     return getattr(settings, env_field, '')
 
 

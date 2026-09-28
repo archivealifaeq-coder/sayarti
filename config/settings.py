@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 import os
+import secrets
 import sys
 from dotenv import load_dotenv
 
@@ -32,8 +33,8 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 if _ENV_SECRET_KEY:
     SECRET_KEY = _ENV_SECRET_KEY
 elif DEBUG:
-    # مفتاح تطوير فقط: واضح أنه غير صالح للإنتاج
-    SECRET_KEY = 'django-insecure-dev-key-4271f8e1e6f7'
+    # مفتاح تطوير مؤقت؛ الإنتاج يرفض الإقلاع من دون مفتاح بيئي ثابت.
+    SECRET_KEY = secrets.token_urlsafe(50)
 else:
     from django.core.exceptions import ImproperlyConfigured
     raise ImproperlyConfigured(

@@ -114,13 +114,12 @@
                               hx-indicator="#loading-spinner"
                               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 detail-form-grid"
                               id="searchForm"
-                              role="search"
-                              novalidate>
+                              role="search">
 
                             <div>
                                 <label for="brandInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الماركة</label>
                                 <div class="input-group">
-                                    <input type="text" name="brand" id="brandInput" value="{{ brand|escape }}" placeholder="اكتب الماركة... مثال: تويوتا" class="search-input" autocomplete="off" maxlength="100">
+                                    <input type="text" name="brand" id="brandInput" value="{{ brand|escape }}" placeholder="اكتب الماركة... مثال: تويوتا" class="search-input" autocomplete="off" maxlength="100" required aria-required="true">
                                     <span class="search-icon" aria-hidden="true">🚗</span>
                                 </div>
                                 <div class="chip-wrap" id="brandChipWrap">
@@ -131,7 +130,7 @@
                             <div>
                                 <label for="modelInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">الموديل</label>
                                 <div class="input-group">
-                                    <input type="text" name="model" id="modelInput" value="{{ model|escape }}" placeholder="اختر الماركة أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
+                                    <input type="text" name="model" id="modelInput" value="{{ model|escape }}" placeholder="اختر الماركة أولاً..." class="search-input" autocomplete="off" maxlength="100" required aria-required="true" disabled>
                                     <span class="search-icon" aria-hidden="true">📐</span>
                                 </div>
                                 <div class="chip-wrap" id="modelChipWrap">
@@ -141,7 +140,7 @@
 
                             <div class="input-group">
                                 <label for="yearInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سنة الصنع</label>
-                                <input type="number" name="year" id="yearInput" value="{{ year|escape }}" placeholder="مثال: 2012" class="search-input" min="1900" max="2099" step="1">
+                                <input type="number" name="year" id="yearInput" value="{{ year|escape }}" placeholder="مثال: 2012" class="search-input" min="1900" max="2099" step="1" required aria-required="true">
                                 <span class="search-icon" aria-hidden="true">📅</span>
                             </div>
 
@@ -154,9 +153,9 @@
                             </div>
 
                             <div>
-                                <label for="specRegionSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">مواصفات المنطقة <span class="optional-tag">اختياري</span></label>
-                                <select name="spec_region" id="specRegionSelect" class="search-select">
-                                    <option value="">-- الكل --</option>
+                                <label for="specRegionSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">مواصفات المنطقة</label>
+                                <select name="spec_region" id="specRegionSelect" class="search-select" required aria-required="true">
+                                    <option value="">-- اختر المواصفة --</option>
                                     {% for sr in spec_region_choices %}<option value="{{ sr.value|escape }}" {% if spec_region == sr.value %}selected{% endif %}>{{ sr.label|escape }}</option>{% endfor %}
                                 </select>
                             </div>
@@ -391,7 +390,7 @@
                     chip.setAttribute('aria-pressed', selected && item.ar === selected ? 'true' : 'false');
                     chip.addEventListener('click', function() {
                         var which = container === brandChips ? 'brand' : (container === modelChips ? 'model' : 'engine');
-                        onPicked(which, item.ar);
+                        onPicked(which, item.ar, item);
                     });
                     container.appendChild(chip);
                 });
@@ -439,7 +438,7 @@
                 renderChips(engineChips, list, engineInput.value.trim(), true);
             }
 
-            function onPicked(which, value) {
+            function onPicked(which, value, item) {
                 if (which === 'brand') {
                     brandInput.value = value;
                     brandQuery = '';
@@ -462,6 +461,7 @@
                     loadEngines();
                 } else if (which === 'engine') {
                     engineInput.value = value;
+                    if (item && item.type) engineTypeSelect.value = item.type;
                     engineQuery = '';
                     renderEngineChips();
                 }
@@ -528,7 +528,7 @@
                 fetch(url).then(function(r) { return r.json(); }).then(function(data) {
                     lastEngines = (data.engines || []).map(function(e) {
                         if (typeof e === 'string') return { ar: e, en: '' };
-                        return { ar: e.value || '', en: e.detail || '' };
+                        return { ar: e.value || '', en: e.detail || '', type: e.engine_type || '' };
                     });
                     isReadyEngine(true);
                     renderEngineChips();

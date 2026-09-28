@@ -590,7 +590,8 @@
             width: 100%;
             outline: none;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 0.95rem;
+            font-size: 1rem;
+            line-height: 1.6;
         }
         .search-input:focus {
             border-color: #f59e0b;
@@ -626,7 +627,8 @@
             width: 100%;
             outline: none;
             transition: all 0.4s ease;
-            font-size: 0.95rem;
+            font-size: 1rem;
+            line-height: 1.6;
             cursor: pointer;
         }
         .search-select:focus { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12); }
@@ -653,7 +655,7 @@
             border: 1px solid rgba(245, 158, 11, 0.4);
             background: rgba(245, 158, 11, 0.08);
             color: #fbbf24;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s ease;
@@ -673,10 +675,10 @@
             border-color: transparent;
             font-weight: 800;
         }
-        .chip-sub { color: inherit; font-size: 0.72rem; direction: ltr; opacity: 0.75; }
+        .chip-sub { color: inherit; font-size: 0.78rem; direction: ltr; opacity: 0.8; }
         .chip-empty {
             color: #64748b;
-            font-size: 0.82rem;
+            font-size: 0.88rem;
             padding: 6px 2px;
             white-space: nowrap;
         }
@@ -783,16 +785,17 @@
             padding: 5px 14px;
             border-radius: 30px;
         }
-        .car-card .car-title { font-size: 1.3rem; font-weight: 800; color: #f1f5f9; transition: color 0.3s ease; margin-bottom: 2px; }
+        .car-card .car-title { font-size: 1.4rem; font-weight: 800; color: #f1f5f9; transition: color 0.3s ease; margin-bottom: 3px; line-height: 1.5; }
         .car-card:hover .car-title { color: #fbbf24; }
-        .car-card .car-subtitle { font-size: 0.7rem; font-weight: 600; color: #64748b; }
+        .car-card .car-subtitle { font-size: 0.82rem; font-weight: 600; color: #64748b; line-height: 1.7; }
         .car-card .car-subtitle .highlight { color: #fbbf24; }
         
         .car-card .engine-badge {
             background: rgba(15, 23, 42, 0.6);
             border-radius: 10px;
             padding: 6px 12px;
-            font-size: 0.75rem;
+            font-size: 0.85rem;
+            line-height: 1.65;
             color: #94a3b8;
             border: 1px solid rgba(51, 65, 85, 0.3);
             display: flex;
@@ -813,8 +816,8 @@
             transition: all 0.3s ease;
         }
         .spec-item:hover { border-color: rgba(245, 158, 11, 0.2); background: rgba(15, 23, 42, 0.7); transform: translateY(-2px); }
-        .spec-item .label { display: block; color: #64748b; font-size: 0.55rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-        .spec-item .value { font-weight: 700; color: #fbbf24; font-size: 0.8rem; }
+        .spec-item .label { display: block; color: #94a3b8; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.35px; margin-bottom: 3px; line-height: 1.5; }
+        .spec-item .value { font-weight: 700; color: #fbbf24; font-size: 0.95rem; line-height: 1.55; }
         .spec-item .value.green { color: #34d399; }
         .spec-item .value.blue { color: #60a5fa; }
         
@@ -833,11 +836,16 @@
         .btn-card-link-primary { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0a0f1a; border: none; }
         .btn-card-link-primary:hover { box-shadow: 0 6px 25px rgba(245, 158, 11, 0.35); }
 
-        .btn-card-toggle { width: 100%; padding: 8px; margin-top: 10px; background: rgba(15, 23, 42, 0.5); border: 1px dashed rgba(245, 158, 11, 0.2); border-radius: 12px; color: #94a3b8; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
+        .btn-card-toggle { width: 100%; padding: 10px; margin-top: 10px; background: rgba(15, 23, 42, 0.5); border: 1px dashed rgba(245, 158, 11, 0.2); border-radius: 12px; color: #94a3b8; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
         .btn-card-toggle:hover { background: rgba(245, 158, 11, 0.08); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
         .btn-card-toggle.active { border-style: solid; color: #fbbf24; }
         .btn-card-toggle .toggle-icon { transition: transform 0.3s ease; font-size: 0.6rem; }
         .btn-card-toggle.active .toggle-icon { transform: rotate(180deg); }
+
+        /* تكبير مدروس للنصوص الفنية داخل بطاقة النتيجة من دون تغيير التخطيط. */
+        .car-card .text-xs { font-size: 0.82rem; line-height: 1.7; }
+        .car-card .text-sm { font-size: 0.95rem; line-height: 1.65; }
+        .car-card .text-lg { font-size: 1.18rem; line-height: 1.55; }
         
         .cta-section {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.04), rgba(251, 191, 36, 0.01));

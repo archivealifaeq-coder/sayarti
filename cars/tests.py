@@ -321,6 +321,19 @@ class PageSmokeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'id="trimSelect"')
         self.assertNotContains(response, 'name="trim"')
+        self.assertContains(response, 'id="yearInput"')
+        self.assertContains(response, 'id="specRegionSelect"')
+        self.assertContains(response, 'required aria-required="true"')
+
+    def test_service_worker_caches_only_current_assets(self):
+        response = self.client.get('/sw.js')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '/static/css/app.css')
+        self.assertNotContains(response, '/static/css/home.css')
+        self.assertNotContains(response, '/static/css/style.css')
+        self.assertNotContains(response, '/static/js/home.js')
+        self.assertNotContains(response, '/static/js/main.js')
 
     def test_engine_suggestions_follow_vehicle_year_region_and_show_details(self):
         _make_car(
@@ -341,9 +354,50 @@ class PageSmokeTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['engines'], [
-            {'value': '2.5', 'detail': 'عادي · A25A-FKS'},
+            {
+                'value': '2.5',
+                'detail': 'عادي · A25A-FKS',
+                'engine_type': 'regular',
+            },
         ])
         self.assertNotIn('trims', response.json())
+
+    def test_engine_filter_is_bound_to_year_region_and_exact_engine(self):
+        _make_car(
+            23, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            spec_region='american', engine='2.5L I4', engine_type='regular',
+        )
+        _make_car(
+            24, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            spec_region='american', engine='2.5L I4 Hybrid', engine_type='hybrid',
+        )
+
+        incomplete = self.client.get('/search/', {
+            'brand': 'Toyota', 'model': 'RAV4', 'year': '2020',
+            'engine': '2.5L I4 Hybrid',
+        })
+        self.assertEqual(len(incomplete.context['car_groups']), 0)
+
+        exact = self.client.get('/search/', {
+            'brand': 'Toyota', 'model': 'RAV4', 'year': '2020',
+            'spec_region': 'american', 'engine': '2.5L I4 Hybrid',
+        })
+        self.assertEqual(len(exact.context['car_groups']), 1)
+        self.assertEqual(exact.context['car_groups'][0]['engine_count'], 1)
+        self.assertEqual(exact.context['car_groups'][0]['engines'][0]['type'], 'hybrid')
+
+    def test_engine_suggestions_require_year_and_region(self):
+        _make_car(
+            25, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            spec_region='american', engine='2.5L I4', engine_type='regular',
+        )
+
+        response = self.client.get('/get-suggestions/', {
+            'brand': 'Toyota', 'model': 'RAV4',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['engines'], [])
 
     def test_trim_can_be_hidden_from_recommendation_card(self):
         car = _make_car(31, trim='Limited')
