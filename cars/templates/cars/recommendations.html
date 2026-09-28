@@ -353,7 +353,7 @@
                     <h1 class="text-4xl md:text-5xl font-black text-white tracking-tight">
                         {{ car.brand_ar }} <span class="text-amber-400">{{ car.model_ar }}</span>
                     </h1>
-                    {% if car.trim %}
+                    {% if car.trim and not site_settings.hide_result_trim %}
                     <span class="trim-pill">{{ car.trim }}</span>
                     {% endif %}
                 </div>
@@ -399,7 +399,7 @@
                     <span class="chip-label">المنطقة/المواصفة</span>
                     <span class="chip-value">{{ car.get_spec_region_display|default:"غير محدد" }}</span>
                 </div>
-                {% if car.trim %}
+                {% if car.trim and not site_settings.hide_result_trim %}
                 <div class="spec-chip">
                     <span class="chip-label">الفئة</span>
                     <span class="chip-value">{{ car.trim }}</span>

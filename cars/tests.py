@@ -28,22 +28,24 @@ def _make_sponsor(slug='testco', prefix='TEST'):
     return sp
 
 
-def _make_car(car_id=1, brand_ar='تويوتا', model_ar='كورولا'):
-    return CarSpecification.objects.create(
-        id=car_id,
-        brand_en='Toyota',
-        brand_ar=brand_ar,
-        model_en='Corolla',
-        model_ar=model_ar,
-        year=2020,
-        spec='خليجي',
-        engine='1.8',
-        oil_visc='5W-30',
-        fuel='بنزين',
-        octane=91,
-        tire_size='205/55R16',
-        oil_capacity='4.2L',
-    )
+def _make_car(car_id=1, brand_ar='تويوتا', model_ar='كورولا', **overrides):
+    values = {
+        'id': car_id,
+        'brand_en': 'Toyota',
+        'brand_ar': brand_ar,
+        'model_en': 'Corolla',
+        'model_ar': model_ar,
+        'year': 2020,
+        'spec': 'خليجي',
+        'engine': '1.8',
+        'oil_visc': '5W-30',
+        'fuel': 'بنزين',
+        'octane': 91,
+        'tire_size': '205/55R16',
+        'oil_capacity': '4.2L',
+    }
+    values.update(overrides)
+    return CarSpecification.objects.create(**values)
 
 
 class SiteSettingsCacheTests(TestCase):
@@ -282,6 +284,65 @@ class PageSmokeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '2ZR-FE')
         self.assertContains(response, 'NGK Iridium')
+
+    def test_search_groups_related_engines_by_vehicle_and_oil_recommendation(self):
+        _make_car(
+            11, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            spec_region='american', engine='2.5', engine_code='A25A-FKS',
+            engine_type='regular', oil_visc='0W-16',
+        )
+        _make_car(
+            12, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            spec_region='american', engine='2.5 Hybrid', engine_code='A25A-FXS',
+            engine_type='hybrid', oil_visc='0W-16',
+        )
+
+        response = self.client.get('/search/', {
+            'brand': 'Toyota', 'model': 'RAV4', 'year': '2020',
+            'spec_region': 'american',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        groups = response.context['car_groups']
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0]['engine_count'], 2)
+        self.assertEqual(len(groups[0]['recommendations']), 1)
+        self.assertContains(response, 'A25A-FKS')
+        self.assertContains(response, 'A25A-FXS')
+        self.assertContains(response, 'توصي بـ')
+
+    def test_engine_suggestions_follow_vehicle_year_region_and_show_details(self):
+        _make_car(
+            21, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            spec_region='american', engine='2.5', engine_code='A25A-FKS',
+            engine_type='regular',
+        )
+        _make_car(
+            22, 'تويوتا', 'راف فور', model_en='RAV4', spec='خليجي',
+            spec_region='gcc', engine='2.0', engine_code='M20A-FKS',
+            engine_type='regular',
+        )
+
+        response = self.client.get('/get-suggestions/', {
+            'brand': 'Toyota', 'model': 'RAV4', 'year': '2020',
+            'spec_region': 'american',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['engines'], [
+            {'value': '2.5', 'detail': 'عادي · A25A-FKS'},
+        ])
+
+    def test_trim_can_be_hidden_from_recommendation_card(self):
+        car = _make_car(31, trim='Limited')
+        settings = SiteSettings.load()
+        settings.hide_result_trim = True
+        settings.save()
+
+        response = self.client.get(f'/car/{car.id}/recommendations/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Limited')
 
     def test_car_export_excel_by_brand(self):
         self.client.force_login(User.objects.create_superuser('boss4', 'b4@example.com', 'pw'))

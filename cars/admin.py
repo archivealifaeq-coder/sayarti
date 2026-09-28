@@ -988,7 +988,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': (
                 'hide_result_octane', 'hide_result_engine_oil', 'hide_result_oil_brands',
                 'hide_result_tire_size', 'hide_result_spark', 'hide_result_battery',
-                'hide_result_transmission', 'hide_result_engine_code',
+                'hide_result_transmission', 'hide_result_engine_code', 'hide_result_trim',
             ),
             'description': 'ضع علامة على أي تفصيل تريد إخفاءه مؤقتاً من بطاقات نتائج البحث لكل السيارات، بدون حذف البيانات من قاعدة البيانات.'
         }),

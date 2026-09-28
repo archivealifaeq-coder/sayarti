@@ -41,7 +41,7 @@
             {% for car in db_results %}
             <a href="{% url 'recommendations' car.id %}" class="quick-db-card" data-car-id="{{ car.id }}">
                 <div class="quick-db-top">
-                    <h5 class="text-white font-bold text-sm">★ {{ car.name }}{% if car.trim %} <span class="text-pink-400">({{ car.trim }})</span>{% endif %}</h5>
+                    <h5 class="text-white font-bold text-sm">★ {{ car.name }}{% if car.trim and not site_settings.hide_result_trim %} <span class="text-pink-400">({{ car.trim }})</span>{% endif %}</h5>
                     <span class="quick-db-year">📅 {{ car.year }}</span>
                 </div>
                 <div class="quick-db-meta">

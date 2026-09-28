@@ -11,7 +11,7 @@
         {% for car in db_results %}
         <div class="ai-suggest-card ai-suggest-card-db">
             <div class="ai-suggest-top">
-                <h5 class="text-white font-bold text-sm">★ {{ car.name }}{% if car.trim %} <span class="text-pink-400">({{ car.trim }})</span>{% endif %}</h5>
+                <h5 class="text-white font-bold text-sm">★ {{ car.name }}{% if car.trim and not site_settings.hide_result_trim %} <span class="text-pink-400">({{ car.trim }})</span>{% endif %}</h5>
                 {% if not site_settings.hide_result_octane %}<span class="ai-octane">⛽ أوكتان {{ car.octane }}</span>{% endif %}
             </div>
             <div class="ai-suggest-meta">

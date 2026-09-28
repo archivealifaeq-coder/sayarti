@@ -202,13 +202,13 @@
                 <div class="loading-spinner" role="status" aria-label="جاري التحميل"></div>
             </div>
 
-            {% if cars is None %}
+            {% if car_groups is None %}
                 <div class="text-center py-10 md:py-16 bg-slate-900/30 rounded-3xl border border-slate-800/50">
                     <div class="text-5xl md:text-6xl mb-3 md:mb-4" aria-hidden="true">🔍</div>
                     <h4 class="text-slate-300 text-lg md:text-xl font-bold">ابحث عن سيارتك</h4>
                     <p class="text-slate-500 text-sm md:text-base mt-2 max-w-md mx-auto">استخدم نموذج البحث أعلاه للعثور على مواصفات سيارتك المفضلة</p>
                 </div>
-            {% elif cars|length == 0 %}
+            {% elif car_groups|length == 0 %}
                 <div class="text-center py-10 md:py-16 bg-slate-900/50 rounded-3xl border border-slate-800">
                     <div class="text-6xl mb-3 md:mb-4" aria-hidden="true">🔍</div>
                     <p class="text-slate-300 text-lg font-bold">سيارتك غير متوفرة حالياً في قاعدة البيانات.</p>
@@ -218,61 +218,84 @@
                 <div id="ai-suggest-container"></div>
             {% else %}
                 <div class="flex flex-wrap justify-between items-center mb-3 md:mb-4 gap-2 text-slate-400">
-                    <p class="text-sm font-semibold">🚗 نتائج البحث: <span class="text-amber-400 font-extrabold text-lg" id="resultsCount">{{ cars|length }}</span> سيارة</p>
+                    <p class="text-sm font-semibold">🚗 نتائج البحث: <span class="text-amber-400 font-extrabold text-lg" id="resultsCount">{{ car_groups|length }}</span> بطاقة</p>
                     <a href="{% url 'search' %}" class="text-amber-400 hover:text-amber-300 transition text-sm font-semibold">✕ إعادة تعيين</a>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6" id="cars-grid">
-                    {% for car in cars %}
-                    <div class="car-card" data-car-id="{{ car.id }}">
-                        {% if not site_settings.hide_result_octane %}<div class="badge-octane">موثق · أوكتان {{ car.octane|escape }}</div>{% endif %}
+                    {% for group in car_groups %}
+                    {% with car=group.car %}
+                    <div class="car-card" data-car-id="{{ group.id }}">
                         <div class="mb-2">
-                            <h3 class="car-title">{{ car.brand_ar|escape }} {{ car.model_ar|escape }}{% if car.trim %} <span class="text-pink-400 text-base">({{ car.trim|escape }})</span>{% endif %}</h3>
-                            <p class="car-subtitle">{{ car.brand_en|escape }} {{ car.model_en|escape }} <span class="highlight">| {{ car.year|escape }}</span>{% if car.engine_type %}<span class="highlight">| {{ car.get_engine_type_display|escape }}</span>{% endif %}{% if car.spec_region %}<span class="text-slate-500">| {{ car.get_spec_region_display|escape }}</span>{% endif %}</p>
+                            <h3 class="car-title">{{ car.brand_ar|escape }} {{ car.model_ar|escape }}{% if car.trim and not site_settings.hide_result_trim %} <span class="text-pink-400 text-base">({{ car.trim|escape }})</span>{% endif %}</h3>
+                            <p class="car-subtitle">{{ car.brand_en|escape }} {{ car.model_en|escape }} <span class="highlight">| {{ car.year|escape }}</span>{% if car.spec_region %}<span class="text-slate-500">| {{ car.get_spec_region_display|escape }}</span>{% endif %}{% if car.spec %}<span class="text-slate-500">| {{ car.spec|escape }}</span>{% endif %}</p>
                         </div>
-                        <div class="engine-badge"><span>⚙️ المحرك</span><span class="value">{{ car.engine|escape }}{% if car.engine_code %} · {{ car.engine_code|escape }}{% endif %}</span></div>
-                        <div class="text-emerald-300 text-xs font-black mb-2">المواصفات الموثقة لسيارتك</div>
-                        <div class="spec-grid">
-                            <div class="spec-item"><span class="label">📅 السنة</span><span class="value">{{ car.year|escape }}</span></div>
-                            {% if car.fuel %}<div class="spec-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ car.fuel|escape }}</span></div>{% endif %}
-                            {% if not site_settings.hide_result_octane %}<div class="spec-item"><span class="label">⛽ الأوكتان</span><span class="value">{{ car.octane|escape }}</span></div>{% endif %}
+                        <div class="engine-badge" style="align-items:flex-start;">
+                            <span>⚙️ المحركات المرتبطة ({{ group.engine_count }})</span>
+                            <span class="value" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
+                                {% for engine in group.engines %}
+                                <a href="{% url 'recommendations' engine.id %}" class="text-amber-300 hover:text-amber-200">
+                                    {{ engine.name|escape }} · {{ engine.type_label|escape }}{% if engine.code and not site_settings.hide_result_engine_code %} · {{ engine.code|escape }}{% endif %}
+                                </a>{% if not forloop.last %}<span class="text-slate-600">|</span>{% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+
+                        {% for recommendation in group.recommendations %}
+                        {% with rec=recommendation.car %}
+                        <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 mb-3">
+                            <div class="text-emerald-300 text-xs font-black mb-2">توصية الشركة المصنّعة المسجلة</div>
                             {% if not site_settings.hide_result_engine_oil %}
-                            <div class="spec-item"><span class="label">🛢️ لزوجة الزيت</span><span class="value">{{ car.oil_visc|escape }}</span></div>
-                            <div class="spec-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ car.oil_capacity|default:"غير محدد"|escape }}</span></div>
+                            <div class="text-white font-black text-lg mb-2">توصي بـ <span class="text-amber-400">{{ rec.oil_visc|escape }}</span></div>
                             {% endif %}
-                            {% if car.oil_brands and not site_settings.hide_result_oil_brands %}<div class="spec-item"><span class="label">🏷️ ماركات الزيت</span><span class="value blue">{{ car.oil_brands|escape }}</span></div>{% endif %}
+                            <div class="text-slate-400 text-xs mb-2">تنطبق على:</div>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                {% for engine in recommendation.engines %}
+                                <a href="{% url 'recommendations' engine.id %}" class="px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-slate-200 text-xs hover:border-amber-400/50">
+                                    {{ engine.name|escape }} · {{ engine.type_label|escape }}{% if engine.code and not site_settings.hide_result_engine_code %} · {{ engine.code|escape }}{% endif %}
+                                </a>
+                                {% endfor %}
+                            </div>
+                            <div class="spec-grid">
+                                {% if rec.fuel %}<div class="spec-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ rec.fuel|escape }}</span></div>{% endif %}
+                                {% if not site_settings.hide_result_octane %}<div class="spec-item"><span class="label">⛽ الأوكتان</span><span class="value">{{ rec.octane|escape }}</span></div>{% endif %}
+                                {% if not site_settings.hide_result_engine_oil %}<div class="spec-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ rec.oil_capacity|default:"غير محدد"|escape }}</span></div>{% endif %}
+                                {% if rec.oil_brands and not site_settings.hide_result_oil_brands %}<div class="spec-item"><span class="label">🏷️ ماركات الزيت</span><span class="value blue">{{ rec.oil_brands|escape }}</span></div>{% endif %}
+                            </div>
                         </div>
-                        <div class="card-details-extra" id="details-{{ car.id }}" style="display:none;">
+                        {% endwith %}
+                        {% endfor %}
+
+                        <div class="card-details-extra" id="details-{{ group.id }}" style="display:none;">
                             <div class="text-amber-300 text-xs font-black mt-2 mb-2">معلومات عامة حسب الاستخدام</div>
-                            <div class="spec-grid" style="margin-top:4px;">
-                                {% if not site_settings.hide_result_engine_oil %}<div class="spec-item"><span class="label">📈 لزوجة بعد 100 ألف كم</span><span class="value">{{ car.oil_visc_high_km|default:"غير محدد"|escape }}</span></div>{% endif %}
-                            </div>
                             <p class="text-slate-400 text-xs leading-7 mt-2">أجواء العراق تعتبر استخدام شاق بسبب الحرارة والغبار والزحام وتشغيل المكيف الطويل، لذلك قد تحتاج فترات تبديل أقصر حسب حالة السيارة ودليل الشركة.</p>
-                            <div class="text-red-300 text-xs font-black mt-3 mb-2">تحقق قبل الشراء</div>
-                            <p class="text-slate-400 text-xs leading-7 mb-2">قد تختلف هذه المعلومات حسب رقم الشاصي، المحرك، الفئة، والسوق. تحقق من دليل السيارة أو الوكيل أو مختص قبل شراء القطعة.</p>
-                            <div class="spec-grid" style="margin-top:4px;">
-                                {% if not site_settings.hide_result_tire_size %}<div class="spec-item"><span class="label">🛞 الإطارات</span><span class="value blue">{{ car.tire_size|default:"غير محدد"|escape }}</span></div>{% endif %}
-                                {% if car.spark and not site_settings.hide_result_spark %}<div class="spec-item"><span class="label">⚡ البلكات</span><span class="value">{{ car.spark|escape }}</span></div>{% endif %}
-                                {% if not site_settings.hide_result_battery %}<div class="spec-item"><span class="label">🔋 البطارية</span><span class="value">{{ car.battery|default:"غير محدد"|escape }}</span></div>{% endif %}
-                                {% if not site_settings.hide_result_transmission %}
-                                <div class="spec-item"><span class="label">⚙️ نوع الكير</span><span class="value">{{ car.transmission_type|default:"غير محدد"|escape }}</span></div>
-                                <div class="spec-item"><span class="label">🛢️ زيت الكير</span><span class="value">{{ car.transmission_oil_spec|default:"غير محدد"|escape }}</span></div>
-                                {% if car.transmission_oil_brands %}<div class="spec-item"><span class="label">🏷️ ماركات زيت الكير</span><span class="value">{{ car.transmission_oil_brands|escape }}</span></div>{% endif %}
-                                {% endif %}
-                                {% if car.engine_code and not site_settings.hide_result_engine_code %}<div class="spec-item"><span class="label">🔢 كود المحرك</span><span class="value">{{ car.engine_code|escape }}</span></div>{% endif %}
-                                {% if car.spec_region %}<div class="spec-item"><span class="label">🌍 المنطقة</span><span class="value">{{ car.get_spec_region_display|escape }}</span></div>{% endif %}
-                                {% if car.engine_type %}<div class="spec-item"><span class="label">🔧 نوع المحرك</span><span class="value">{{ car.get_engine_type_display|escape }}</span></div>{% endif %}
-                                {% if car.trim %}<div class="spec-item"><span class="label">🏷️ الفئة</span><span class="value">{{ car.trim|escape }}</span></div>{% endif %}
+                            {% for recommendation in group.recommendations %}
+                            {% with rec=recommendation.car %}
+                            <div class="border-t border-slate-700/60 pt-3 mt-3">
+                                <div class="text-slate-200 text-xs font-black mb-2">تفاصيل {{ rec.oil_visc|escape }} — {{ recommendation.engines|length }} محرك</div>
+                                <div class="spec-grid" style="margin-top:4px;">
+                                    {% if not site_settings.hide_result_engine_oil %}<div class="spec-item"><span class="label">📈 لزوجة بعد 100 ألف كم</span><span class="value">{{ rec.oil_visc_high_km|default:"غير محدد"|escape }}</span></div>{% endif %}
+                                    {% if not site_settings.hide_result_tire_size %}<div class="spec-item"><span class="label">🛞 الإطارات</span><span class="value blue">{{ rec.tire_size|default:"غير محدد"|escape }}</span></div>{% endif %}
+                                    {% if rec.spark and not site_settings.hide_result_spark %}<div class="spec-item"><span class="label">⚡ البلكات</span><span class="value">{{ rec.spark|escape }}</span></div>{% endif %}
+                                    {% if not site_settings.hide_result_battery %}<div class="spec-item"><span class="label">🔋 البطارية</span><span class="value">{{ rec.battery|default:"غير محدد"|escape }}</span></div>{% endif %}
+                                    {% if not site_settings.hide_result_transmission %}
+                                    <div class="spec-item"><span class="label">⚙️ نوع الكير</span><span class="value">{{ rec.transmission_type|default:"غير محدد"|escape }}</span></div>
+                                    <div class="spec-item"><span class="label">🛢️ زيت الكير</span><span class="value">{{ rec.transmission_oil_spec|default:"غير محدد"|escape }}</span></div>
+                                    {% if rec.transmission_oil_brands %}<div class="spec-item"><span class="label">🏷️ ماركات زيت الكير</span><span class="value">{{ rec.transmission_oil_brands|escape }}</span></div>{% endif %}
+                                    {% endif %}
+                                    {% if car.spec_region %}<div class="spec-item"><span class="label">🌍 المنطقة</span><span class="value">{{ car.get_spec_region_display|escape }}</span></div>{% endif %}
+                                    {% if car.trim and not site_settings.hide_result_trim %}<div class="spec-item"><span class="label">🏷️ الفئة</span><span class="value">{{ car.trim|escape }}</span></div>{% endif %}
+                                </div>
+                                {% if rec.recommendations %}<p class="text-slate-300 text-xs leading-7 mt-3">{{ rec.recommendations|escape }}</p>{% endif %}
                             </div>
-                            <div class="card-links-row">
-                                <a href="{% url 'mix_calculator' %}" class="btn-card-link">🧮 حاسبة الخلط</a>
-                                <a href="{% url 'recommendations' car.id %}" class="btn-card-link btn-card-link-primary">🔍 التوصيات والتفاصيل</a>
-                            </div>
+                            {% endwith %}
+                            {% endfor %}
                         </div>
-                        <button type="button" class="btn-card-toggle" onclick="toggleCardDetails({{ car.id }}, this)">
+                        <button type="button" class="btn-card-toggle" onclick="toggleCardDetails({{ group.id }}, this)">
                             <span class="toggle-text">عرض التفاصيل الإضافية</span>
                             <span class="toggle-icon">▼</span>
                         </button>
                     </div>
+                    {% endwith %}
                     {% endfor %}
                 </div>
                 {% include 'cars/_ad_unit.html' with slot_id=site_settings.ad_slot_results %}
@@ -422,12 +445,12 @@
                 var list;
                 if (engineQuery.length >= 1) {
                     list = lastEngines.filter(function(e) {
-                        return accepts(engineQuery, e);
+                        return accepts(engineQuery, e.ar) || accepts(engineQuery, e.en);
                     });
                 } else {
                     list = lastEngines;
                 }
-                renderChips(engineChips, list, engineInput.value.trim(), false);
+                renderChips(engineChips, list, engineInput.value.trim(), true);
             }
 
             function onPicked(which, value) {
@@ -474,7 +497,7 @@
             function isReadyEngine(ready) {
                 engineInput.disabled = !ready;
                 if (!ready) {
-                    engineInput.placeholder = 'اختر الماركة والموديل أولاً...';
+                    engineInput.placeholder = 'اختر الماركة والموديل والسنة والمواصفة أولاً...';
                     lastEngines = [];
                     renderEngineChips();
                 } else {
@@ -533,20 +556,23 @@
             function loadEngines() {
                 var brand = brandInput.value.trim();
                 var model = modelInput.value.trim();
-                if (!brand || !model) {
+                var year = yearInput.value.trim();
+                var specRegion = specRegionSelect.value;
+                if (!brand || !model || !year || !specRegion) {
                     isReadyEngine(false);
                     isReadyTrim(false);
                     return;
                 }
                 var url = '{% url "get_suggestions" %}?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model);
-                var year = yearInput.value.trim();
                 var engineType = engineTypeSelect.value;
-                var specRegion = specRegionSelect.value;
                 if (year) url += '&year=' + encodeURIComponent(year);
                 if (engineType) url += '&engine_type=' + encodeURIComponent(engineType);
                 if (specRegion) url += '&spec_region=' + encodeURIComponent(specRegion);
                 fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                    lastEngines = (data.engines || []).map(function(e) { return { ar: e, en: '' }; });
+                    lastEngines = (data.engines || []).map(function(e) {
+                        if (typeof e === 'string') return { ar: e, en: '' };
+                        return { ar: e.value || '', en: e.detail || '' };
+                    });
                     isReadyEngine(true);
                     renderEngineChips();
                     populateTrimSelect(data.trims || []);
@@ -583,14 +609,17 @@
             });
 
             yearInput.addEventListener('change', function() {
+                engineInput.value = '';
                 if (brandInput.value.trim()) loadModels();
                 if (modelInput.value) loadEngines();
             });
             engineTypeSelect.addEventListener('change', function() {
+                engineInput.value = '';
                 if (brandInput.value.trim()) loadModels();
                 if (modelInput.value) loadEngines();
             });
             specRegionSelect.addEventListener('change', function() {
+                engineInput.value = '';
                 if (brandInput.value.trim()) loadModels();
                 if (modelInput.value) loadEngines();
             });

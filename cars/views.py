@@ -366,6 +366,70 @@ def _apply(qs, required, keep_keys):
     return qs.filter(q)
 
 
+def _group_search_results(cars):
+    """اجمع صفوف المحركات في بطاقة سيارة واحدة من دون تغيير جدول السيارات.
+
+    البطاقة تمثل الماركة/الموديل/السنة/السوق/الفئة، وداخلها تُجمع
+    المحركات التي تحمل التوصية الفنية نفسها. لا تُستنتج أي معلومة جديدة؛
+    كل قيمة معروضة مأخوذة من صف CarSpecification موجود فعلاً.
+    """
+    if cars is None:
+        return None
+
+    groups = {}
+    for car in cars:
+        group_key = (
+            car.brand_ar, car.brand_en, car.model_ar, car.model_en,
+            car.year, car.spec_region, car.spec or '', car.trim or '',
+        )
+        group = groups.setdefault(group_key, {
+            'id': car.id,
+            'car': car,
+            'engines': [],
+            'recommendations': [],
+            '_engine_keys': set(),
+            '_recommendation_map': {},
+        })
+
+        engine_key = (car.engine_norm or car.engine, car.engine_code or '', car.engine_type)
+        engine_data = {
+            'id': car.id,
+            'name': car.engine,
+            'code': car.engine_code or '',
+            'type': car.engine_type,
+            'type_label': car.get_engine_type_display(),
+        }
+        if engine_key not in group['_engine_keys']:
+            group['_engine_keys'].add(engine_key)
+            group['engines'].append(engine_data)
+
+        recommendation_key = (
+            car.oil_visc, car.oil_capacity, car.fuel, car.octane,
+            car.oil_visc_high_km or '', car.oil_brands or '',
+            car.transmission_type or '', car.transmission_oil_spec or '',
+            car.transmission_oil_brands or '', car.recommendations or '',
+            car.tire_size or '', car.spark or '', car.battery or '',
+        )
+        recommendation = group['_recommendation_map'].get(recommendation_key)
+        if recommendation is None:
+            recommendation = {'car': car, 'engines': [], '_engine_keys': set()}
+            group['_recommendation_map'][recommendation_key] = recommendation
+            group['recommendations'].append(recommendation)
+        if engine_key not in recommendation['_engine_keys']:
+            recommendation['_engine_keys'].add(engine_key)
+            recommendation['engines'].append(engine_data)
+
+    result = []
+    for group in groups.values():
+        group.pop('_engine_keys', None)
+        group.pop('_recommendation_map', None)
+        for recommendation in group['recommendations']:
+            recommendation.pop('_engine_keys', None)
+        group['engine_count'] = len(group['engines'])
+        result.append(group)
+    return result
+
+
 def _cached_lookup_data():
     """بيانات القوائم الثابتة (البراندات/الفئات/...)— محسوبة مرة وتُخزَّن بالذاكرة لحين تحديث قاعدة البيانات."""
     data = cache.get('lookup_data')
@@ -426,11 +490,18 @@ def _search_context(request):
             cars = _apply(qs, required, optional)
         else:
             cars = _apply(qs, required, [])
+        cars = cars.order_by(
+            'brand_ar', 'model_ar', 'year', 'spec_region', 'trim',
+            'engine_type', 'engine_norm', 'engine', 'id',
+        )
+
+    car_groups = _group_search_results(cars)
 
     lookup = _cached_lookup_data()
 
     return {
         'cars': cars,
+        'car_groups': car_groups,
         'brand_suggestions': lookup['brand_suggestions'],
         'brand_suggestions_en': lookup['brand_suggestions_en'],
         'popular_brands': lookup['popular_brands'],
@@ -581,8 +652,27 @@ def get_suggestions(request):
 
         engines = []
         if model:
-            engines_raw = list(narrow(base_qs()).values_list('engine', flat=True).distinct().order_by('engine')[:200])
-            engines = engines_raw
+            engine_rows = list(
+                narrow(base_qs())
+                .values('engine', 'engine_code', 'engine_type')
+                .distinct()
+                .order_by('engine', 'engine_type', 'engine_code')[:400]
+            )
+            engine_choices = dict(CarSpecification.ENGINE_TYPE_CHOICES)
+            engine_details = {}
+            for row in engine_rows:
+                value = row['engine']
+                details = engine_details.setdefault(value, [])
+                detail_parts = [engine_choices.get(row['engine_type'], row['engine_type'])]
+                if row['engine_code']:
+                    detail_parts.append(row['engine_code'])
+                detail = ' · '.join(part for part in detail_parts if part)
+                if detail and detail not in details:
+                    details.append(detail)
+            engines = [
+                {'value': value, 'detail': ' / '.join(details)}
+                for value, details in engine_details.items()
+            ]
 
         trims = list(
             narrow(base_qs())

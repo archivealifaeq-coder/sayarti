@@ -531,6 +531,7 @@ class SiteSettings(models.Model):
     hide_result_battery = models.BooleanField(default=False, verbose_name="إخفاء البطارية من نتائج البحث")
     hide_result_transmission = models.BooleanField(default=False, verbose_name="إخفاء نوع الكير وزيته من نتائج البحث")
     hide_result_engine_code = models.BooleanField(default=False, verbose_name="إخفاء كود المحرك من نتائج البحث")
+    hide_result_trim = models.BooleanField(default=False, verbose_name="إخفاء الفئة من نتائج البحث")
     ads_txt = models.TextField(
         blank=True,
         verbose_name="محتوى ads.txt",
