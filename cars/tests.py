@@ -15,7 +15,6 @@ from cars.models import (
     AppInstallMetric, CarSpecification, Dealer, MaintenanceTask, PromoCode,
     SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY,
 )
-from cars.services.deepseek_service import _provider_chain
 from cars.views import _client_ip
 
 # الاختبارات تعمل في عملية واحدة، لذا نستبدل التخزين "المشترك" بذاكرة محلية

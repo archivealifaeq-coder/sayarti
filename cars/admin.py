@@ -1149,10 +1149,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             ),
             'description': 'ضع علامة على أي تفصيل تريد إخفاءه مؤقتاً من بطاقات نتائج البحث لكل السيارات، بدون حذف البيانات من قاعدة البيانات.'
         }),
-        ('الذكاء الاصطناعي', {
-            'fields': ('deepseek_api_key',),
-            'description': 'DeepSeek هو مزود الذكاء الوحيد لميزات البحث الذكي.'
-        }),
         ('إحصاءات الزوار', {
             'fields': ('ga4_id', 'ga4_property_id', 'ga_service_account_json'),
             'classes': ('collapse',),
@@ -1193,12 +1189,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def settings_summary(self, obj):
-        ai_status = 'DeepSeek مفعل' if obj.deepseek_api_key else 'DeepSeek غير مضبوط'
         ads_status = 'الإعلانات مفعلة' if obj.show_ads and obj.adsense_client_id else 'الإعلانات غير مفعلة'
         return format_html(
             '<strong style="color:#0f172a;">إعدادات الموقع العامة</strong>'
-            '<span style="color:#64748b; margin-inline-start:10px;">{} · {}</span>',
-            ai_status,
+            '<span style="color:#64748b; margin-inline-start:10px;">{}</span>',
             ads_status,
         )
     settings_summary.short_description = 'لوحة الإعدادات'

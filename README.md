@@ -122,7 +122,6 @@ pkill -HUP gunicorn
 - `ADMIN_URL`: مسار خاص للوحة التحكم، ولا يُترك `admin/`.
 - `DATABASE_URL`: رابط PostgreSQL، لا تعتمد على SQLite في الإنتاج.
 - `BACKUP_GITHUB_REPO` و`GITHUB_BACKUP_TOKEN` و`BACKUP_ENCRYPTION_PASSPHRASE`: لتفعيل النسخ الاحتياطي المشفر.
-- `DEEPSEEK_API_KEY`: مزود الذكاء الوحيد للبحث الذكي.
 
 ## النسخ الاحتياطي والاسترجاع
 

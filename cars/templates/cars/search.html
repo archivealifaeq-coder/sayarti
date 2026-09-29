@@ -73,37 +73,19 @@
                     <span class="search-gate-icon">🚗</span>
                     <span class="search-gate-text">
                         <span class="search-gate-title">ابحث عن سيارتك</span>
-                        <span class="search-gate-sub">اضغط هنا — ستظهر أمامك طريقتان للبحث</span>
+                        <span class="search-gate-sub">دليل المالك هو مرجعك الأول دائماً. اضغط هنا للبحث في قاعدة بيانات سيارتي.</span>
                     </span>
                     <span class="search-gate-chev" aria-hidden="true">▼</span>
                 </button>
 
                 <div class="search-modes" id="searchModes">
 
-                    <!-- ===== بطاقة البحث السريع الذكي ===== -->
-                    <div class="mode-card mode-card-quick">
-                        <div class="mode-card-head">
-                            <span class="mode-card-icon">⚡</span>
-                            <div>
-                                <h3 class="mode-card-title">البحث السريع</h3>
-                                <p class="mode-card-note">اكتب ماركة وموديل سيارتك والسنة — ونجهّز لك أدقّ النتائج</p>
-                            </div>
-                        </div>
-                        <div class="quick-search-row">
-                            <input type="text" id="quickSearchInput" class="search-input" placeholder="كورلا 2022 هايبرد" maxlength="200" autocomplete="off">
-                            <button type="button" class="btn-primary quick-search-btn" id="quickSearchBtn">🔍 بحث</button>
-                        </div>
-                        
-                        <div id="quick-results" class="quick-results"></div>
-                    </div>
-
-                    <!-- ===== بطاقة البحث المخصص (الحقول الحالية) ===== -->
                     <div class="mode-card mode-card-detail">
                         <div class="mode-card-head">
-                            <span class="mode-card-icon">🔬</span>
+                            <span class="mode-card-icon">🔍</span>
                             <div>
-                                <h3 class="mode-card-title">البحث المخصص</h3>
-                                <p class="mode-card-note">ابحث بتفاصيل سيارتك الدقيقة</p>
+                                <h3 class="mode-card-title">تفاصيل السيارة</h3>
+                                <p class="mode-card-note">اختر بيانات السيارة بدقة. المعلومات إرشادية ولا تغني عن دليل المالك أو فحص المختص.</p>
                             </div>
                         </div>
 
@@ -207,7 +189,6 @@
                     {% endif %}
                     <a href="{% url 'search' %}" class="text-amber-400 hover:text-amber-300 font-semibold mt-4 inline-block transition-colors">✕ إعادة تعيين</a>
                 </div>
-                <div id="ai-suggest-container"></div>
             {% else %}
                 <div class="flex flex-wrap justify-between items-center mb-3 md:mb-4 gap-2 text-slate-400">
                     <p class="text-sm font-semibold">🚗 نتائج البحث: <span class="text-amber-400 font-extrabold text-lg" id="resultsCount">{{ car_groups|length }}</span> بطاقة</p>
@@ -706,23 +687,6 @@
             document.addEventListener('htmx:afterSwap', function(evt) {
                 if (evt.target && evt.target.id === 'cars-container') {
                     setTimeout(initReveal, 60);
-                    var aiBox = document.getElementById('ai-suggest-container');
-                    if (aiBox) {
-                        aiBox.innerHTML = '<div class="ai-suggest-box" style="text-align:center;padding:28px 18px;"><div class="spin-wheel"></div><p class="text-amber-400 text-sm font-bold mt-3">⏳ انتظرنا من فضلك</p><p class="text-slate-500 text-xs mt-1">نحن نجلب لك أفضل النتائج من الشركة المصنعة...</p></div>';
-                        var params = new URLSearchParams();
-                        var bVal = brandInput ? brandInput.value.trim() : '';
-                        var mVal = modelInput ? modelInput.value.trim() : '';
-                        var yVal = yearInput ? yearInput.value.trim() : '';
-                        var eVal = engineSelect ? engineSelect.value.trim() : '';
-                        if (bVal) params.set('brand', bVal);
-                        if (mVal) params.set('model', mVal);
-                        if (yVal) params.set('year', yVal);
-                        if (eVal) params.set('engine', eVal);
-                        fetch('/search/ai-suggest/?' + params.toString())
-                            .then(function(r) { return r.text(); })
-                            .then(function(html) { aiBox.innerHTML = html; })
-                            .catch(function() { aiBox.innerHTML = '<div class="ai-suggest-box ai-suggest-error"><span class="text-xl" aria-hidden="true">😔</span><p class="text-slate-400 text-sm mt-1">تعذر الاتصال. حاول البحث بكلمات مختلفة.</p></div>'; });
-                    }
                 }
             });
 
@@ -795,13 +759,10 @@
             });
 
             /* ============================================
-               البطاقة الذهبية: فتح البوابة + البحث السريع
+               البطاقة الذهبية: فتح حقول البحث
             ============================================ */
             var searchGate = document.getElementById('searchGate');
             var searchModes = document.getElementById('searchModes');
-            var quickInput = document.getElementById('quickSearchInput');
-            var quickBtn = document.getElementById('quickSearchBtn');
-            var quickResults = document.getElementById('quick-results');
 
             function openSearchModes() {
                 if (!searchGate || !searchModes) return;
@@ -814,55 +775,6 @@
             }
             if (searchGate) {
                 searchGate.addEventListener('click', openSearchModes);
-            }
-
-            var quickBusy = false;
-            function runQuickSearch(q) {
-                if (!quickResults || quickBusy) return;
-                q = (q || '').trim();
-                if (!q) {
-                    if (quickInput) quickInput.focus();
-                    return;
-                }
-                quickBusy = true;
-                quickResults.innerHTML = '<div class="quick-loading"><div class="spin-wheel" style="width:40px;height:40px;"></div><p class="text-slate-300 text-sm mt-2 font-bold">⏳ أبو الشباب، انتظرنا شوية</p><p class="text-slate-500 text-xs mt-1">وراح نجهّزلك أدق النتائج...</p></div>';
-                if (quickBtn) quickBtn.disabled = true;
-                fetch('/search/quick/?q=' + encodeURIComponent(q), { headers: { 'Accept': 'text/html' } })
-                    .then(function(r) { return r.text(); })
-                    .then(function(html) {
-                        quickResults.classList.add('res-in');
-                        quickResults.innerHTML = html;
-                        smoothScrollToResults();
-                    })
-                    .catch(function() {
-                        quickResults.innerHTML = '<div class="quick-results-wrap"><div class="quick-results-head"><div class="quick-ai-avatar">😔</div><div><h4 class="text-slate-300 font-bold text-sm">حدث خطأ في الاتصال</h4><p class="text-slate-500 text-xs">حاول مرة أخرى بعد قليل</p></div></div></div>';
-                    })
-                    .finally(function() {
-                        quickBusy = false;
-                        if (quickBtn) quickBtn.disabled = false;
-                    });
-            }
-
-            function smoothScrollToResults() {
-                var cards = quickResults.querySelectorAll('.quick-db-card');
-                if (cards.length && window.getComputedStyle(quickResults).display !== 'none') {
-                    quickResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }
-
-            if (quickBtn) {
-                quickBtn.addEventListener('click', function() {
-                    runQuickSearch(quickInput ? quickInput.value : '');
-                });
-            }
-            if (quickInput) {
-                quickInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        runQuickSearch(quickInput.value);
-                    }
-                });
-                quickInput.addEventListener('click', function(e) { e.stopPropagation(); });
             }
 
             /* إن كانت الصفحة محمّلة بمعاملات بحث (رابط مباشر) نفتح الوضعين تلقائياً */
