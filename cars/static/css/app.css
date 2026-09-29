@@ -845,187 +845,6 @@
         .engine-recommendation-scope.has-divider { border-top: 1px solid rgba(100, 116, 139, 0.3); padding-top: 12px; margin-top: 12px; }
         .scope-title { color: #cbd5e1; font-size: 0.78rem; font-weight: 800; margin-bottom: 6px; }
 
-        .recommendation-shell {
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 12px;
-            padding: 14px;
-            border: 1px solid rgba(52, 211, 153, 0.2);
-            border-radius: 18px;
-            background:
-                radial-gradient(circle at 100% 0%, rgba(52, 211, 153, 0.1), transparent 38%),
-                rgba(6, 20, 31, 0.78);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
-        }
-        .recommendation-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-        .recommendation-eyebrow {
-            display: block;
-            color: #6ee7b7;
-            font-size: 0.72rem;
-            font-weight: 900;
-            letter-spacing: 0.2px;
-            margin-bottom: 3px;
-        }
-        .recommendation-header h4 {
-            color: #f8fafc;
-            font-size: 1rem;
-            font-weight: 900;
-            line-height: 1.65;
-            margin: 0;
-            overflow-wrap: anywhere;
-        }
-        .engine-code-pill {
-            flex: 0 0 auto;
-            color: #fde68a;
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.24);
-            border-radius: 999px;
-            padding: 5px 9px;
-            font-size: 0.7rem;
-            font-weight: 900;
-            direction: ltr;
-        }
-        .oil-recommendation-line {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            min-height: 72px;
-            padding: 12px 14px;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 15px;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.06));
-        }
-        .oil-recommendation-copy,
-        .oil-fact,
-        .fuel-fact {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-        }
-        .oil-recommendation-copy > span:last-child,
-        .oil-fact > span:last-child,
-        .fuel-fact > span:last-child { min-width: 0; }
-        .oil-icon {
-            display: grid;
-            place-items: center;
-            flex: 0 0 38px;
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            background: rgba(245, 158, 11, 0.14);
-            font-size: 1.3rem;
-        }
-        .oil-recommendation-copy small,
-        .oil-fact small,
-        .fuel-fact small {
-            display: block;
-            color: #94a3b8;
-            font-size: 0.68rem;
-            font-weight: 700;
-            line-height: 1.45;
-            margin-bottom: 2px;
-        }
-        .oil-recommendation-copy b {
-            display: block;
-            color: #e2e8f0;
-            font-size: 0.78rem;
-            line-height: 1.45;
-        }
-        .oil-viscosity {
-            flex: 0 0 auto;
-            color: #fbbf24;
-            font-size: clamp(1.35rem, 4vw, 1.85rem);
-            font-weight: 950;
-            letter-spacing: 0.4px;
-            text-shadow: 0 5px 22px rgba(245, 158, 11, 0.16);
-        }
-        .oil-facts-row {
-            display: grid;
-            grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .oil-fact {
-            padding: 10px;
-            border: 1px solid rgba(100, 116, 139, 0.2);
-            border-radius: 13px;
-            background: rgba(15, 23, 42, 0.58);
-        }
-        .fact-icon {
-            display: grid;
-            place-items: center;
-            flex: 0 0 30px;
-            width: 30px;
-            height: 30px;
-            border-radius: 9px;
-            background: rgba(96, 165, 250, 0.08);
-        }
-        .oil-fact b {
-            display: block;
-            color: #6ee7b7;
-            font-size: 0.78rem;
-            line-height: 1.55;
-            overflow-wrap: anywhere;
-        }
-        .oil-brands-fact b { color: #93c5fd; }
-        .fuel-facts-row {
-            display: flex;
-            align-items: stretch;
-            justify-content: space-between;
-            gap: 8px;
-            margin-top: 10px;
-            padding: 9px 10px;
-            border: 1px solid rgba(96, 165, 250, 0.2);
-            border-radius: 14px;
-            background: linear-gradient(135deg, rgba(30, 64, 175, 0.12), rgba(15, 23, 42, 0.55));
-        }
-        .fuel-fact {
-            flex: 1 1 50%;
-            padding: 2px 4px;
-        }
-        .fuel-icon {
-            display: grid;
-            place-items: center;
-            flex: 0 0 32px;
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            background: rgba(96, 165, 250, 0.1);
-        }
-        .fuel-fact b {
-            display: block;
-            color: #bfdbfe;
-            font-size: 0.88rem;
-            font-weight: 900;
-            line-height: 1.4;
-            overflow-wrap: anywhere;
-        }
-        .octane-fact {
-            justify-content: flex-end;
-            text-align: left;
-            border-inline-start: 1px solid rgba(96, 165, 250, 0.16);
-            padding-inline-start: 12px;
-        }
-        .octane-fact b { color: #fbbf24; font-size: 1.05rem; }
-
-        @media (max-width: 520px) {
-            .recommendation-shell { padding: 11px; border-radius: 16px; }
-            .recommendation-header { flex-direction: column; gap: 7px; }
-            .oil-recommendation-line { padding: 11px; gap: 8px; }
-            .oil-recommendation-copy b { display: none; }
-            .oil-facts-row { grid-template-columns: 1fr; }
-            .fuel-facts-row { padding: 8px; }
-            .fuel-fact { gap: 7px; }
-        }
-        
         .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
         .spec-item {
             background: rgba(15, 23, 42, 0.5);
@@ -1041,6 +860,45 @@
         .spec-item .value { font-weight: 700; color: #fbbf24; font-size: 0.95rem; line-height: 1.55; }
         .spec-item .value.green { color: #34d399; }
         .spec-item .value.blue { color: #60a5fa; }
+
+        /* يحافظ على شكل البطاقات الأصلي ويمنع تزاحم القيم الطويلة. */
+        .recommendation-spec-grid {
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            grid-auto-rows: minmax(82px, auto);
+            align-items: stretch;
+        }
+        .recommendation-spec-grid .spec-item {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .recommendation-spec-grid .oil-capacity-item { grid-column: span 4; }
+        .recommendation-spec-grid .oil-brands-item { grid-column: span 8; }
+        .recommendation-spec-grid .fuel-item,
+        .recommendation-spec-grid .octane-item { grid-column: span 6; }
+        .recommendation-spec-grid .spec-item .value {
+            width: 100%;
+            overflow-wrap: anywhere;
+            word-break: normal;
+            white-space: normal;
+        }
+        .recommendation-spec-grid .oil-brands-item .value { line-height: 1.75; }
+
+        @media (max-width: 520px) {
+            .recommendation-spec-grid { gap: 6px; }
+            .recommendation-spec-grid .spec-item { padding: 8px 5px; }
+            .recommendation-spec-grid .oil-capacity-item { grid-column: span 5; }
+            .recommendation-spec-grid .oil-brands-item { grid-column: span 7; }
+        }
+
+        @media (max-width: 360px) {
+            .recommendation-spec-grid .oil-capacity-item,
+            .recommendation-spec-grid .oil-brands-item,
+            .recommendation-spec-grid .fuel-item,
+            .recommendation-spec-grid .octane-item { grid-column: 1 / -1; }
+        }
         
         .car-card .card-actions { display: flex; gap: 8px; margin-top: 12px; }
         .car-card .card-actions .btn-sm { flex: 1; padding: 8px 12px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; text-align: center; text-decoration: none; transition: all 0.3s ease; display: inline-block; }
