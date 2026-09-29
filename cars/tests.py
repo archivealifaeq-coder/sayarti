@@ -292,6 +292,11 @@ class PageSmokeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '2ZR-FE')
         self.assertContains(response, 'NGK Iridium')
+        self.assertContains(response, 'class="oil-recommendation-line"')
+        self.assertContains(response, 'class="oil-facts-row"')
+        self.assertContains(response, 'class="fuel-facts-row"')
+        html = response.content.decode('utf-8')
+        self.assertLess(html.index('class="oil-recommendation-line"'), html.index('class="fuel-facts-row"'))
 
     def test_search_groups_related_engines_by_vehicle_and_oil_recommendation(self):
         _make_car(
@@ -321,7 +326,7 @@ class PageSmokeTests(TestCase):
         self.assertEqual(len(groups[0]['engines'][1]['recommendations']), 1)
         self.assertContains(response, 'A25A-FKS')
         self.assertContains(response, 'A25A-FXS')
-        self.assertContains(response, 'توصي بـ')
+        self.assertContains(response, 'لزوجة زيت المحرك الموصى بها')
         self.assertContains(response, 'اختر محرك سيارتك لعرض توصياته فقط')
         self.assertContains(response, 'data-engine-panel=', count=2)
 
@@ -391,7 +396,7 @@ class PageSmokeTests(TestCase):
         response = self.client.get('/sw.js')
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "CACHE_NAME = 'sayarti-v4'")
+        self.assertContains(response, "CACHE_NAME = 'sayarti-v5'")
         self.assertContains(response, '/static/css/app.css')
         self.assertNotContains(response, '/static/css/home.css')
         self.assertNotContains(response, '/static/css/style.css')

@@ -242,9 +242,14 @@
 
                         {% for engine in group.engines %}
                         <div class="engine-result-panel" data-engine-panel="{{ engine.id }}"{% if group.selected_engine_id != engine.id %} hidden{% endif %}>
-                            <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 mb-3">
-                                <div class="text-emerald-300 text-xs font-black mb-1">توصية الشركة المصنّعة لهذا المحرك</div>
-                                <div class="text-white font-black text-lg mb-2">{{ engine.name|escape }} · {{ engine.type_label|escape }}{% if engine.code and not site_settings.hide_result_engine_code %} · <span class="text-amber-300">{{ engine.code|escape }}</span>{% endif %}</div>
+                            <div class="recommendation-shell">
+                                <header class="recommendation-header">
+                                    <div>
+                                        <span class="recommendation-eyebrow">توصية الشركة المصنّعة</span>
+                                        <h4>{{ engine.name|escape }} · {{ engine.type_label|escape }}</h4>
+                                    </div>
+                                    {% if engine.code and not site_settings.hide_result_engine_code %}<span class="engine-code-pill">{{ engine.code|escape }}</span>{% endif %}
+                                </header>
                                 {% if engine.recommendations|length > 1 %}
                                 <p class="engine-variant-note">توجد اختلافات موثقة حسب نظام الدفع أو التجهيز؛ أبقيناها منفصلة داخل المحرك نفسه لمنع خلط التوصيات.</p>
                                 {% endif %}
@@ -252,12 +257,39 @@
                                 {% with rec=recommendation.car %}
                                 <section class="engine-recommendation-scope{% if not forloop.first %} has-divider{% endif %}">
                                     {% if engine.recommendations|length > 1 %}<div class="scope-title">التجهيز الموثق {{ forloop.counter }}</div>{% endif %}
-                                    {% if not site_settings.hide_result_engine_oil %}<div class="text-white font-black text-lg mb-2">توصي بـ <span class="text-amber-400">{{ rec.oil_visc|escape }}</span></div>{% endif %}
-                                    <div class="spec-grid">
-                                        {% if rec.fuel %}<div class="spec-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ rec.fuel|escape }}</span></div>{% endif %}
-                                        {% if not site_settings.hide_result_octane %}<div class="spec-item"><span class="label">⛽ الأوكتان</span><span class="value">{{ rec.octane|escape }}</span></div>{% endif %}
-                                        {% if not site_settings.hide_result_engine_oil %}<div class="spec-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ rec.oil_capacity|default:"غير محدد"|escape }}</span></div>{% endif %}
-                                        {% if rec.oil_brands and not site_settings.hide_result_oil_brands %}<div class="spec-item"><span class="label">🏷️ ماركات الزيت</span><span class="value blue">{{ rec.oil_brands|escape }}</span></div>{% endif %}
+                                    {% if not site_settings.hide_result_engine_oil %}
+                                    <div class="oil-recommendation-line">
+                                        <div class="oil-recommendation-copy">
+                                            <span class="oil-icon" aria-hidden="true">🛢️</span>
+                                            <span><small>لزوجة زيت المحرك الموصى بها</small><b>اختيار الشركة لهذا المحرك</b></span>
+                                        </div>
+                                        <strong class="oil-viscosity" dir="ltr">{{ rec.oil_visc|escape }}</strong>
+                                    </div>
+                                    <div class="oil-facts-row">
+                                        <div class="oil-fact">
+                                            <span class="fact-icon" aria-hidden="true">🧴</span>
+                                            <span><small>سعة الزيت</small><b>{{ rec.oil_capacity|default:"غير محدد"|escape }}</b></span>
+                                        </div>
+                                        {% if rec.oil_brands and not site_settings.hide_result_oil_brands %}
+                                        <div class="oil-fact oil-brands-fact">
+                                            <span class="fact-icon" aria-hidden="true">🏷️</span>
+                                            <span><small>ماركات الزيت الموصى بها</small><b>{{ rec.oil_brands|escape }}</b></span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="fuel-facts-row">
+                                        {% if rec.fuel %}
+                                        <div class="fuel-fact">
+                                            <span class="fuel-icon" aria-hidden="true">⛽</span>
+                                            <span><small>نوع الوقود</small><b>{{ rec.fuel|escape }}</b></span>
+                                        </div>
+                                        {% endif %}
+                                        {% if not site_settings.hide_result_octane %}
+                                        <div class="fuel-fact octane-fact">
+                                            <span><small>رقم الأوكتان</small><b dir="ltr">{{ rec.octane|escape }}</b></span>
+                                        </div>
+                                        {% endif %}
                                     </div>
                                 </section>
                                 {% endwith %}
