@@ -280,7 +280,10 @@ class PageSmokeTests(TestCase):
         car.spark = 'NGK Iridium'
         car.save()
 
-        response = self.client.get('/search/', {'brand': 'Toyota'})
+        response = self.client.get('/search/', {
+            'brand': 'Toyota', 'model': 'Corolla', 'year': '2020',
+            'spec_region': 'gcc',
+        })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '2ZR-FE')
         self.assertContains(response, 'NGK Iridium')
@@ -309,9 +312,29 @@ class PageSmokeTests(TestCase):
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0]['engine_count'], 2)
         self.assertEqual(len(groups[0]['recommendations']), 1)
+        self.assertEqual(len(groups[0]['engines'][0]['recommendations']), 1)
+        self.assertEqual(len(groups[0]['engines'][1]['recommendations']), 1)
         self.assertContains(response, 'A25A-FKS')
         self.assertContains(response, 'A25A-FXS')
         self.assertContains(response, 'توصي بـ')
+        self.assertContains(response, 'اختر محرك سيارتك لعرض توصياته فقط')
+        self.assertContains(response, 'data-engine-panel=', count=2)
+
+    def test_spec_region_is_required_by_server_search_logic(self):
+        _make_car(14, spec_region='gcc')
+
+        incomplete = self.client.get('/search/', {
+            'brand': 'Toyota', 'model': 'Corolla', 'year': '2020',
+        })
+        self.assertEqual(len(incomplete.context['car_groups']), 0)
+        self.assertTrue(incomplete.context['missing_spec_region'])
+        self.assertContains(incomplete, 'اختر مواصفات المنطقة أولاً')
+
+        complete = self.client.get('/search/', {
+            'brand': 'Toyota', 'model': 'Corolla', 'year': '2020',
+            'spec_region': 'gcc',
+        })
+        self.assertEqual(len(complete.context['car_groups']), 1)
 
     def test_search_form_does_not_offer_trim_filter(self):
         _make_car(13, trim='Limited')
@@ -329,6 +352,7 @@ class PageSmokeTests(TestCase):
         response = self.client.get('/sw.js')
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CACHE_NAME = 'sayarti-v3'")
         self.assertContains(response, '/static/css/app.css')
         self.assertNotContains(response, '/static/css/home.css')
         self.assertNotContains(response, '/static/css/style.css')

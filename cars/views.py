@@ -326,6 +326,7 @@ def _filters(request):
     spec_region = request.GET.get('spec_region', '').strip()
     fuel = request.GET.get('fuel', '').strip()
     vehicle_identity_complete = all((brand, model, year, spec_region))
+    has_vehicle_query = any((brand, model, year, engine, engine_type, fuel))
 
     required = Q()
     if brand:
@@ -358,6 +359,9 @@ def _filters(request):
         else:
             # اسم الاقتراح الكامل يميّز مثلاً 2.5 العادي عن 2.5 الهايبرد.
             optional.append(('engine', Q(engine__iexact=engine)))
+    if has_vehicle_query and not spec_region:
+        # المواصفة/السوق جزء إلزامي من هوية السيارة، وليست فلتر تحسين اختياري.
+        required &= Q(pk__isnull=True)
     return required, optional
 
 
@@ -370,7 +374,7 @@ def _apply(qs, required, keep_keys):
     return qs.filter(q)
 
 
-def _group_search_results(cars):
+def _group_search_results(cars, selected_engine='', selected_engine_type=''):
     """اجمع صفوف المحركات في بطاقة سيارة واحدة من دون تغيير جدول السيارات.
 
     البطاقة تمثل الماركة/الموديل/السنة/السوق، وداخلها تُجمع
@@ -392,6 +396,7 @@ def _group_search_results(cars):
             'engines': [],
             'recommendations': [],
             '_engine_keys': set(),
+            '_engine_map': {},
             '_recommendation_map': {},
         })
 
@@ -402,10 +407,15 @@ def _group_search_results(cars):
             'code': car.engine_code or '',
             'type': car.engine_type,
             'type_label': car.get_engine_type_display(),
+            'recommendations': [],
+            '_recommendation_keys': set(),
         }
         if engine_key not in group['_engine_keys']:
             group['_engine_keys'].add(engine_key)
             group['engines'].append(engine_data)
+            group['_engine_map'][engine_key] = engine_data
+        else:
+            engine_data = group['_engine_map'][engine_key]
 
         recommendation_key = (
             car.oil_visc, car.oil_capacity, car.fuel, car.octane,
@@ -420,15 +430,37 @@ def _group_search_results(cars):
             group['recommendations'].append(recommendation)
         if engine_key not in recommendation['_engine_keys']:
             recommendation['_engine_keys'].add(engine_key)
-            recommendation['engines'].append(engine_data)
+            recommendation['engines'].append({
+                'id': engine_data['id'],
+                'name': engine_data['name'],
+                'code': engine_data['code'],
+                'type': engine_data['type'],
+                'type_label': engine_data['type_label'],
+            })
+        if recommendation_key not in engine_data['_recommendation_keys']:
+            engine_data['_recommendation_keys'].add(recommendation_key)
+            engine_data['recommendations'].append(recommendation)
 
     result = []
     for group in groups.values():
         group.pop('_engine_keys', None)
+        group.pop('_engine_map', None)
         group.pop('_recommendation_map', None)
         for recommendation in group['recommendations']:
             recommendation.pop('_engine_keys', None)
+        for engine_data in group['engines']:
+            engine_data.pop('_recommendation_keys', None)
         group['engine_count'] = len(group['engines'])
+        group['selected_engine_id'] = None
+        if group['engine_count'] == 1:
+            group['selected_engine_id'] = group['engines'][0]['id']
+        elif selected_engine:
+            for engine_data in group['engines']:
+                name_matches = engine_data['name'].casefold() == selected_engine.casefold()
+                type_matches = not selected_engine_type or engine_data['type'] == selected_engine_type
+                if name_matches and type_matches:
+                    group['selected_engine_id'] = engine_data['id']
+                    break
         result.append(group)
     return result
 
@@ -487,7 +519,7 @@ def _search_context(request):
             'engine_type', 'engine_norm', 'engine', 'id',
         )
 
-    car_groups = _group_search_results(cars)
+    car_groups = _group_search_results(cars, engine, engine_type)
 
     lookup = _cached_lookup_data()
 
@@ -506,6 +538,7 @@ def _search_context(request):
         'engine_type': engine_type,
         'spec_region': spec_region,
         'fuel': fuel,
+        'missing_spec_region': bool(any((brand, model, year, engine, engine_type, fuel)) and not spec_region),
     }
 
 
