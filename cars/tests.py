@@ -598,3 +598,30 @@ class AdminExcelToolsTests(TestCase):
 
         self.assertEqual(report.status_code, 200)
         self.assertEqual(import_attempt.status_code, 302)
+
+    def test_car_import_accepts_long_descriptive_specification_values(self):
+        from cars.services.excel_importer import import_cars_from_excel
+
+        headers = [
+            'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year', 'Trim', 'Spec',
+            'Engine', 'Engine Code', 'Oil Visc', 'Oil Visc (>100k)', 'Fuel', 'Octane',
+            'Spark', 'Tire Size', 'Oil Capacity', 'Recommendations', 'Oil Brands', 'Battery',
+            'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands', 'id',
+        ]
+        long_value = 'بيانات مواصفة تفصيلية ' * 12
+        values = [
+            'Toyota', 'تويوتا', 'RAV4', 'راف فور', 2025, long_value, long_value,
+            long_value, long_value, long_value, long_value, long_value, long_value,
+            long_value, long_value, long_value, long_value, long_value, long_value,
+            long_value, long_value, long_value, 9876,
+        ]
+        upload = self._xlsx_upload(headers, values, filename='cars.xlsx', sheet='CarSpecifications')
+
+        result = import_cars_from_excel(upload)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(result['created'], 1)
+        self.assertEqual(result['failed'], 0)
+        car = CarSpecification.objects.get(pk=9876)
+        self.assertEqual(car.oil_capacity, long_value)
+        self.assertEqual(car.transmission_type, long_value)

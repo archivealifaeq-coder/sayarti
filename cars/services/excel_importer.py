@@ -4,6 +4,18 @@ from cars.models import CarSpecification
 from cars.services.textnorm import fold_ar, fold_engine
 
 
+FIELD_EXCEL_NAMES = {
+    'brand_en': 'Brand_EN',
+    'brand_ar': 'Brand_AR',
+    'brand_norm': 'Brand_AR',
+    'model_en': 'Model_EN',
+    'model_ar': 'Model_AR',
+    'model_norm': 'Model_AR',
+    'engine_type': 'Engine',
+    'spec_region': 'Spec',
+}
+
+
 def _cell(row, col, default=''):
     """قراءة آمنة لأي خلية: ترجع default عند غياب العمود أو قيمة فارغة/NaN."""
     try:
@@ -44,6 +56,20 @@ def _octane_value(row):
     if isinstance(raw, float) and raw.is_integer():
         return str(int(raw))
     return str(raw).strip()
+
+
+def _validate_bounded_fields(values):
+    """Give a precise Excel-column error for the few identity fields that stay bounded."""
+    for field_name, value in values.items():
+        if value in (None, ''):
+            continue
+        field = CarSpecification._meta.get_field(field_name)
+        if field.max_length and len(str(value)) > field.max_length:
+            column = FIELD_EXCEL_NAMES.get(field_name, field_name)
+            raise ValueError(
+                f"العمود {column} أطول من الحد المسموح "
+                f"({len(str(value))} حرفاً، الحد {field.max_length})."
+            )
 
 
 def validate_excel_file(file):
@@ -146,37 +172,39 @@ def import_cars_from_excel(file):
             battery_val = _cell_any(row, 'Battery Capacity', 'Battery', 'Battery Size')
             spark_val = _cell_any(row, 'Spark', 'Spark Plug', 'Spark Plugs', 'Plugs', 'البواجي', 'بواجي')
             
+            defaults = {
+                'brand_en': _cell(row, 'Brand_EN'),
+                'brand_ar': _cell(row, 'Brand_AR'),
+                'brand_norm': fold_ar(_cell(row, 'Brand_AR')),
+                'model_en': _cell(row, 'Model_EN'),
+                'model_ar': _cell(row, 'Model_AR'),
+                'model_norm': fold_ar(_cell(row, 'Model_AR')),
+                'year': _year_value(row),
+                'spec': _cell(row, 'Spec'),
+                'trim': _cell(row, 'Trim') or _cell(row, 'Class'),
+                'engine_type': engine_type_val,
+                'spec_region': spec_region_val,
+                'engine': _cell(row, 'Engine'),
+                'engine_code': _cell(row, 'Engine Code'),
+                'engine_norm': fold_engine(_cell(row, 'Engine')),
+                'oil_visc': _cell(row, 'Oil Visc'),
+                'oil_visc_high_km': _cell(row, 'Oil Visc (>100k)'),
+                'fuel': _cell(row, 'Fuel'),
+                'octane': _octane_value(row),
+                'tire_size': tire_size_val,
+                'spark': spark_val,
+                'oil_capacity': _cell(row, 'Oil Capacity'),
+                'recommendations': _cell(row, 'Recommendations'),
+                'oil_brands': _cell(row, 'Oil Brands'),
+                'battery': battery_val,
+                'transmission_type': _cell(row, 'Transmission Type'),
+                'transmission_oil_spec': _cell(row, 'Transmission Oil Spec'),
+                'transmission_oil_brands': _cell(row, 'Transmission Oil Brands'),
+            }
+            _validate_bounded_fields(defaults)
             obj, created = CarSpecification.objects.update_or_create(
                 id=int(float(row['id'])),
-                defaults={
-                    'brand_en': _cell(row, 'Brand_EN'),
-                    'brand_ar': _cell(row, 'Brand_AR'),
-                    'brand_norm': fold_ar(_cell(row, 'Brand_AR')),
-                    'model_en': _cell(row, 'Model_EN'),
-                    'model_ar': _cell(row, 'Model_AR'),
-                    'model_norm': fold_ar(_cell(row, 'Model_AR')),
-                    'year': _year_value(row),
-                    'spec': _cell(row, 'Spec'),
-                    'trim': _cell(row, 'Trim') or _cell(row, 'Class'),
-                    'engine_type': engine_type_val,
-                    'spec_region': spec_region_val,
-                    'engine': _cell(row, 'Engine'),
-                    'engine_code': _cell(row, 'Engine Code'),
-                    'engine_norm': fold_engine(_cell(row, 'Engine')),
-                    'oil_visc': _cell(row, 'Oil Visc'),
-                    'oil_visc_high_km': _cell(row, 'Oil Visc (>100k)'),
-                    'fuel': _cell(row, 'Fuel'),
-                    'octane': _octane_value(row),
-                    'tire_size': tire_size_val,
-                    'spark': spark_val,
-                    'oil_capacity': _cell(row, 'Oil Capacity'),
-                    'recommendations': _cell(row, 'Recommendations'),
-                    'oil_brands': _cell(row, 'Oil Brands'),
-                    'battery': battery_val,
-                    'transmission_type': _cell(row, 'Transmission Type'),
-                    'transmission_oil_spec': _cell(row, 'Transmission Oil Spec'),
-                    'transmission_oil_brands': _cell(row, 'Transmission Oil Brands'),
-                }
+                defaults=defaults,
             )
             
             if created:

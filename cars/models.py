@@ -19,10 +19,9 @@ class CarSpecification(models.Model):
             MaxValueValidator(2099, message="السنة يجب أن تكون 2099 أو أقل")
         ]
     )
-    spec = models.CharField(max_length=100, blank=True, null=True)
+    spec = models.TextField(blank=True, null=True)
 
-    trim = models.CharField(
-        max_length=100,
+    trim = models.TextField(
         blank=True,
         null=True,
         verbose_name="الفئة (Trim)",
@@ -58,75 +57,66 @@ class CarSpecification(models.Model):
         verbose_name="مواصفات المنطقة"
     )
 
-    engine = models.CharField(max_length=100)
-    engine_code = models.CharField(
-        max_length=100,
+    engine = models.TextField()
+    engine_code = models.TextField(
         blank=True,
         null=True,
         verbose_name="كود المحرك",
         help_text="مثال: 2ZR-FE، G4NA، M274"
     )
-    engine_norm = models.CharField(max_length=100, blank=True, default='')
-    oil_visc = models.CharField(max_length=50)
-    oil_visc_high_km = models.CharField(max_length=50, blank=True, null=True)
-    fuel = models.CharField(max_length=50)
+    engine_norm = models.TextField(blank=True, default='')
+    oil_visc = models.TextField()
+    oil_visc_high_km = models.TextField(blank=True, null=True)
+    fuel = models.TextField()
     
-    octane = models.CharField(
-        max_length=50,
+    octane = models.TextField(
         verbose_name="الأوكتان",
         help_text="مثال: 91، 95، 91 RON، 91 أو أعلى"
     )
     
-    tire_size = models.CharField(
-        max_length=50,
+    tire_size = models.TextField(
         verbose_name="حجم الإطار",
         default="غير محدد",
         help_text="مثال: 215/60R16"
     )
-    spark = models.CharField(
-        max_length=100,
+    spark = models.TextField(
         blank=True,
         null=True,
         verbose_name="شمعات الاحتراق",
         help_text="مثال: NGK Iridium"
     )
 
-    oil_capacity = models.CharField(max_length=50)
+    oil_capacity = models.TextField()
     recommendations = models.TextField(blank=True, null=True)
-    oil_brands = models.CharField(
-        max_length=255,
+    oil_brands = models.TextField(
         blank=True,
         null=True,
         verbose_name="ماركات الزيت",
         help_text="مثال: Mobil 1, Castrol, Total"
     )
 
-    battery = models.CharField(
-        max_length=100,
+    battery = models.TextField(
         blank=True,
         null=True,
         verbose_name="البطارية (الحجم/السعة)",
         help_text="مثال: 55D23L، 60Ah، 12V 70Ah"
     )
 
-    transmission_type = models.CharField(
-        max_length=50,
+    transmission_type = models.TextField(
         blank=True,
         null=True,
         verbose_name="نوع ناقل الحركة",
         help_text="مثال: أوتوماتيك 6 سرعات، CVT، Manual"
     )
 
-    transmission_oil_spec = models.CharField(
-        max_length=100,
+    transmission_oil_spec = models.TextField(
         blank=True,
         null=True,
         verbose_name="مواصفات زيت الناقل",
         help_text="مثال: ATF WS، ATF SP-III، Dexron VI"
     )
 
-    transmission_oil_brands = models.CharField(
-        max_length=255,
+    transmission_oil_brands = models.TextField(
         blank=True,
         null=True,
         verbose_name="ماركات زيت الناقل",

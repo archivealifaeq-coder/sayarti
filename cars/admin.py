@@ -409,6 +409,11 @@ def import_maintenance_tasks_from_excel(excel_file):
 @admin.register(CarSpecification)
 class CarSpecificationAdmin(admin.ModelAdmin):
     change_list_template = 'admin/cars_changelist.html'
+    formfield_overrides = {
+        db_models.TextField: {
+            'widget': forms.Textarea(attrs={'rows': 2, 'style': 'width:100%;max-width:920px;resize:vertical;'})
+        },
+    }
 
     list_display = (
         'id', 
