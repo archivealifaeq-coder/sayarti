@@ -4,7 +4,7 @@
    يعمل أوفلاين: عند انقطاع النت تُعرض آخر نسخة محفوظة.
    ============================================================ */
 
-var CACHE_NAME = 'sayarti-v3';
+var CACHE_NAME = 'sayarti-v4';
 var CORE_ASSETS = [
   '/',
   '/manifest.json',

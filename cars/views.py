@@ -353,11 +353,9 @@ def _filters(request):
         if not vehicle_identity_complete:
             # لا يجوز فصل المحرك عن سنته وسوقه حتى عبر رابط GET يدوي.
             required &= Q(pk__isnull=True)
-        elif engine_type:
-            e = fold_engine(engine)
-            optional.append(('engine', Q(engine__iexact=engine) | Q(engine_norm=e)))
         else:
-            # اسم الاقتراح الكامل يميّز مثلاً 2.5 العادي عن 2.5 الهايبرد.
+            # القائمة ترسل الاسم الكامل؛ المطابقة التقريبية تخلط أنظمة الدفع
+            # التي تشترك في السعة وكود المحرك.
             optional.append(('engine', Q(engine__iexact=engine)))
     if has_vehicle_query and not spec_region:
         # المواصفة/السوق جزء إلزامي من هوية السيارة، وليست فلتر تحسين اختياري.
@@ -400,7 +398,9 @@ def _group_search_results(cars, selected_engine='', selected_engine_type=''):
             '_recommendation_map': {},
         })
 
-        engine_key = (car.engine_norm or car.engine, car.engine_code or '', car.engine_type)
+        # نص المحرك الكامل جزء من الهوية؛ engine_norm يزيل تفاصيل مثل FWD/AWD
+        # ولذلك لا يصلح مفتاحاً لتجميع التوصيات.
+        engine_key = (car.engine.casefold(), car.engine_code or '', car.engine_type)
         engine_data = {
             'id': car.id,
             'name': car.engine,
@@ -418,10 +418,12 @@ def _group_search_results(cars, selected_engine='', selected_engine_type=''):
             engine_data = group['_engine_map'][engine_key]
 
         recommendation_key = (
+            engine_key,
             car.oil_visc, car.oil_capacity, car.fuel, car.octane,
             car.oil_visc_high_km or '', car.oil_brands or '',
             car.transmission_type or '', car.transmission_oil_spec or '',
             car.transmission_oil_brands or '', car.recommendations or '',
+            car.tire_size or '', car.spark or '', car.battery or '', car.trim or '',
         )
         recommendation = group['_recommendation_map'].get(recommendation_key)
         if recommendation is None:

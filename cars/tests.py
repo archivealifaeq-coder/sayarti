@@ -315,7 +315,7 @@ class PageSmokeTests(TestCase):
         groups = response.context['car_groups']
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0]['engine_count'], 2)
-        self.assertEqual(len(groups[0]['recommendations']), 1)
+        self.assertEqual(len(groups[0]['recommendations']), 2)
         self.assertEqual(len(groups[0]['engines'][0]['recommendations']), 1)
         self.assertEqual(len(groups[0]['engines'][1]['recommendations']), 1)
         self.assertContains(response, 'A25A-FKS')
@@ -350,13 +350,47 @@ class PageSmokeTests(TestCase):
         self.assertNotContains(response, 'name="trim"')
         self.assertContains(response, 'id="yearInput"')
         self.assertContains(response, 'id="specRegionSelect"')
+        self.assertContains(response, 'id="engineSelect"')
+        self.assertNotContains(response, 'id="engineInput"')
+        self.assertNotContains(response, 'id="engineChips"')
         self.assertContains(response, 'required aria-required="true"')
+
+    def test_full_engine_name_keeps_drivetrain_variants_separate(self):
+        _make_car(
+            41, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            spec_region='american', engine='2.5L I4 (A25A-FKS) - FWD',
+            engine_type='regular', transmission_type='8AT FWD',
+        )
+        _make_car(
+            42, 'تويوتا', 'راف فور', model_en='RAV4', spec='أمريكي',
+            spec_region='american', engine='2.5L I4 (A25A-FKS) - AWD',
+            engine_type='regular', transmission_type='8AT AWD',
+        )
+
+        all_engines = self.client.get('/search/', {
+            'brand': 'Toyota', 'model': 'RAV4', 'year': '2020',
+            'spec_region': 'american',
+        })
+        group = all_engines.context['car_groups'][0]
+        self.assertEqual(group['engine_count'], 2)
+        self.assertEqual([len(item['recommendations']) for item in group['engines']], [1, 1])
+
+        exact = self.client.get('/search/', {
+            'brand': 'Toyota', 'model': 'RAV4', 'year': '2020',
+            'spec_region': 'american',
+            'engine': '2.5L I4 (A25A-FKS) - FWD', 'engine_type': 'regular',
+        })
+        exact_group = exact.context['car_groups'][0]
+        self.assertEqual(exact_group['engine_count'], 1)
+        self.assertEqual(exact_group['engines'][0]['name'], '2.5L I4 (A25A-FKS) - FWD')
+        self.assertContains(exact, '8AT FWD')
+        self.assertNotContains(exact, '8AT AWD')
 
     def test_service_worker_caches_only_current_assets(self):
         response = self.client.get('/sw.js')
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "CACHE_NAME = 'sayarti-v3'")
+        self.assertContains(response, "CACHE_NAME = 'sayarti-v4'")
         self.assertContains(response, '/static/css/app.css')
         self.assertNotContains(response, '/static/css/home.css')
         self.assertNotContains(response, '/static/css/style.css')

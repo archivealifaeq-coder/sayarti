@@ -161,14 +161,10 @@
                             </div>
 
                             <div>
-                                <label for="engineInput" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">سعة المحرك <span class="optional-tag">اختياري</span></label>
-                                <div class="input-group">
-                                    <input type="text" name="engine" id="engineInput" value="{{ engine|escape }}" placeholder="اختر الماركة والموديل أولاً..." class="search-input" autocomplete="off" maxlength="100" disabled>
-                                    <span class="search-icon" aria-hidden="true">⚙️</span>
-                                </div>
-                                <div class="chip-wrap" id="engineChipWrap">
-                                    <div class="chip-row" id="engineChips" role="list"></div>
-                                </div>
+                                <label for="engineSelect" class="block text-slate-400 text-sm font-semibold mb-1 md:mb-2">المحرك <span class="optional-tag">اختياري</span></label>
+                                <select name="engine" id="engineSelect" class="search-select" disabled>
+                                    <option value="">-- اختر الماركة والموديل والسنة والمواصفة أولاً --</option>
+                                </select>
                             </div>
 
                             <div id="suggestions-container" class="hidden" aria-hidden="true"></div>
@@ -350,13 +346,11 @@
 
             var brandInput = document.getElementById('brandInput');
             var modelInput = document.getElementById('modelInput');
-            var engineInput = document.getElementById('engineInput');
+            var engineSelect = document.getElementById('engineSelect');
             var brandChips = document.getElementById('brandChips');
             var modelChips = document.getElementById('modelChips');
-            var engineChips = document.getElementById('engineChips');
             var brandChipWrap = document.getElementById('brandChipWrap');
             var modelChipWrap = document.getElementById('modelChipWrap');
-            var engineChipWrap = document.getElementById('engineChipWrap');
             var engineTypeSelect = document.getElementById('engineTypeSelect');
             var specRegionSelect = document.getElementById('specRegionSelect');
             var yearInput = document.getElementById('yearInput');
@@ -369,9 +363,9 @@
             ];
             var brandQuery = '';
             var modelQuery = '';
-            var engineQuery = '';
             var lastModels = [];
             var lastEngines = [];
+            var requestedEngine = '{{ engine|escapejs }}';
             var inputTimer = null;
 
             function foldArJs(t) {
@@ -440,26 +434,13 @@
                 renderChips(modelChips, list, modelInput.value.trim(), true);
             }
 
-            function renderEngineChips() {
-                var list;
-                if (engineQuery.length >= 1) {
-                    list = lastEngines.filter(function(e) {
-                        return accepts(engineQuery, e.ar) || accepts(engineQuery, e.en);
-                    });
-                } else {
-                    list = lastEngines;
-                }
-                renderChips(engineChips, list, engineInput.value.trim(), true);
-            }
-
             function onPicked(which, value, item) {
                 if (which === 'brand') {
                     brandInput.value = value;
                     brandQuery = '';
                     modelInput.value = '';
-                    engineInput.value = '';
+                    engineSelect.value = '';
                     modelQuery = '';
-                    engineQuery = '';
                     isReadyModel(false);
                     isReadyEngine(false);
                     renderBrandChips();
@@ -468,16 +449,10 @@
                 } else if (which === 'model') {
                     modelInput.value = value;
                     modelQuery = '';
-                    engineInput.value = '';
-                    engineQuery = '';
+                    engineSelect.value = '';
                     isReadyEngine(false);
                     renderModelChips();
                     loadEngines();
-                } else if (which === 'engine') {
-                    engineInput.value = value;
-                    if (item && item.type) engineTypeSelect.value = item.type;
-                    engineQuery = '';
-                    renderEngineChips();
                 }
             }
 
@@ -493,14 +468,27 @@
             }
 
             function isReadyEngine(ready) {
-                engineInput.disabled = !ready;
+                engineSelect.disabled = !ready;
                 if (!ready) {
-                    engineInput.placeholder = 'اختر الماركة والموديل والسنة والمواصفة أولاً...';
                     lastEngines = [];
-                    renderEngineChips();
-                } else {
-                    engineInput.placeholder = 'اكتب سعة المحرك... أو اختر من الشرائح';
+                    engineSelect.innerHTML = '<option value="">-- اختر الماركة والموديل والسنة والمواصفة أولاً --</option>';
                 }
+            }
+
+            function renderEngineOptions(selectedValue) {
+                engineSelect.innerHTML = '';
+                var placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '-- كل المحركات المرتبطة بهذه السيارة --';
+                engineSelect.appendChild(placeholder);
+                lastEngines.forEach(function(item) {
+                    var option = document.createElement('option');
+                    option.value = item.ar;
+                    option.textContent = item.en ? item.ar + ' — ' + item.en : item.ar;
+                    option.dataset.engineType = item.type || '';
+                    if (selectedValue && item.ar === selectedValue) option.selected = true;
+                    engineSelect.appendChild(option);
+                });
             }
 
             function loadModels() {
@@ -545,7 +533,9 @@
                         return { ar: e.value || '', en: e.detail || '', type: e.engine_type || '' };
                     });
                     isReadyEngine(true);
-                    renderEngineChips();
+                    var selectedValue = engineSelect.value || requestedEngine;
+                    renderEngineOptions(selectedValue);
+                    requestedEngine = '';
                 }).catch(function() {
                     isReadyEngine(false);
                 });
@@ -569,26 +559,23 @@
                 }, 120);
             });
 
-            engineInput.addEventListener('input', function() {
-                clearTimeout(inputTimer);
-                inputTimer = setTimeout(function() {
-                    engineQuery = engineInput.value.trim().toLowerCase();
-                    renderEngineChips();
-                }, 120);
+            engineSelect.addEventListener('change', function() {
+                var option = engineSelect.options[engineSelect.selectedIndex];
+                if (option && option.dataset.engineType) engineTypeSelect.value = option.dataset.engineType;
             });
 
             yearInput.addEventListener('change', function() {
-                engineInput.value = '';
+                engineSelect.value = '';
                 if (brandInput.value.trim()) loadModels();
                 if (modelInput.value) loadEngines();
             });
             engineTypeSelect.addEventListener('change', function() {
-                engineInput.value = '';
+                engineSelect.value = '';
                 if (brandInput.value.trim()) loadModels();
                 if (modelInput.value) loadEngines();
             });
             specRegionSelect.addEventListener('change', function() {
-                engineInput.value = '';
+                engineSelect.value = '';
                 if (brandInput.value.trim()) loadModels();
                 if (modelInput.value) loadEngines();
             });
@@ -596,7 +583,6 @@
             (function initChips() {
                 var initialBrand = '{{ brand|escapejs }}';
                 var initialModel = '{{ model|escapejs }}';
-                var initialEngine = '{{ engine|escapejs }}';
                 brandInput.value = initialBrand;
                 renderBrandChips();
                 if (initialBrand) {
@@ -606,7 +592,6 @@
                         modelInput.value = initialModel;
                         loadEngines();
                         isReadyEngine(true);
-                        if (initialEngine) engineInput.value = initialEngine;
                     }
                 } else {
                     isReadyModel(false);
@@ -721,7 +706,7 @@
                         var bVal = brandInput ? brandInput.value.trim() : '';
                         var mVal = modelInput ? modelInput.value.trim() : '';
                         var yVal = yearInput ? yearInput.value.trim() : '';
-                        var eVal = engineInput ? engineInput.value.trim() : '';
+                        var eVal = engineSelect ? engineSelect.value.trim() : '';
                         if (bVal) params.set('brand', bVal);
                         if (mVal) params.set('model', mVal);
                         if (yVal) params.set('year', yVal);
