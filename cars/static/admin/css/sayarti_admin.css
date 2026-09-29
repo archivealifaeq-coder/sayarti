@@ -1126,6 +1126,30 @@ fieldset.module,
     white-space: nowrap;
 }
 
+/* يجب أن تبقى بعد CSS الخاص بـ RTL في Django: لا عوم ولا هامش سالب. */
+body.change-list #content-main .object-tools {
+    float: none !important;
+    clear: both !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    margin: 0 auto 18px !important;
+    padding: 0 !important;
+}
+
+[dir="rtl"] body.change-list #content-main .object-tools li,
+body.change-list #content-main .object-tools li {
+    float: none !important;
+    height: auto !important;
+    margin: 0 !important;
+}
+
+[dir="rtl"] body.change-list #content-main .object-tools a,
+body.change-list #content-main .object-tools a {
+    float: none !important;
+    margin: 0 !important;
+}
+
 .messagelist li {
     text-align: center;
 }

@@ -407,6 +407,19 @@ class PageSmokeTests(TestCase):
         self.assertIn('float: none;', content)
         self.assertIn('position: static;', content)
         self.assertIn('flex: 1 1 100%;', content)
+        self.assertIn('float: none !important;', content)
+
+        template = Path('cars/templates/admin/base_site.html').read_text(encoding='utf-8')
+        self.assertIn('{% block responsive %}', template)
+        self.assertIn("sayarti_admin.css' %}?v=3", template)
+
+        self.client.force_login(User.objects.create_superuser('layout-admin', 'layout@example.com', 'pw'))
+        dealer_admin = self.client.get('/admin/cars/dealer/').content.decode('utf-8')
+        self.assertIn('sayarti_admin.css?v=3', dealer_admin)
+        self.assertGreater(
+            dealer_admin.index('sayarti_admin.css?v=3'),
+            dealer_admin.index('responsive_rtl.css'),
+        )
 
     def test_engine_suggestions_follow_vehicle_year_region_and_show_details(self):
         _make_car(
