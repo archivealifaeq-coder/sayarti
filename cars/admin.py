@@ -9,11 +9,27 @@ from django.core.cache import cache
 from django.middleware.csrf import get_token
 from django.db.models import Count, Sum
 from django.db import models as db_models
+from django.core.exceptions import ValidationError
 from .models import (
     CarSpecification, AdBanner, SiteSettings, Sponsor, PromoCode, Dealer,
     AppInstallMetric, DealerClickMetric, CarSymptom, SymptomCause, MaintenanceTask,
 )
 from .services.excel_importer import import_cars_from_excel
+from .services.admin_excel import excel_response
+from .services.admin_excel_data import (
+    AD_BANNER_HEADERS,
+    DEALER_HEADERS,
+    PROMO_CODE_HEADERS,
+    SPONSOR_HEADERS,
+    banner_rows,
+    dealer_rows,
+    import_banners,
+    import_dealers,
+    import_promo_codes,
+    import_sponsors,
+    promo_code_rows,
+    sponsor_rows,
+)
 
 
 class CsvImportForm(forms.Form):
@@ -31,6 +47,92 @@ class CarExportForm(forms.Form):
 
 class MaintenanceImportForm(forms.Form):
     excel_file = forms.FileField(label='اختر ملف Excel')
+
+
+class ExcelDataAdminMixin:
+    """Consistent Excel report/template/import controls for admin data tables."""
+
+    change_list_template = 'admin/excel_tools_changelist.html'
+    excel_import_enabled = True
+    excel_template_enabled = True
+    excel_sheet_name = 'Data'
+    excel_filename = 'data.xlsx'
+    excel_headers = ()
+    excel_template_example = ()
+    excel_import_handler = None
+
+    def get_urls(self):
+        model_name = self.model._meta.model_name
+        urls = [path('export-excel/', self.admin_site.admin_view(self.export_excel_view), name=f'{model_name}_export_excel')]
+        if self.excel_template_enabled:
+            urls.append(path('excel-template/', self.admin_site.admin_view(self.excel_template_view), name=f'{model_name}_excel_template'))
+        if self.excel_import_enabled:
+            urls.append(path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name=f'{model_name}_import_excel'))
+        return urls + super().get_urls()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = dict(extra_context or {})
+        extra_context['excel_import_enabled'] = self.excel_import_enabled
+        extra_context['excel_template_enabled'] = self.excel_template_enabled
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_excel_rows(self, request):
+        return []
+
+    def get_excel_sheets(self, request):
+        return [(self.excel_sheet_name, self.excel_headers, self.get_excel_rows(request))]
+
+    def get_excel_template_sheets(self):
+        return [(self.excel_sheet_name, self.excel_headers, self.excel_template_example)]
+
+    def export_excel_view(self, request):
+        return excel_response(self.excel_filename, self.get_excel_sheets(request))
+
+    def excel_template_view(self, request):
+        filename = self.excel_filename.replace('.xlsx', '-template.xlsx')
+        return excel_response(filename, self.get_excel_template_sheets())
+
+    def import_excel_view(self, request):
+        if not self.excel_import_enabled or self.excel_import_handler is None:
+            self.message_user(request, 'الاستيراد غير متاح لهذا الجدول.', messages.ERROR)
+            return redirect('../')
+        form = MaintenanceImportForm(request.POST or None, request.FILES or None)
+        if request.method == 'POST' and form.is_valid():
+            try:
+                result = self.excel_import_handler(form.cleaned_data['excel_file'])
+                level = messages.WARNING if result['failed'] else messages.SUCCESS
+                self.message_user(
+                    request,
+                    f"تم الاستيراد: إضافة {result['created']}، تحديث {result['updated']}، فشل {result['failed']} صف.",
+                    level,
+                )
+                for error in result['errors']:
+                    self.message_user(request, error, messages.ERROR)
+                cache.delete('admin_dash_stats')
+                return redirect('../')
+            except ValidationError as exc:
+                self.message_user(request, ' '.join(exc.messages), messages.ERROR)
+            except Exception:
+                import logging
+                logging.getLogger('cars').exception('Admin data Excel import failed')
+                self.message_user(request, 'تعذر استيراد الملف. راجع بنيته وحاول مجدداً.', messages.ERROR)
+
+        headers = ', '.join(self.excel_headers)
+        html_template = """
+        {% extends "admin/base_site.html" %}
+        {% block content %}
+        <div class="section-card" style="max-width:900px; margin:20px auto;">
+            <h3>استيراد بيانات {{ opts.verbose_name_plural }} من Excel</h3>
+            <p style="line-height:1.9;color:#475569;">نزّل النموذج أولاً، واحتفظ بعناوين الأعمدة كما هي. الصف الموجود في النموذج توضيحي ويمكن حذفه.</p>
+            <p style="direction:ltr;text-align:left;background:#f8fafc;padding:12px;border-radius:10px;overflow:auto;">{{ headers }}</p>
+            <p><a class="button" href="../excel-template/">تنزيل نموذج Excel</a></p>
+            <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit" class="button default">استيراد</button> <a href="../">إلغاء</a></form>
+        </div>
+        {% endblock %}
+        """
+        return HttpResponse(Template(html_template).render(RequestContext(request, {
+            'form': form, 'headers': headers, 'opts': self.model._meta,
+        })))
 
 
 def _safe_excel_value(value):
@@ -258,7 +360,7 @@ def import_maintenance_tasks_from_excel(excel_file):
         brand_ar = _text_value(row, 'brand_ar', 'Brand AR')
         brand_en = _text_value(row, 'brand_en', 'Brand EN')
         action_type = _text_value(row, 'action_type', 'Action Type')
-        description = ''
+        description = _text_value(row, 'description', 'Description')
         stage_title = _text_value(row, 'stage_title', 'Stage Title')
         manufacturer_note = _text_value(row, 'manufacturer_note', 'Manufacturer Note') or stage_title
         iraq_note = _text_value(row, 'iraq_note', 'Iraq Note', 'condition_note')
@@ -686,8 +788,21 @@ class AdBannerForm(forms.ModelForm):
 
 
 @admin.register(AdBanner)
-class AdBannerAdmin(admin.ModelAdmin):
+class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
     form = AdBannerForm
+    excel_sheet_name = 'AdBanners'
+    excel_filename = 'ad-banners.xlsx'
+    excel_headers = AD_BANNER_HEADERS
+    excel_import_handler = staticmethod(import_banners)
+    excel_template_example = ({
+        'id': '', 'sponsor_slug': '', 'title': 'عنوان الإعلان', 'subtitle': '', 'position': 'ticker',
+        'gateway_card_target': '', 'target_dealer_id': '', 'background_color': 'from-blue-700 via-indigo-700 to-purple-700',
+        'text_color': 'text-white', 'button_text': 'اعرف المزيد', 'button_url': '#', 'order': 0,
+        'is_active': True, 'image_reference': '', 'mobile_image_reference': '',
+    },)
+
+    def get_excel_rows(self, request):
+        return banner_rows(AdBanner.objects.all())
 
     list_display = (
         'title_preview', 
@@ -804,7 +919,19 @@ class AdBannerAdmin(admin.ModelAdmin):
 
 
 @admin.register(Dealer)
-class DealerAdmin(admin.ModelAdmin):
+class DealerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
+    excel_sheet_name = 'Dealers'
+    excel_filename = 'dealers.xlsx'
+    excel_headers = DEALER_HEADERS
+    excel_import_handler = staticmethod(import_dealers)
+    excel_template_example = ({
+        'id': '', 'dealer_type': 'oil', 'parts_region': 'all', 'name': 'اسم الوكيل',
+        'governorate': '', 'address': '', 'phone': '', 'whatsapp': '', 'website': '',
+        'brands': '', 'description': '', 'is_active': True, 'is_featured': False, 'order': 0,
+    },)
+
+    def get_excel_rows(self, request):
+        return dealer_rows(Dealer.objects.all())
     list_display = ('name_display', 'dealer_type_badge', 'parts_region_badge', 'governorate', 'phone', 'is_featured', 'is_active', 'order', 'updated_at')
     list_editable = ('is_featured', 'is_active', 'order')
     list_filter = ('dealer_type', 'parts_region', 'governorate', 'is_featured', 'is_active')
@@ -843,10 +970,21 @@ class DealerAdmin(admin.ModelAdmin):
     parts_region_badge.short_description = 'التصنيف'
 
 @admin.register(AppInstallMetric)
-class AppInstallMetricAdmin(admin.ModelAdmin):
+class AppInstallMetricAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
+    excel_import_enabled = False
+    excel_template_enabled = False
+    excel_sheet_name = 'AppInstallMetrics'
+    excel_filename = 'app-install-metrics.xlsx'
+    excel_headers = ('event', 'event_label', 'count', 'updated_at')
     list_display = ('event_display', 'count_display', 'updated_at', 'reset_link')
     readonly_fields = ('event', 'count', 'updated_at')
     actions = ('reset_selected_counters',)
+
+    def get_excel_rows(self, request):
+        return [
+            {'event': item.event, 'event_label': item.get_event_display(), 'count': item.count, 'updated_at': item.updated_at}
+            for item in AppInstallMetric.objects.order_by('event')
+        ]
 
     def get_urls(self):
         urls = super().get_urls()
@@ -907,12 +1045,26 @@ class AppInstallMetricAdmin(admin.ModelAdmin):
 
 
 @admin.register(DealerClickMetric)
-class DealerClickMetricAdmin(admin.ModelAdmin):
+class DealerClickMetricAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
+    excel_import_enabled = False
+    excel_template_enabled = False
+    excel_sheet_name = 'DealerClickMetrics'
+    excel_filename = 'dealer-click-metrics.xlsx'
+    excel_headers = ('dealer_id', 'dealer_name', 'action', 'action_label', 'count', 'updated_at')
     list_display = ('dealer', 'action_display', 'count_display', 'updated_at', 'reset_link')
     list_filter = ('action', 'dealer__dealer_type', 'dealer__parts_region')
     search_fields = ('dealer__name',)
     readonly_fields = ('dealer', 'action', 'count', 'updated_at')
     actions = ('reset_selected_counters',)
+
+    def get_excel_rows(self, request):
+        return [
+            {
+                'dealer_id': item.dealer_id, 'dealer_name': item.dealer.name, 'action': item.action,
+                'action_label': item.get_action_display(), 'count': item.count, 'updated_at': item.updated_at,
+            }
+            for item in DealerClickMetric.objects.select_related('dealer').order_by('dealer__name', 'action')
+        ]
 
     def get_urls(self):
         urls = super().get_urls()
@@ -1054,8 +1206,25 @@ class SymptomCauseInline(admin.TabularInline):
 
 
 @admin.register(CarSymptom)
-class CarSymptomAdmin(admin.ModelAdmin):
+class CarSymptomAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
     change_list_template = 'admin/symptoms_changelist.html'
+    excel_sheet_name = 'CarSymptom'
+    excel_filename = 'car-symptoms.xlsx'
+    excel_headers = (
+        'name', 'slug', 'category', 'description', 'severity', 'safety_status',
+        'driver_questions', 'self_check_steps', 'urgent_warning', 'seo_title',
+        'seo_description', 'is_active',
+    )
+    cause_excel_headers = (
+        'symptom_slug', 'priority', 'title', 'description', 'likelihood',
+        'check_method', 'solution_hint', 'is_active',
+    )
+    excel_template_example = ({
+        'name': 'اهتزاز المحرك', 'slug': 'engine-vibration', 'category': 'engine',
+        'description': '', 'severity': 'medium', 'safety_status': 'check_soon',
+        'driver_questions': '', 'self_check_steps': '', 'urgent_warning': '',
+        'seo_title': '', 'seo_description': '', 'is_active': True,
+    },)
     list_display = ('name', 'category', 'severity', 'safety_status', 'is_active', 'updated_at')
     list_filter = ('category', 'severity', 'safety_status', 'is_active')
     search_fields = ('name', 'description', 'driver_questions', 'self_check_steps')
@@ -1068,10 +1237,41 @@ class CarSymptomAdmin(admin.ModelAdmin):
         ('SEO', {'fields': ('seo_title', 'seo_description'), 'classes': ('collapse',)}),
     )
 
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='symptoms_import_excel')]
-        return custom_urls + urls
+    def get_excel_rows(self, request):
+        return [
+            {header: getattr(item, header) for header in self.excel_headers}
+            for item in CarSymptom.objects.order_by('category', 'name')
+        ]
+
+    def get_excel_sheets(self, request):
+        causes = [
+            {
+                'symptom_slug': item.symptom.slug,
+                'priority': item.priority,
+                'title': item.title,
+                'description': item.description,
+                'likelihood': item.likelihood,
+                'check_method': item.check_method,
+                'solution_hint': item.solution_hint,
+                'is_active': item.is_active,
+            }
+            for item in SymptomCause.objects.select_related('symptom').order_by('symptom__slug', 'priority', 'id')
+        ]
+        return [
+            ('CarSymptom', self.excel_headers, self.get_excel_rows(request)),
+            ('SymptomCause', self.cause_excel_headers, causes),
+        ]
+
+    def get_excel_template_sheets(self):
+        cause_example = ({
+            'symptom_slug': 'engine-vibration', 'priority': 1, 'title': 'سبب محتمل',
+            'description': '', 'likelihood': 'medium', 'check_method': '',
+            'solution_hint': '', 'is_active': True,
+        },)
+        return [
+            ('CarSymptom', self.excel_headers, self.excel_template_example),
+            ('SymptomCause', self.cause_excel_headers, cause_example),
+        ]
 
     def import_excel_view(self, request):
         form = MaintenanceImportForm(request.POST or None, request.FILES or None)
@@ -1103,8 +1303,25 @@ class CarSymptomAdmin(admin.ModelAdmin):
 
 
 @admin.register(MaintenanceTask)
-class MaintenanceTaskAdmin(admin.ModelAdmin):
+class MaintenanceTaskAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
     change_list_template = 'admin/maintenance_changelist.html'
+    excel_sheet_name = 'Database_Structure'
+    excel_filename = 'maintenance-tasks.xlsx'
+    excel_headers = (
+        'name', 'stage_title', 'action_type', 'brand_ar', 'brand_en', 'category',
+        'interval_km', 'interval_months', 'severe_interval_km', 'severe_interval_months',
+        'start_km', 'importance', 'description', 'manufacturer_note', 'iraq_note',
+        'display_level', 'condition_type', 'applies_to_engine_type',
+        'applies_to_transmission', 'is_active',
+    )
+    excel_template_example = ({
+        'name': 'تغيير زيت المحرك', 'stage_title': '', 'action_type': 'replace',
+        'brand_ar': '', 'brand_en': '', 'category': 'oil', 'interval_km': 10000,
+        'interval_months': 12, 'severe_interval_km': 5000, 'severe_interval_months': 6,
+        'start_km': 0, 'importance': 'high', 'description': '', 'manufacturer_note': '',
+        'iraq_note': '', 'display_level': 'essential', 'condition_type': 'all',
+        'applies_to_engine_type': 'all', 'applies_to_transmission': 'all', 'is_active': True,
+    },)
     list_display = ('name', 'stage_title', 'display_level', 'condition_type', 'brand_display', 'category', 'start_km', 'importance', 'applies_to_engine_type', 'is_active')
     list_filter = ('display_level', 'condition_type', 'category', 'importance', 'applies_to_engine_type', 'applies_to_transmission', 'is_active', 'brand_ar', 'brand_en')
     search_fields = ('name', 'stage_title', 'action_type', 'brand_ar', 'brand_en', 'description', 'manufacturer_note', 'iraq_note')
@@ -1117,10 +1334,11 @@ class MaintenanceTaskAdmin(admin.ModelAdmin):
         ('الشرح', {'fields': ('manufacturer_note', 'description', 'iraq_note')}),
     )
 
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='maintenance_import_excel')]
-        return custom_urls + urls
+    def get_excel_rows(self, request):
+        return [
+            {header: getattr(item, header) for header in self.excel_headers}
+            for item in MaintenanceTask.objects.order_by('brand_ar', 'brand_en', 'start_km', 'name')
+        ]
 
     def brand_display(self, obj):
         return obj.brand_ar or obj.brand_en or 'عام'
@@ -1172,12 +1390,23 @@ class SponsorForm(forms.ModelForm):
 
 
 @admin.register(Sponsor)
-class SponsorAdmin(admin.ModelAdmin):
+class SponsorAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
     form = SponsorForm
+    excel_sheet_name = 'Sponsors'
+    excel_filename = 'sponsors.xlsx'
+    excel_headers = SPONSOR_HEADERS
+    excel_import_handler = staticmethod(import_sponsors)
+    excel_template_example = ({
+        'name': 'اسم الشركة', 'slug': 'company-name', 'code_prefix': 'COMPANY',
+        'discount': 10, 'website': '', 'is_active': True,
+    },)
     list_display = ('name_preview', 'slug', 'discount_badge', 'codes_count', 'banners_count', 'active_badge')
     list_filter = ('is_active',)
     search_fields = ('name', 'slug')
     list_per_page = 25
+
+    def get_excel_rows(self, request):
+        return sponsor_rows(Sponsor.objects.all())
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -1270,7 +1499,15 @@ class SponsorAdmin(admin.ModelAdmin):
 
 
 @admin.register(PromoCode)
-class PromoCodeAdmin(admin.ModelAdmin):
+class PromoCodeAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
+    excel_sheet_name = 'PromoCodes'
+    excel_filename = 'promo-codes.xlsx'
+    excel_headers = PROMO_CODE_HEADERS
+    excel_import_handler = staticmethod(import_promo_codes)
+    excel_template_example = ({
+        'code': 'COMPANY-0001', 'sponsor_slug': 'company-name', 'status': 'active',
+        'created_at': '', 'used_at': '', 'verified_by': '',
+    },)
     list_display = ('code', 'sponsor', 'status_badge', 'created_at', 'used_at', 'verified_by_display')
     list_filter = ('status', 'sponsor')
     search_fields = ('code', 'sponsor__name', 'verified_by')
@@ -1278,6 +1515,9 @@ class PromoCodeAdmin(admin.ModelAdmin):
     readonly_fields = ('code', 'created_at', 'used_at', 'verified_by')
     list_per_page = 50
     list_select_related = ('sponsor',)
+
+    def get_excel_rows(self, request):
+        return promo_code_rows(PromoCode.objects.all())
 
     fieldsets = (
         ('🎟️ الكود', {

@@ -1,0 +1,8 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+<li><a href="export-excel/" class="addlink">تقرير Excel</a></li>
+{% if excel_template_enabled %}<li><a href="excel-template/" class="addlink">نموذج Excel</a></li>{% endif %}
+{% if excel_import_enabled %}<li><a href="import-excel/" class="addlink">استيراد Excel</a></li>{% endif %}
+{{ block.super }}
+{% endblock %}

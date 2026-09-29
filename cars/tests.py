@@ -4,12 +4,16 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.cache import cache, caches
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.test import Client, TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from cars.models import CarSpecification, Dealer, PromoCode, SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY
+from cars.models import (
+    AppInstallMetric, CarSpecification, Dealer, MaintenanceTask, PromoCode,
+    SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY,
+)
 from cars.services.deepseek_service import _provider_chain
 from cars.views import _client_ip
 
@@ -458,3 +462,76 @@ class PageSmokeTests(TestCase):
         self.assertEqual(rows[0][-1], 'id')
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[1][1], 'تويوتا')
+
+
+class AdminExcelToolsTests(TestCase):
+    def setUp(self):
+        self.client.force_login(User.objects.create_superuser('excel-admin', 'excel@example.com', 'pw'))
+
+    @staticmethod
+    def _xlsx_upload(headers, values, filename='data.xlsx', sheet='Data'):
+        from openpyxl import Workbook
+
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = sheet
+        worksheet.append(headers)
+        worksheet.append(values)
+        output = BytesIO()
+        workbook.save(output)
+        return SimpleUploadedFile(
+            filename,
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+    def test_maintenance_report_and_template_are_downloadable(self):
+        MaintenanceTask.objects.create(name='تغيير الزيت', category='oil')
+
+        report = self.client.get('/admin/cars/maintenancetask/export-excel/')
+        template = self.client.get('/admin/cars/maintenancetask/excel-template/')
+
+        self.assertEqual(report.status_code, 200)
+        self.assertEqual(template.status_code, 200)
+        from openpyxl import load_workbook
+        rows = list(load_workbook(BytesIO(report.content)).active.iter_rows(values_only=True))
+        self.assertEqual(rows[0][0:3], ('name', 'stage_title', 'action_type'))
+        self.assertEqual(rows[1][0], 'تغيير الزيت')
+
+    def test_promo_codes_can_be_imported_and_exported(self):
+        Sponsor.objects.create(name='شركة', slug='company', code_prefix='COMP', discount=10)
+        upload = self._xlsx_upload(
+            ['code', 'sponsor_slug', 'status', 'created_at', 'used_at', 'verified_by'],
+            ['COMP-1000', 'company', 'active', '', '', ''],
+            sheet='PromoCodes',
+        )
+
+        response = self.client.post('/admin/cars/promocode/import-excel/', {'excel_file': upload})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(PromoCode.objects.filter(code='COMP-1000', sponsor__slug='company').exists())
+        report = self.client.get('/admin/cars/promocode/export-excel/')
+        self.assertEqual(report.status_code, 200)
+        self.assertIn('attachment;', report['Content-Disposition'])
+
+    def test_sponsor_excel_never_exports_password_hash(self):
+        sponsor = Sponsor.objects.create(name='شركة آمنة', slug='safe', code_prefix='SAFE')
+        sponsor.set_password('secret')
+        sponsor.save()
+
+        report = self.client.get('/admin/cars/sponsor/export-excel/')
+
+        self.assertEqual(report.status_code, 200)
+        from openpyxl import load_workbook
+        headers = [cell.value for cell in load_workbook(BytesIO(report.content)).active[1]]
+        self.assertNotIn('password', headers)
+        self.assertNotIn('secret', report.content.decode('latin1', errors='ignore'))
+
+    def test_automatic_metrics_are_report_only(self):
+        AppInstallMetric.objects.create(event='installed', count=12)
+
+        report = self.client.get('/admin/cars/appinstallmetric/export-excel/')
+        import_attempt = self.client.get('/admin/cars/appinstallmetric/import-excel/')
+
+        self.assertEqual(report.status_code, 200)
+        self.assertEqual(import_attempt.status_code, 302)
