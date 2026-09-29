@@ -255,10 +255,17 @@
                                     {% if not site_settings.hide_result_engine_oil %}<div class="text-white font-black text-lg mb-2">توصي بـ <span class="text-amber-400">{{ rec.oil_visc|escape }}</span></div>{% endif %}
                                     <div class="spec-grid recommendation-spec-grid">
                                         {% if not site_settings.hide_result_engine_oil %}<div class="spec-item oil-capacity-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ rec.oil_capacity|default:"غير محدد"|escape }}</span></div>{% endif %}
-                                        {% if rec.oil_brands and not site_settings.hide_result_oil_brands %}<div class="spec-item oil-brands-item"><span class="label">🏷️ ماركات الزيت</span><span class="value blue">{{ rec.oil_brands|escape }}</span></div>{% endif %}
                                         {% if rec.fuel %}<div class="spec-item fuel-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ rec.fuel|escape }}</span></div>{% endif %}
                                         {% if not site_settings.hide_result_octane %}<div class="spec-item octane-item"><span class="label">⛽ الأوكتان</span><span class="value">{{ rec.octane|escape }}</span></div>{% endif %}
                                     </div>
+                                    {% if recommendation.oil_brand_items and not site_settings.hide_result_oil_brands %}
+                                    <div class="oil-brands-text">
+                                        <div class="text-amber-300 text-xs font-black mb-2">🏷️ ماركات الزيت الموصى بها</div>
+                                        <div class="oil-brand-lines">
+                                            {% for brand in recommendation.oil_brand_items %}<div class="oil-brand-line"><span class="oil-brand-number">{{ forloop.counter }}-</span><span>{{ brand|escape }}</span></div>{% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
                                 </section>
                                 {% endwith %}
                                 {% endfor %}

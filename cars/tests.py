@@ -283,7 +283,7 @@ class PageSmokeTests(TestCase):
         car = _make_car(1, 'تويوتا', 'كورولا')
         car.engine_code = '2ZR-FE'
         car.spark = 'NGK Iridium'
-        car.oil_brands = 'Toyota Genuine Motor Oil, Mobil 1, Castrol EDGE, Shell Helix Ultra'
+        car.oil_brands = 'Toyota Genuine Motor Oil، Mobil 1\nCastrol EDGE; Shell Helix Ultra'
         car.save()
 
         response = self.client.get('/search/', {
@@ -295,12 +295,15 @@ class PageSmokeTests(TestCase):
         self.assertContains(response, 'NGK Iridium')
         self.assertContains(response, 'class="spec-grid recommendation-spec-grid"')
         self.assertContains(response, 'class="spec-item oil-capacity-item"')
-        self.assertContains(response, 'class="spec-item oil-brands-item"')
         self.assertContains(response, 'class="spec-item fuel-item"')
         self.assertContains(response, 'class="spec-item octane-item"')
+        self.assertContains(response, 'class="oil-brands-text"')
+        self.assertContains(response, 'class="oil-brand-number">1-')
+        self.assertContains(response, 'class="oil-brand-number">4-')
+        self.assertNotContains(response, 'oil-brands-item')
         html = response.content.decode('utf-8')
         self.assertLess(html.index('class="spec-item oil-capacity-item"'), html.index('class="spec-item fuel-item"'))
-        self.assertLess(html.index('class="spec-item oil-brands-item"'), html.index('class="spec-item fuel-item"'))
+        self.assertLess(html.index('class="spec-item octane-item"'), html.index('class="oil-brands-text"'))
 
     def test_search_groups_related_engines_by_vehicle_and_oil_recommendation(self):
         _make_car(
@@ -400,7 +403,7 @@ class PageSmokeTests(TestCase):
         response = self.client.get('/sw.js')
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "CACHE_NAME = 'sayarti-v6'")
+        self.assertContains(response, "CACHE_NAME = 'sayarti-v7'")
         self.assertContains(response, '/static/css/app.css')
         self.assertNotContains(response, '/static/css/home.css')
         self.assertNotContains(response, '/static/css/style.css')

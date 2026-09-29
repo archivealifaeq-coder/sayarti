@@ -745,6 +745,7 @@
         .feature-card .feature-title { color: #f1f5f9; font-weight: 700; font-size: 0.9rem; }
         .feature-card .feature-desc { color: #94a3b8; font-size: 0.7rem; margin-top: 2px; }
         
+        #cars-grid { align-items: stretch; grid-auto-flow: row; }
         .car-card {
             background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
             border: 1px solid rgba(245, 158, 11, 0.08);
@@ -754,6 +755,11 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            height: 100%;
+            container-type: inline-size;
         }
         .car-card::before {
             content: '';
@@ -835,6 +841,9 @@
         .engine-choice-btn:hover,
         .engine-choice-btn.active { border-color: rgba(245, 158, 11, 0.7); background: rgba(245, 158, 11, 0.13); color: #fbbf24; }
         .engine-choice-btn.active small { color: #fde68a; }
+        .engine-result-panel,
+        .engine-recommendation-scope,
+        .card-details-extra { min-width: 0; max-width: 100%; }
         .engine-result-panel[hidden] { display: none !important; }
         .engine-variant-note {
             color: #94a3b8;
@@ -845,7 +854,7 @@
         .engine-recommendation-scope.has-divider { border-top: 1px solid rgba(100, 116, 139, 0.3); padding-top: 12px; margin-top: 12px; }
         .scope-title { color: #cbd5e1; font-size: 0.78rem; font-weight: 800; margin-bottom: 6px; }
 
-        .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+        .spec-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 12px 0; min-width: 0; }
         .spec-item {
             background: rgba(15, 23, 42, 0.5);
             backdrop-filter: blur(4px);
@@ -854,10 +863,23 @@
             padding: 8px 6px;
             text-align: center;
             transition: all 0.3s ease;
+            min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
         }
         .spec-item:hover { border-color: rgba(245, 158, 11, 0.2); background: rgba(15, 23, 42, 0.7); transform: translateY(-2px); }
         .spec-item .label { display: block; color: #94a3b8; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.35px; margin-bottom: 3px; line-height: 1.5; }
-        .spec-item .value { font-weight: 700; color: #fbbf24; font-size: 0.95rem; line-height: 1.55; }
+        .spec-item .value {
+            display: block;
+            max-width: 100%;
+            font-weight: 700;
+            color: #fbbf24;
+            font-size: clamp(0.8rem, 3.4cqi, 0.95rem);
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+            word-break: normal;
+            white-space: normal;
+        }
         .spec-item .value.green { color: #34d399; }
         .spec-item .value.blue { color: #60a5fa; }
 
@@ -874,28 +896,51 @@
             align-items: center;
             justify-content: center;
         }
-        .recommendation-spec-grid .oil-capacity-item { grid-column: span 4; }
-        .recommendation-spec-grid .oil-brands-item { grid-column: span 8; }
+        .recommendation-spec-grid .oil-capacity-item,
         .recommendation-spec-grid .fuel-item,
-        .recommendation-spec-grid .octane-item { grid-column: span 6; }
+        .recommendation-spec-grid .octane-item { grid-column: span 4; }
         .recommendation-spec-grid .spec-item .value {
             width: 100%;
             overflow-wrap: anywhere;
             word-break: normal;
             white-space: normal;
         }
-        .recommendation-spec-grid .oil-brands-item .value { line-height: 1.75; }
+        .oil-brands-text {
+            margin: 12px 0 4px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(100, 116, 139, 0.3);
+        }
+        .oil-brand-lines { display: grid; gap: 6px; }
+        .oil-brand-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            color: #cbd5e1;
+            min-width: 0;
+            font-size: clamp(0.8rem, 3.1cqi, 0.86rem);
+            font-weight: 700;
+            line-height: 1.8;
+            overflow-wrap: anywhere;
+        }
+        .oil-brand-number { flex: 0 0 auto; color: #60a5fa; font-weight: 900; }
 
         @media (max-width: 520px) {
             .recommendation-spec-grid { gap: 6px; }
             .recommendation-spec-grid .spec-item { padding: 8px 5px; }
-            .recommendation-spec-grid .oil-capacity-item { grid-column: span 5; }
-            .recommendation-spec-grid .oil-brands-item { grid-column: span 7; }
+        }
+
+        @container (max-width: 340px) {
+            .car-title { font-size: 1.18rem; }
+            .spec-item .label { font-size: 0.66rem; }
+            .engine-choice-btn { font-size: 0.84rem; }
+        }
+
+        @container (max-width: 290px) {
+            .spec-grid:not(.recommendation-spec-grid) { grid-template-columns: minmax(0, 1fr); }
         }
 
         @media (max-width: 360px) {
             .recommendation-spec-grid .oil-capacity-item,
-            .recommendation-spec-grid .oil-brands-item,
             .recommendation-spec-grid .fuel-item,
             .recommendation-spec-grid .octane-item { grid-column: 1 / -1; }
         }

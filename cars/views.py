@@ -372,6 +372,21 @@ def _apply(qs, required, keep_keys):
     return qs.filter(q)
 
 
+def _split_list_values(value):
+    """حوّل الحقول النصية المفصولة بفواصل أو أسطر إلى قائمة عرض مرتبة."""
+    if not value:
+        return []
+    items = []
+    seen = set()
+    for item in re.split(r'[\r\n,،;؛|]+', str(value)):
+        item = item.strip(' \t-–—')
+        normalized = item.casefold()
+        if item and normalized not in seen:
+            seen.add(normalized)
+            items.append(item)
+    return items
+
+
 def _group_search_results(cars, selected_engine='', selected_engine_type=''):
     """اجمع صفوف المحركات في بطاقة سيارة واحدة من دون تغيير جدول السيارات.
 
@@ -427,7 +442,12 @@ def _group_search_results(cars, selected_engine='', selected_engine_type=''):
         )
         recommendation = group['_recommendation_map'].get(recommendation_key)
         if recommendation is None:
-            recommendation = {'car': car, 'engines': [], '_engine_keys': set()}
+            recommendation = {
+                'car': car,
+                'oil_brand_items': _split_list_values(car.oil_brands),
+                'engines': [],
+                '_engine_keys': set(),
+            }
             group['_recommendation_map'][recommendation_key] = recommendation
             group['recommendations'].append(recommendation)
         if engine_key not in recommendation['_engine_keys']:
