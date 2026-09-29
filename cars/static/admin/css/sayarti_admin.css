@@ -1096,8 +1096,34 @@ fieldset.module,
 .object-tools {
     display: flex;
     justify-content: center;
+    align-items: stretch;
     flex-wrap: wrap;
     gap: 8px;
+    float: none;
+    clear: both;
+    position: static;
+    width: 100%;
+    margin: 0 auto 18px;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.object-tools li {
+    float: none;
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
+.object-tools a,
+.object-tools a:link,
+.object-tools a:visited {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    margin: 0;
+    white-space: nowrap;
 }
 
 .messagelist li {
@@ -1113,6 +1139,22 @@ fieldset.module,
     }
     #searchbar {
         min-width: 100%;
+    }
+    .object-tools {
+        gap: 7px;
+        margin-bottom: 16px;
+    }
+    .object-tools li {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+    .object-tools a,
+    .object-tools a:link,
+    .object-tools a:visited {
+        width: 100%;
+        box-sizing: border-box;
+        white-space: normal;
+        text-align: center;
     }
 }
 

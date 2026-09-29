@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -396,6 +397,16 @@ class PageSmokeTests(TestCase):
         self.assertNotContains(response, '/static/css/style.css')
         self.assertNotContains(response, '/static/js/home.js')
         self.assertNotContains(response, '/static/js/main.js')
+
+    def test_admin_object_tools_use_non_overlapping_layout(self):
+        from django.contrib.staticfiles import finders
+
+        css_path = finders.find('admin/css/sayarti_admin.css')
+        self.assertIsNotNone(css_path)
+        content = Path(css_path).read_text(encoding='utf-8')
+        self.assertIn('float: none;', content)
+        self.assertIn('position: static;', content)
+        self.assertIn('flex: 1 1 100%;', content)
 
     def test_engine_suggestions_follow_vehicle_year_region_and_show_details(self):
         _make_car(
