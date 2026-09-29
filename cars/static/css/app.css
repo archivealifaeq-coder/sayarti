@@ -882,7 +882,6 @@
         }
         .spec-item .value.green { color: #34d399; }
         .spec-item .value.blue { color: #60a5fa; }
-
         /* يحافظ على شكل البطاقات الأصلي ويمنع تزاحم القيم الطويلة. */
         .recommendation-spec-grid {
             grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -921,6 +920,11 @@
             font-weight: 700;
             line-height: 1.8;
             overflow-wrap: anywhere;
+        }
+        .oil-brand-line span:last-child {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .oil-brand-number { flex: 0 0 auto; color: #60a5fa; font-weight: 900; }
 

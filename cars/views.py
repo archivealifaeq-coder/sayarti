@@ -373,13 +373,22 @@ def _apply(qs, required, keep_keys):
 
 
 def _split_list_values(value):
-    """حوّل الحقول النصية المفصولة بفواصل أو أسطر إلى قائمة عرض مرتبة."""
+    """حوّل ماركات الزيت إلى قائمة؛ كل قيمة داخل قوسين تعد ماركة مستقلة."""
     if not value:
         return []
+    text = str(value)
+    bracket_items = re.findall(r'\(([^()]+)\)', text)
+    if bracket_items:
+        raw_items = []
+        for chunk in bracket_items:
+            raw_items.extend(re.split(r'[\r\n,،;؛|]+', chunk))
+    else:
+        raw_items = re.split(r'[\r\n,،;؛|]+', text)
+
     items = []
     seen = set()
-    for item in re.split(r'[\r\n,،;؛|]+', str(value)):
-        item = item.strip(' \t-–—')
+    for item in raw_items:
+        item = item.strip(' \t-–—()')
         normalized = item.casefold()
         if item and normalized not in seen:
             seen.add(normalized)
