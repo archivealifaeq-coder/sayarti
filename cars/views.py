@@ -454,6 +454,7 @@ def _group_search_results(cars, selected_engine='', selected_engine_type=''):
             recommendation = {
                 'car': car,
                 'oil_brand_items': _split_list_values(car.oil_brands),
+                'transmission_oil_brand_items': _split_list_values(car.transmission_oil_brands),
                 'engines': [],
                 '_engine_keys': set(),
             }

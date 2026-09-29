@@ -267,11 +267,18 @@
                                         {% if not site_settings.hide_result_transmission %}
                                         <div class="spec-item"><span class="label">⚙️ نوع الكير</span><span class="value">{{ rec.transmission_type|default:"غير محدد"|escape }}</span></div>
                                         <div class="spec-item"><span class="label">🛢️ زيت الكير</span><span class="value">{{ rec.transmission_oil_spec|default:"غير محدد"|escape }}</span></div>
-                                        {% if rec.transmission_oil_brands %}<div class="spec-item"><span class="label">🏷️ ماركات زيت الكير</span><span class="value">{{ rec.transmission_oil_brands|escape }}</span></div>{% endif %}
                                         {% endif %}
                                         {% if car.spec_region %}<div class="spec-item"><span class="label">🌍 المنطقة</span><span class="value">{{ car.get_spec_region_display|escape }}</span></div>{% endif %}
                                         {% if rec.trim and not site_settings.hide_result_trim %}<div class="spec-item"><span class="label">🏷️ الفئة</span><span class="value">{{ rec.trim|escape }}</span></div>{% endif %}
                                     </div>
+                                    {% if recommendation.transmission_oil_brand_items and not site_settings.hide_result_transmission %}
+                                    <div class="oil-brands-text transmission-oil-brands-text">
+                                        <div class="text-amber-300 text-xs font-black mb-2">🏷️ ماركات زيت الكير الموصى بها</div>
+                                        <div class="oil-brand-lines">
+                                            {% for brand in recommendation.transmission_oil_brand_items %}<div class="oil-brand-line"><span class="oil-brand-number">{{ forloop.counter }}-</span><span>{{ brand|escape }}</span></div>{% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
                                     {% if rec.recommendations %}<p class="text-slate-300 text-xs leading-7 mt-3">{{ rec.recommendations|escape }}</p>{% endif %}
                                 </div>
                                 {% endwith %}
