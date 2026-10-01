@@ -1,29 +1,21 @@
 <style>
     .ticker-wrapper {
-        position: fixed;
-        top: 64px;
-        left: 0;
-        right: 0;
-        z-index: 9997;
-        height: 46px;
+        position: relative;
+        width: 100%;
+        height: 34px;
+        margin-top: 64px;
         overflow: hidden;
         display: flex;
         align-items: center;
-        background: linear-gradient(90deg, rgba(15, 23, 42, 0.98), rgba(51, 43, 28, 0.96), rgba(15, 23, 42, 0.98));
-        border-top: 1px solid rgba(245, 158, 11, 0.08);
-        border-bottom: 1px solid rgba(245, 158, 11, 0.11);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: transparent;
     }
-    .ticker-track { display: flex; align-items: center; height: 100%; width: max-content; animation: tickerScroll 16s linear infinite; }
-    .ticker-item { display: flex; align-items: center; gap: 10px; padding: 0 34px; height: 100%; white-space: nowrap; flex-shrink: 0; border-left: 1px solid rgba(245, 158, 11, 0.12); }
+    .ticker-track { display: flex; align-items: center; height: 100%; width: max-content; animation: tickerScroll 14s linear infinite; will-change: transform; }
+    .ticker-item { display: flex; align-items: center; gap: 10px; padding: 0 34px; height: 100%; white-space: nowrap; flex-shrink: 0; }
     .ticker-icon { font-size: 1rem; flex-shrink: 0; }
-    .ticker-text { color: #f8fafc; font-weight: 900; font-size: clamp(0.82rem, 1vw, 1rem); letter-spacing: 0.01em; }
+    .ticker-text { color: rgba(248, 250, 252, 0.82); font-weight: 900; font-size: clamp(0.8rem, 1vw, 0.95rem); letter-spacing: 0.01em; }
     .ticker-text .highlight { color: #f8d17a; }
     @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-25%); } }
-    @media (max-width: 640px) { .ticker-wrapper { top: 56px; height: 40px; } .ticker-item { padding: 0 22px; } }
-    body.no-navbar .ticker-wrapper { top: 0; }
-    @media (max-width: 640px) { body.no-navbar .ticker-wrapper { top: 0; } }
+    @media (max-width: 640px) { .ticker-wrapper { height: 30px; margin-top: 56px; } .ticker-item { padding: 0 22px; } }
 </style>
 <div class="ticker-wrapper" id="tickerWrapper" role="region" aria-label="شريط العروض والإعلانات">
     <div class="ticker-track" id="tickerTrack">
