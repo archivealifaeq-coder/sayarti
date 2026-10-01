@@ -919,8 +919,8 @@ class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj=None, **kwargs)
-        form.base_fields['image'].help_text = 'للسلايدر الرئيسي: 1920 × 600 بكسل. الشريط العلوي نصي ولا يحتاج صورة.'
-        form.base_fields['image_mobile'].help_text = 'للسلايدر على الهاتف: 1080 × 720 بكسل. الشريط العلوي نصي ولا يحتاج صورة.'
+        form.base_fields['image'].help_text = 'للسلايدر الرئيسي 30%: 1920 × 360 بكسل. الشريط العلوي نصي ولا يحتاج صورة.'
+        form.base_fields['image_mobile'].help_text = 'للسلايدر على الهاتف 30%: 1080 × 480 بكسل. الشريط العلوي نصي ولا يحتاج صورة.'
         return form
 
 

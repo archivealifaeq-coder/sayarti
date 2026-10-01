@@ -281,7 +281,7 @@ class AdBanner(models.Model):
         blank=True,
         null=True,
         verbose_name="صورة البنر (سطح المكتب)",
-        help_text="للسلايدر الرئيسي: 1920 × 600 بكسل. الشريط العلوي نصي ولا يحتاج صورة."
+        help_text="للسلايدر الرئيسي 30%: 1920 × 360 بكسل. الشريط العلوي نصي ولا يحتاج صورة."
     )
     
     image_mobile = models.ImageField(
@@ -289,7 +289,7 @@ class AdBanner(models.Model):
         blank=True,
         null=True,
         verbose_name="صورة البنر للهواتف",
-        help_text="للسلايدر على الهاتف: 1080 × 720 بكسل. الشريط العلوي نصي ولا يحتاج صورة."
+        help_text="للسلايدر على الهاتف 30%: 1080 × 480 بكسل. الشريط العلوي نصي ولا يحتاج صورة."
     )
     
     background_color = models.CharField(
