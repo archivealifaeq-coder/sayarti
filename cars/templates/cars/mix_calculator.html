@@ -229,10 +229,25 @@
         }
     </style>
 </head>
-<body class="no-navbar">
+<body>
 
+    <nav class="fixed w-full top-0 z-50 px-6 py-3" id="navbar" style="background: rgba(10,15,26,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(245,158,11,0.12);">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="{% url 'index' %}" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
+                🚗 سيارتي
+            </a>
+            <div class="hidden md:flex gap-6 text-sm">
+                <a href="{% url 'index' %}" class="nav-link">الرئيسية</a>
+                <a href="{% url 'mix_calculator' %}" class="nav-link active">حاسبة الخلط</a>
+                {% if site_settings.show_dealers_card %}<a href="{% url 'dealers' %}" class="nav-link">🛢️ الوكلاء</a>{% endif %}
+                <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">💼 نافذة الخدمات</a>
+                {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color: #fbbf24;" rel="nofollow">🔐 لوحة التحكم</a>{% endif %}
+            </div>
+            <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
+        </div>
+    </nav>
     {% include 'cars/_promo_ticker.html' %}
-    <div class="h-16"></div>
+    <div class="h-32"></div>
 
     <div class="max-w-5xl mx-auto px-4 py-6">
         <div class="glass-card" id="calculator-section">
@@ -633,6 +648,26 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.getElementById('menuToggle');
+            if (menuToggle) {
+                var navMenu = document.querySelector('.hidden.md\\:flex');
+                var isMenuOpen = false;
+                menuToggle.addEventListener('click', function() {
+                    isMenuOpen = !isMenuOpen;
+                    if (isMenuOpen) {
+                        navMenu.classList.remove('hidden');
+                        navMenu.classList.add('flex', 'flex-col', 'absolute', 'top-full', 'left-0', 'right-0', 'bg-slate-900/95', 'p-6', 'backdrop-blur', 'rounded-b-2xl', 'border-t', 'border-amber-500/10', 'gap-4');
+                        menuToggle.setAttribute('aria-expanded', 'true');
+                        menuToggle.textContent = '✕';
+                    } else {
+                        navMenu.classList.add('hidden');
+                        navMenu.classList.remove('flex', 'flex-col', 'absolute', 'top-full', 'left-0', 'right-0', 'bg-slate-900/95', 'p-6', 'backdrop-blur', 'rounded-b-2xl', 'border-t', 'border-amber-500/10', 'gap-4');
+                        menuToggle.setAttribute('aria-expanded', 'false');
+                        menuToggle.textContent = '☰';
+                    }
+                });
+            }
+
             var inputs = document.querySelectorAll('input');
             for (var i = 0; i < inputs.length; i++) {
                 inputs[i].addEventListener('keypress', function(e) {

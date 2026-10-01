@@ -83,7 +83,7 @@
         
         .ticker-track {
             display: flex;
-            animation: tickerScroll 24s linear infinite;
+            animation: tickerScroll 18s linear infinite;
             width: max-content;
             align-items: center;
             height: 100%;

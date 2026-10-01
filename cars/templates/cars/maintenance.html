@@ -62,6 +62,7 @@
                 {% if site_settings.show_dealers_card %}<a href="{% url 'dealers' %}" class="nav-link">🛢️ الوكلاء</a>{% endif %}
                 <a href="{% url 'maintenance' %}" class="nav-link active" aria-current="page">🛠️ الصيانة</a>
             </div>
+            <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
         </div>
     </nav>
 
@@ -158,6 +159,27 @@
         </section>
     </main>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.getElementById('menuToggle');
+            if (!menuToggle) return;
+            var navMenu = document.querySelector('.hidden.md\\:flex');
+            var isMenuOpen = false;
+            menuToggle.addEventListener('click', function() {
+                isMenuOpen = !isMenuOpen;
+                if (isMenuOpen) {
+                    navMenu.classList.remove('hidden');
+                    navMenu.classList.add('flex', 'flex-col', 'absolute', 'top-full', 'left-0', 'right-0', 'bg-slate-900/95', 'p-6', 'backdrop-blur', 'rounded-b-2xl', 'border-t', 'border-amber-500/10', 'gap-4');
+                    menuToggle.setAttribute('aria-expanded', 'true');
+                    menuToggle.textContent = '✕';
+                } else {
+                    navMenu.classList.add('hidden');
+                    navMenu.classList.remove('flex', 'flex-col', 'absolute', 'top-full', 'left-0', 'right-0', 'bg-slate-900/95', 'p-6', 'backdrop-blur', 'rounded-b-2xl', 'border-t', 'border-amber-500/10', 'gap-4');
+                    menuToggle.setAttribute('aria-expanded', 'false');
+                    menuToggle.textContent = '☰';
+                }
+            });
+        });
+
         (function() {
             var hasResult = {% if selected_symptom or maintenance_rows %}true{% else %}false{% endif %};
             if (!hasResult) return;

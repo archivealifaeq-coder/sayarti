@@ -74,7 +74,7 @@
     <nav class="fixed w-full top-0 z-50 px-6 py-3" style="background: rgba(10,15,26,.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(245,158,11,.12);">
         <div class="max-w-7xl mx-auto flex justify-between items-center gap-4">
             <a href="{% url 'index' %}" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">🚗 سيارتي</a>
-            <div class="flex flex-wrap gap-4 text-sm justify-end">
+            <div class="hidden md:flex flex-wrap gap-4 text-sm justify-end">
                 <a href="{% url 'index' %}" class="nav-link">الرئيسية</a>
                 <a href="{% url 'search' %}" class="nav-link">البحث</a>
                 <a href="{% url 'mix_calculator' %}" class="nav-link">حاسبة الخلط</a>
@@ -82,6 +82,7 @@
                 <a href="{% url 'services_login' %}" class="nav-link" style="color:#60a5fa;">نافذة الخدمات</a>
                 {% if user.is_staff %}<a href="/admin/" class="nav-link" style="color:#fbbf24;" rel="nofollow">لوحة التحكم</a>{% endif %}
             </div>
+            <button class="md:hidden text-white text-2xl" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
         </div>
     </nav>
     {% include 'cars/_promo_ticker.html' %}
@@ -149,6 +150,26 @@
     </main>
     <script>
     (function() {
+        var menuToggle = document.getElementById('menuToggle');
+        if (menuToggle) {
+            var navMenu = document.querySelector('.hidden.md\\:flex');
+            var isMenuOpen = false;
+            menuToggle.addEventListener('click', function() {
+                isMenuOpen = !isMenuOpen;
+                if (isMenuOpen) {
+                    navMenu.classList.remove('hidden');
+                    navMenu.classList.add('flex', 'flex-col', 'absolute', 'top-full', 'left-0', 'right-0', 'bg-slate-900/95', 'p-6', 'backdrop-blur', 'rounded-b-2xl', 'border-t', 'border-amber-500/10', 'gap-4');
+                    menuToggle.setAttribute('aria-expanded', 'true');
+                    menuToggle.textContent = '✕';
+                } else {
+                    navMenu.classList.add('hidden');
+                    navMenu.classList.remove('flex', 'flex-col', 'absolute', 'top-full', 'left-0', 'right-0', 'bg-slate-900/95', 'p-6', 'backdrop-blur', 'rounded-b-2xl', 'border-t', 'border-amber-500/10', 'gap-4');
+                    menuToggle.setAttribute('aria-expanded', 'false');
+                    menuToggle.textContent = '☰';
+                }
+            });
+        }
+
         function csrfToken() {
             var match = document.cookie.match(/csrftoken=([^;]+)/);
             return match ? decodeURIComponent(match[1]) : '';
