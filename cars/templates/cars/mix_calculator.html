@@ -338,7 +338,7 @@
                                 <span class="text-blue-300 text-xs font-bold">84 أوكتان</span>
                             </div>
                             <div class="mt-3 text-white font-black text-2xl">
-                                {% if regular_fuel_price_iqd %}{{ regular_fuel_price_iqd }}{% else %}غير محدد{% endif %}
+                                {% if regular_fuel_price_iqd %}{{ regular_fuel_price_iqd_display }}{% else %}غير محدد{% endif %}
                                 <span class="text-slate-400 text-xs font-bold">د.ع / لتر</span>
                             </div>
                         </div>
@@ -348,7 +348,7 @@
                                 <span class="text-amber-300 text-xs font-bold">91 أوكتان</span>
                             </div>
                             <div class="mt-3 text-white font-black text-2xl">
-                                {% if premium_fuel_price_iqd %}{{ premium_fuel_price_iqd }}{% else %}غير محدد{% endif %}
+                                {% if premium_fuel_price_iqd %}{{ premium_fuel_price_iqd_display }}{% else %}غير محدد{% endif %}
                                 <span class="text-slate-400 text-xs font-bold">د.ع / لتر</span>
                             </div>
                         </div>
@@ -459,15 +459,15 @@
                         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                             <div class="bg-slate-900/60 rounded-xl p-3 border border-blue-500/20">
                                 <div class="text-slate-400">تكلفة العادي</div>
-                                <div class="text-blue-300 font-bold">{{ result.regular_cost }} د.ع</div>
+                                <div class="text-blue-300 font-bold">{{ result.regular_cost_display }} د.ع</div>
                             </div>
                             <div class="bg-slate-900/60 rounded-xl p-3 border border-amber-500/20">
                                 <div class="text-slate-400">تكلفة المحسن</div>
-                                <div class="text-amber-300 font-bold">{{ result.premium_cost }} د.ع</div>
+                                <div class="text-amber-300 font-bold">{{ result.premium_cost_display }} د.ع</div>
                             </div>
                             <div class="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20">
                                 <div class="text-slate-400">سعر التفويلة التقريبي</div>
-                                <div class="text-emerald-300 font-bold text-lg">{{ result.total_cost }} د.ع</div>
+                                <div class="text-emerald-300 font-bold text-lg">{{ result.total_cost_display }} د.ع</div>
                             </div>
                         </div>
                         {% endif %}

@@ -779,6 +779,13 @@ def _octane_number(value):
     return match.group(0) if match else ''
 
 
+def _format_iqd(value):
+    try:
+        return f'{int(round(float(value))):,}'
+    except (TypeError, ValueError):
+        return ''
+
+
 def _mix_car_options():
     options = []
     for car in _mix_cars():
@@ -811,6 +818,8 @@ def _mix_calculator_context(result=None):
         'result': result,
         'regular_fuel_price_iqd': settings.regular_fuel_price_iqd,
         'premium_fuel_price_iqd': settings.premium_fuel_price_iqd,
+        'regular_fuel_price_iqd_display': _format_iqd(settings.regular_fuel_price_iqd),
+        'premium_fuel_price_iqd_display': _format_iqd(settings.premium_fuel_price_iqd),
     }
 
 
@@ -845,6 +854,9 @@ def mix_calculator_view(request):
                 settings = SiteSettings.load()
                 regular_price = settings.regular_fuel_price_iqd or 0
                 premium_price = settings.premium_fuel_price_iqd or 0
+                regular_cost = round(amount1 * regular_price)
+                premium_cost = round(amount2 * premium_price)
+                total_cost = round((amount1 * regular_price) + (amount2 * premium_price))
                 result = {
                     'octane1': o1,
                     'octane2': o2,
@@ -856,9 +868,12 @@ def mix_calculator_view(request):
                     'tank': tank,
                     'regular_price': regular_price,
                     'premium_price': premium_price,
-                    'regular_cost': round(amount1 * regular_price),
-                    'premium_cost': round(amount2 * premium_price),
-                    'total_cost': round((amount1 * regular_price) + (amount2 * premium_price)),
+                    'regular_cost': regular_cost,
+                    'premium_cost': premium_cost,
+                    'total_cost': total_cost,
+                    'regular_cost_display': _format_iqd(regular_cost),
+                    'premium_cost_display': _format_iqd(premium_cost),
+                    'total_cost_display': _format_iqd(total_cost),
                     'show_cost': regular_price > 0 and premium_price > 0,
                 }
                 messages.success(request, "✅ تم حساب الخلطة بنجاح!")
