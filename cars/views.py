@@ -105,6 +105,13 @@ def _unique_texts(values):
     return result
 
 
+def _split_pipe_lines(value):
+    if not value:
+        return []
+    parts = re.split(r'[|\r\n]+', str(value))
+    return [part.strip(' \t-–—') for part in parts if part.strip(' \t-–—')]
+
+
 def _build_maintenance_summary(odometer, nearest_km, engine_type, transmission, stage_tasks=None):
     if not odometer:
         return None
@@ -299,7 +306,13 @@ def symptom_detail(request, slug):
     symptom = CarSymptom.objects.filter(slug=slug, is_active=True).prefetch_related('causes').first()
     if not symptom:
         return redirect('maintenance')
-    return render(request, 'cars/maintenance_symptom_detail.html', {'symptom': symptom})
+    active_causes = [cause for cause in symptom.causes.all() if cause.is_active]
+    return render(request, 'cars/maintenance_symptom_detail.html', {
+        'symptom': symptom,
+        'active_causes': active_causes,
+        'driver_questions': _split_pipe_lines(symptom.driver_questions),
+        'self_check_steps': _split_pipe_lines(symptom.self_check_steps),
+    })
 
 
 RELAX_LABELS = {

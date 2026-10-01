@@ -2,23 +2,178 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/maintenance/symptom/{{ symptom.slug }}/">
     <title>{{ symptom.seo_title|default:symptom.name }} - سيارتي</title>
     <meta name="description" content="{{ symptom.seo_description|default:symptom.description|truncatechars:150 }}">
-    <script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="{% static 'css/app.css' %}"/>
-    <style>body{background:#0f172a;color:#f1f5f9}.box{background:rgba(30,41,59,.72);border:1px solid rgba(245,158,11,.14);border-radius:24px;padding:22px}.chip{display:inline-block;border-radius:999px;padding:7px 12px;background:rgba(251,191,36,.14);color:#fde68a;font-weight:800;font-size:.8rem}</style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}"/>
+    <style>
+        body { background:#0f172a; color:#f1f5f9; font-family:'Cairo',system-ui,sans-serif; }
+        .diag-shell { max-width:980px; margin:0 auto; padding:96px 16px 48px; }
+        .diag-card { background:linear-gradient(145deg,rgba(30,41,59,.82),rgba(15,23,42,.74)); border:1px solid rgba(245,158,11,.16); border-radius:28px; padding:22px; box-shadow:0 24px 70px rgba(0,0,0,.34); }
+        .diag-chip { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:7px 13px; background:rgba(251,191,36,.13); color:#fde68a; font-weight:900; font-size:.78rem; }
+        .diag-chip.red { background:rgba(239,68,68,.13); color:#fecaca; }
+        .diag-chip.blue { background:rgba(96,165,250,.13); color:#bfdbfe; }
+        .diag-question { border:1px solid rgba(148,163,184,.16); background:rgba(15,23,42,.48); border-radius:22px; padding:16px; transition:.25s ease; }
+        .diag-question.answered { border-color:rgba(251,191,36,.38); box-shadow:0 0 0 1px rgba(251,191,36,.08), 0 12px 30px rgba(0,0,0,.16); }
+        .answer-row { display:flex; flex-wrap:wrap; gap:9px; margin-top:12px; }
+        .answer-btn { border:1px solid rgba(251,191,36,.28); border-radius:999px; padding:9px 15px; color:#fde68a; background:rgba(251,191,36,.08); font-weight:900; cursor:pointer; transition:.22s ease; }
+        .answer-btn:hover { transform:translateY(-2px); background:rgba(251,191,36,.16); box-shadow:0 10px 26px rgba(251,191,36,.08); }
+        .answer-btn.active { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#111827; border-color:transparent; box-shadow:0 12px 34px rgba(245,158,11,.26); }
+        .progress-track { height:9px; background:rgba(51,65,85,.7); border-radius:999px; overflow:hidden; }
+        .progress-bar { height:100%; width:0%; background:linear-gradient(90deg,#fbbf24,#22c55e); border-radius:999px; transition:width .25s ease; }
+        .result-panel { display:none; border:1px solid rgba(34,197,94,.26); background:linear-gradient(145deg,rgba(34,197,94,.12),rgba(15,23,42,.72)); border-radius:24px; padding:18px; margin-top:18px; }
+        .result-panel.show { display:block; animation:diagIn .28s ease both; }
+        @keyframes diagIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+        .cause-card { border:1px solid rgba(148,163,184,.15); background:rgba(15,23,42,.42); border-radius:18px; padding:14px; }
+        .mini-list { display:grid; gap:9px; }
+        .mini-list li { list-style:none; border:1px solid rgba(148,163,184,.14); background:rgba(15,23,42,.35); border-radius:15px; padding:10px 12px; color:#cbd5e1; line-height:1.85; }
+        .mini-list li::before { content:'•'; color:#fbbf24; font-weight:900; margin-left:8px; }
+    </style>
 </head>
-<body><main class="max-w-4xl mx-auto px-4 pt-24 pb-12">
+<body>
+<main class="diag-shell">
     <a href="{% url 'maintenance' %}?symptom={{ symptom.slug }}" class="text-amber-300 font-bold">← الصيانة والأعطال</a>
-    <section class="box mt-4">
-        <div class="flex flex-wrap gap-2 mb-4"><span class="chip">{{ symptom.get_category_display }}</span><span class="chip">{{ symptom.get_severity_display }}</span><span class="chip">{{ symptom.get_safety_status_display }}</span></div>
+
+    <section class="diag-card mt-4">
+        <div class="flex flex-wrap gap-2 mb-4">
+            <span class="diag-chip">{{ symptom.get_category_display }}</span>
+            <span class="diag-chip blue">{{ symptom.get_severity_display }}</span>
+            <span class="diag-chip red">{{ symptom.get_safety_status_display }}</span>
+        </div>
         <h1 class="text-3xl md:text-5xl font-black mb-4">{{ symptom.name }}</h1>
         <p class="text-slate-300 leading-8">{{ symptom.description }}</p>
     </section>
-    {% if symptom.urgent_warning %}<section class="box mt-4 border-red-500/40"><h2 class="text-xl font-black text-red-300 mb-2">تحذير مهم</h2><p class="leading-8 text-slate-300">{{ symptom.urgent_warning }}</p></section>{% endif %}
-    <section class="box mt-4"><h2 class="text-xl font-black text-amber-300 mb-3">أهم الأسباب المحتملة</h2><div class="space-y-3">{% for cause in symptom.causes.all %}{% if cause.is_active %}<div class="box p-4"><h3 class="font-black text-white">{{ cause.priority }}. {{ cause.title }}</h3><p class="text-slate-300 text-sm leading-7 mt-1">{{ cause.description }}</p>{% if cause.check_method %}<p class="text-amber-100 text-sm mt-2">الفحص: {{ cause.check_method }}</p>{% endif %}{% if cause.solution_hint %}<p class="text-slate-400 text-sm mt-2">الحل المتوقع: {{ cause.solution_hint }}</p>{% endif %}</div>{% endif %}{% endfor %}</div></section>
-    {% if symptom.driver_questions %}<section class="box mt-4"><h2 class="text-xl font-black text-amber-300 mb-2">أسئلة قبل مراجعة الفيتر</h2><p class="whitespace-pre-line leading-8 text-slate-300">{{ symptom.driver_questions }}</p></section>{% endif %}
-    {% if symptom.self_check_steps %}<section class="box mt-4"><h2 class="text-xl font-black text-amber-300 mb-2">خطوات فحص ذاتي</h2><p class="whitespace-pre-line leading-8 text-slate-300">{{ symptom.self_check_steps }}</p></section>{% endif %}
-</main></body></html>
+
+    {% if symptom.urgent_warning %}
+    <section class="diag-card mt-4" style="border-color:rgba(239,68,68,.38);">
+        <h2 class="text-xl font-black text-red-300 mb-2">تحذير مهم</h2>
+        <p class="leading-8 text-slate-300">{{ symptom.urgent_warning }}</p>
+    </section>
+    {% endif %}
+
+    {% if driver_questions %}
+    <section class="diag-card mt-4" id="diagnosisCard" data-question-count="{{ driver_questions|length }}">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+            <div>
+                <h2 class="text-2xl font-black text-amber-300">تشخيص أولي سريع</h2>
+                <p class="text-slate-400 text-sm leading-7 mt-1">أجب عن الأسئلة بنعم أو لا. بعدها تظهر لك قراءة أولية تساعدك قبل مراجعة الفني.</p>
+            </div>
+            <span class="diag-chip"><span id="answeredCount">0</span> / {{ driver_questions|length }} مكتملة</span>
+        </div>
+        <div class="progress-track mb-4"><div class="progress-bar" id="diagnosisProgress"></div></div>
+
+        <div class="grid gap-3">
+            {% for question in driver_questions %}
+            <article class="diag-question" data-question-index="{{ forloop.counter }}" data-question="{{ question|escape }}">
+                <h3 class="font-black text-white leading-8">{{ forloop.counter }}. {{ question }}</h3>
+                <div class="answer-row" role="group" aria-label="إجابة السؤال {{ forloop.counter }}">
+                    <button type="button" class="answer-btn" data-answer="نعم">نعم</button>
+                    <button type="button" class="answer-btn" data-answer="لا">لا</button>
+                    <button type="button" class="answer-btn" data-answer="غير متأكد">غير متأكد</button>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <div class="result-panel" id="diagnosisResult">
+            <h3 class="text-2xl font-black text-white mb-2">نتيجة التشخيص الأولي</h3>
+            <p class="text-emerald-200 leading-8">تم تجهيز ملخص مبدئي بناءً على إجاباتك. هذه القراءة لا تغني عن فحص مختص، لكنها تساعدك تشرح الحالة بدقة.</p>
+            <div class="mt-4 grid md:grid-cols-2 gap-4">
+                <div>
+                    <h4 class="font-black text-amber-300 mb-2">ملخص إجاباتك</h4>
+                    <ul class="mini-list" id="answerSummary"></ul>
+                </div>
+                <div>
+                    <h4 class="font-black text-amber-300 mb-2">أولوية التصرف</h4>
+                    <p class="text-slate-300 leading-8" id="actionHint"></p>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="diag-card mt-4">
+        <h2 class="text-xl font-black text-amber-300 mb-3">الأسباب المحتملة</h2>
+        <div class="grid gap-3">
+            {% for cause in active_causes %}
+            <article class="cause-card">
+                <div class="flex flex-wrap justify-between gap-2 mb-2">
+                    <h3 class="font-black text-white">{{ cause.priority }}. {{ cause.title }}</h3>
+                    <span class="diag-chip">{{ cause.get_likelihood_display }}</span>
+                </div>
+                <p class="text-slate-300 text-sm leading-7">{{ cause.description }}</p>
+                {% if cause.check_method %}<p class="text-amber-100 text-sm mt-2 leading-7"><b>الفحص:</b> {{ cause.check_method }}</p>{% endif %}
+                {% if cause.solution_hint %}<p class="text-slate-400 text-sm mt-2 leading-7"><b>الحل المتوقع:</b> {{ cause.solution_hint }}</p>{% endif %}
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% if self_check_steps %}
+    <section class="diag-card mt-4">
+        <h2 class="text-xl font-black text-amber-300 mb-3">خطوات فحص ذاتي آمنة</h2>
+        <ul class="mini-list">
+            {% for step in self_check_steps %}<li>{{ step }}</li>{% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</main>
+
+<script>
+    (function() {
+        var card = document.getElementById('diagnosisCard');
+        if (!card) return;
+        var total = Number(card.getAttribute('data-question-count') || 0);
+        var answeredCount = document.getElementById('answeredCount');
+        var progress = document.getElementById('diagnosisProgress');
+        var result = document.getElementById('diagnosisResult');
+        var summary = document.getElementById('answerSummary');
+        var actionHint = document.getElementById('actionHint');
+        var answers = {};
+
+        function updateResult() {
+            var answered = Object.keys(answers).length;
+            answeredCount.textContent = answered;
+            progress.style.width = total ? ((answered / total) * 100) + '%' : '0%';
+            if (answered < total) return;
+
+            summary.innerHTML = '';
+            card.querySelectorAll('.diag-question').forEach(function(q) {
+                var idx = q.getAttribute('data-question-index');
+                var li = document.createElement('li');
+                li.textContent = q.getAttribute('data-question') + ' — ' + answers[idx];
+                summary.appendChild(li);
+            });
+
+            var yesCount = Object.values(answers).filter(function(v) { return v === 'نعم'; }).length;
+            var unsureCount = Object.values(answers).filter(function(v) { return v === 'غير متأكد'; }).length;
+            if (yesCount >= Math.ceil(total / 2)) {
+                actionHint.textContent = 'إجاباتك تشير إلى أن العرض واضح ومتكرر. راجع الفني قريباً، واذكر له الإجابات كما هي لتسريع التشخيص.';
+            } else if (unsureCount) {
+                actionHint.textContent = 'بعض الإجابات غير مؤكدة. راقب متى يظهر العرض، السرعة، الحرارة، وهل يتكرر بعد التشغيل أو أثناء القيادة.';
+            } else {
+                actionHint.textContent = 'الإجابات لا تؤكد نمطاً خطيراً بوضوح، لكن إذا استمر العرض أو زاد، افحص السيارة عند مختص.';
+            }
+            result.classList.add('show');
+            result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        card.addEventListener('click', function(e) {
+            var btn = e.target.closest('.answer-btn');
+            if (!btn) return;
+            var question = btn.closest('.diag-question');
+            var idx = question.getAttribute('data-question-index');
+            question.querySelectorAll('.answer-btn').forEach(function(item) { item.classList.remove('active'); });
+            btn.classList.add('active');
+            question.classList.add('answered');
+            answers[idx] = btn.getAttribute('data-answer');
+            updateResult();
+        });
+    })();
+</script>
+</body>
+</html>
