@@ -180,22 +180,22 @@
         .helper-card {
             position: relative;
             overflow: hidden;
-            background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.18), transparent 34%), linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(59, 130, 246, 0.08));
+            background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.18), transparent 32%), linear-gradient(135deg, rgba(245, 158, 11, 0.11), rgba(59, 130, 246, 0.07));
             border: 1px solid rgba(245, 158, 11, 0.22);
             border-radius: 20px;
-            padding: 18px;
+            padding: 16px;
         }
 
         .choice-point {
-            background: rgba(15, 23, 42, 0.58);
-            border: 1px solid rgba(148, 163, 184, 0.12);
-            border-radius: 16px;
-            padding: 12px 14px;
+            background: rgba(15, 23, 42, 0.52);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 999px;
+            padding: 8px 12px;
         }
 
         .choice-number {
-            width: 30px;
-            height: 30px;
+            width: 22px;
+            height: 22px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -203,13 +203,14 @@
             background: linear-gradient(135deg, #fbbf24, #f59e0b);
             color: #0f172a;
             font-weight: 900;
+            font-size: 0.75rem;
             flex-shrink: 0;
         }
 
         .fuel-price-card {
             background: rgba(15, 23, 42, 0.72);
-            border-radius: 18px;
-            padding: 14px 16px;
+            border-radius: 16px;
+            padding: 10px 12px;
             border: 1px solid rgba(148, 163, 184, 0.14);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 35px rgba(0, 0, 0, 0.18);
         }
@@ -307,50 +308,48 @@
             </div>
 
             <div class="helper-card mb-8">
-                <div class="flex flex-col lg:flex-row lg:items-stretch gap-5 mb-5">
-                    <div class="flex-1">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-200 text-xs font-bold mb-3">
-                            اختيار ذكي أو إدخال يدوي
+                <div class="flex flex-col xl:flex-row xl:items-center gap-4 mb-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-col md:flex-row md:items-center gap-3 mb-3">
+                            <div>
+                                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-200 text-[11px] font-bold mb-2">
+                                    بداية سريعة
+                                </div>
+                                <h3 class="text-white font-extrabold text-xl leading-tight">اختر طريقتك لحساب الخلطة</h3>
+                            </div>
+                            <p class="text-amber-100/70 text-xs md:mr-auto">كل القيم تبقى قابلة للتعديل قبل الحساب.</p>
                         </div>
-                        <h3 class="text-white font-extrabold text-2xl mb-4">اختر طريقتك لحساب الخلطة</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div class="choice-point flex gap-3 items-start">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div class="choice-point flex gap-2 items-center">
                                 <span class="choice-number">1</span>
-                                <div>
-                                    <div class="text-white font-bold">أدخل بياناتك يدوياً</div>
-                                    <p class="text-slate-400 text-sm leading-6 mt-1">اكتب الأوكتان المطلوب وسعة الخزان بنفسك إذا تعرف مواصفات سيارتك.</p>
-                                </div>
+                                <span class="text-slate-200 text-sm font-bold">أدخل الأوكتان وسعة الخزان يدوياً.</span>
                             </div>
-                            <div class="choice-point flex gap-3 items-start">
+                            <div class="choice-point flex gap-2 items-center">
                                 <span class="choice-number">2</span>
-                                <div>
-                                    <div class="text-white font-bold">اختر من قاعدة سيارتي</div>
-                                    <p class="text-slate-400 text-sm leading-6 mt-1">حدد الماركة والموديل والسنة والمحرك، وسنملأ الأوكتان وسعة الخزان إذا كانت متوفرة.</p>
-                                </div>
+                                <span class="text-slate-200 text-sm font-bold">أو اختر السيارة لنملأ البيانات المتوفرة.</span>
                             </div>
                         </div>
-                        <p class="text-amber-200/80 text-xs mt-3">كل القيم تبقى مرنة وقابلة للتعديل قبل الضغط على زر الحساب.</p>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 lg:w-64">
+                    <div class="grid grid-cols-2 gap-2 xl:w-80">
                         <div class="fuel-price-card regular">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="fuel-badge regular">بنزين عادي</span>
-                                <span class="text-blue-300 text-xs font-bold">84 أوكتان</span>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="fuel-badge regular">عادي</span>
+                                <span class="text-blue-300 text-[11px] font-bold">84</span>
                             </div>
-                            <div class="mt-3 text-white font-black text-2xl">
+                            <div class="mt-2 text-white font-black text-lg leading-tight">
                                 {% if regular_fuel_price_iqd %}{{ regular_fuel_price_iqd_display }}{% else %}غير محدد{% endif %}
-                                <span class="text-slate-400 text-xs font-bold">د.ع / لتر</span>
                             </div>
+                            <div class="text-slate-400 text-[11px] font-bold mt-1">د.ع / لتر</div>
                         </div>
                         <div class="fuel-price-card premium">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="fuel-badge premium">بنزين محسن</span>
-                                <span class="text-amber-300 text-xs font-bold">91 أوكتان</span>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="fuel-badge premium">محسن</span>
+                                <span class="text-amber-300 text-[11px] font-bold">91</span>
                             </div>
-                            <div class="mt-3 text-white font-black text-2xl">
+                            <div class="mt-2 text-white font-black text-lg leading-tight">
                                 {% if premium_fuel_price_iqd %}{{ premium_fuel_price_iqd_display }}{% else %}غير محدد{% endif %}
-                                <span class="text-slate-400 text-xs font-bold">د.ع / لتر</span>
                             </div>
+                            <div class="text-slate-400 text-[11px] font-bold mt-1">د.ع / لتر</div>
                         </div>
                     </div>
                 </div>
