@@ -68,6 +68,15 @@ class CarSpecification(models.Model):
     oil_visc = models.TextField()
     oil_visc_high_km = models.TextField(blank=True, null=True)
     fuel = models.TextField()
+
+    tank = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        blank=True,
+        null=True,
+        verbose_name="سعة خزان الوقود (لتر)",
+        help_text="مثال: 60، ويستخدم في حاسبة الأوكتان عند اختيار السيارة"
+    )
     
     octane = models.TextField(
         verbose_name="الأوكتان",
@@ -522,6 +531,16 @@ class SiteSettings(models.Model):
     hide_result_transmission = models.BooleanField(default=False, verbose_name="إخفاء نوع الكير وزيته من نتائج البحث")
     hide_result_engine_code = models.BooleanField(default=False, verbose_name="إخفاء كود المحرك من نتائج البحث")
     hide_result_trim = models.BooleanField(default=False, verbose_name="إخفاء الفئة من نتائج البحث")
+    regular_fuel_price_iqd = models.PositiveIntegerField(
+        default=0,
+        verbose_name="سعر لتر البنزين العادي بالدينار",
+        help_text="مثال: 450. اتركه 0 لإخفاء حساب تكلفة التفويلة."
+    )
+    premium_fuel_price_iqd = models.PositiveIntegerField(
+        default=0,
+        verbose_name="سعر لتر البنزين المحسن بالدينار",
+        help_text="مثال: 850. اتركه 0 لإخفاء حساب تكلفة التفويلة."
+    )
     ads_txt = models.TextField(
         blank=True,
         verbose_name="محتوى ads.txt",

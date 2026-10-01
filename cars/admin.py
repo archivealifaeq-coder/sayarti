@@ -470,7 +470,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
             'fields': ('battery', 'transmission_type', 'transmission_oil_spec', 'transmission_oil_brands')
         }),
         ('⛽ الوقود', {
-            'fields': ('fuel', 'octane')
+            'fields': ('fuel', 'octane', 'tank')
         }),
         ('🛞 الإطارات', {
             'fields': ('tire_size', 'spark')
@@ -631,6 +631,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
                 'Oil Visc (>100k)': car.oil_visc_high_km or '',
                 'Fuel': car.fuel,
                 'Octane': car.octane,
+                'Tank': car.tank or '',
                 'Spark': car.spark or '',
                 'Tire Size': car.tire_size,
                 'Oil Capacity': car.oil_capacity,
@@ -661,7 +662,7 @@ class CarSpecificationAdmin(admin.ModelAdmin):
             if df.empty:
                 df = pd.DataFrame(columns=[
                     'Brand_EN', 'Brand_AR', 'Model_EN', 'Model_AR', 'Year', 'Trim', 'Spec',
-                    'Engine', 'Engine Code', 'Oil Visc', 'Oil Visc (>100k)', 'Fuel', 'Octane',
+                    'Engine', 'Engine Code', 'Oil Visc', 'Oil Visc (>100k)', 'Fuel', 'Octane', 'Tank',
                     'Spark', 'Tire Size', 'Oil Capacity', 'Recommendations', 'Oil Brands', 'Battery',
                     'Transmission Type', 'Transmission Oil Spec', 'Transmission Oil Brands', 'id'
                 ])
@@ -1148,6 +1149,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'hide_result_transmission', 'hide_result_engine_code', 'hide_result_trim',
             ),
             'description': 'ضع علامة على أي تفصيل تريد إخفاءه مؤقتاً من بطاقات نتائج البحث لكل السيارات، بدون حذف البيانات من قاعدة البيانات.'
+        }),
+        ('حاسبة الأوكتان', {
+            'fields': ('regular_fuel_price_iqd', 'premium_fuel_price_iqd'),
+            'description': 'أدخل سعر اللتر بالدينار العراقي ليظهر حساب تكلفة التفويلة في حاسبة الأوكتان. اترك السعر 0 لإخفاء التكلفة.'
         }),
         ('إحصاءات الزوار', {
             'fields': ('ga4_id', 'ga4_property_id', 'ga_service_account_json'),

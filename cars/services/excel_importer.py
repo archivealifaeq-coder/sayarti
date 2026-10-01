@@ -58,6 +58,18 @@ def _octane_value(row):
     return str(raw).strip()
 
 
+def _decimal_text(row, *cols):
+    raw = _cell_any(row, *cols)
+    if raw == '':
+        return None
+    if isinstance(raw, str):
+        raw = raw.replace(',', '').strip()
+    try:
+        return str(round(float(raw), 1))
+    except (TypeError, ValueError):
+        return None
+
+
 def _validate_bounded_fields(values):
     """Give a precise Excel-column error for the few identity fields that stay bounded."""
     for field_name, value in values.items():
@@ -191,6 +203,7 @@ def import_cars_from_excel(file):
                 'oil_visc_high_km': _cell(row, 'Oil Visc (>100k)'),
                 'fuel': _cell(row, 'Fuel'),
                 'octane': _octane_value(row),
+                'tank': _decimal_text(row, 'Tank', 'Fuel Tank', 'Tank Capacity', 'Fuel Tank Capacity', 'سعة الخزان', 'خزان الوقود'),
                 'tire_size': tire_size_val,
                 'spark': spark_val,
                 'oil_capacity': _cell(row, 'Oil Capacity'),

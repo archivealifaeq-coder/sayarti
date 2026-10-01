@@ -768,7 +768,50 @@ def _mix_cars():
     """
     return (CarSpecification.objects.all()
             .order_by('-year', 'brand_ar', 'model_ar')
-            .only('id', 'brand_ar', 'model_ar', 'year', 'octane', 'oil_capacity')[:MIX_CAR_LIMIT])
+            .only(
+                'id', 'brand_ar', 'model_ar', 'year', 'spec_region', 'engine',
+                'engine_code', 'engine_type', 'octane', 'tank'
+            )[:MIX_CAR_LIMIT])
+
+
+def _octane_number(value):
+    match = re.search(r'\d+(?:\.\d+)?', str(value or ''))
+    return match.group(0) if match else ''
+
+
+def _mix_car_options():
+    options = []
+    for car in _mix_cars():
+        octane_value = _octane_number(car.octane)
+        if not octane_value:
+            continue
+        engine_parts = [car.engine]
+        if car.engine_code:
+            engine_parts.append(car.engine_code)
+        options.append({
+            'id': car.id,
+            'brand': car.brand_ar,
+            'model': car.model_ar,
+            'year': car.year,
+            'spec_region': car.spec_region,
+            'spec_region_label': car.get_spec_region_display(),
+            'engine': ' · '.join(part for part in engine_parts if part),
+            'engine_type': car.get_engine_type_display() if car.engine_type else '',
+            'octane': octane_value,
+            'octane_label': str(car.octane or ''),
+            'tank': str(car.tank) if car.tank else '',
+        })
+    return options
+
+
+def _mix_calculator_context(result=None):
+    settings = SiteSettings.load()
+    return {
+        'car_options': _mix_car_options(),
+        'result': result,
+        'regular_fuel_price_iqd': settings.regular_fuel_price_iqd,
+        'premium_fuel_price_iqd': settings.premium_fuel_price_iqd,
+    }
 
 
 def mix_calculator_view(request):
@@ -783,11 +826,11 @@ def mix_calculator_view(request):
             
             if tank <= 0:
                 messages.error(request, "⚠️ سعة الخزان يجب أن تكون أكبر من صفر")
-                return render(request, 'cars/mix_calculator.html', {'cars': _mix_cars(), 'result': result})
+                return render(request, 'cars/mix_calculator.html', _mix_calculator_context(result))
             
             if o1 < 80 or o1 > 120 or o2 < 80 or o2 > 120:
                 messages.error(request, "⚠️ رقم الأوكتان يجب أن يكون بين 80 و 120")
-                return render(request, 'cars/mix_calculator.html', {'cars': _mix_cars(), 'result': result})
+                return render(request, 'cars/mix_calculator.html', _mix_calculator_context(result))
             
             if not (min(o1, o2) <= target <= max(o1, o2)):
                 messages.error(request, "⚠️ الأوكتان المطلوب يجب أن يكون بين النوعين")
@@ -797,15 +840,26 @@ def mix_calculator_view(request):
                 else:
                     r1 = 0.5
                 r2 = 1 - r1
+                amount1 = round(r1 * tank, 2)
+                amount2 = round(r2 * tank, 2)
+                settings = SiteSettings.load()
+                regular_price = settings.regular_fuel_price_iqd or 0
+                premium_price = settings.premium_fuel_price_iqd or 0
                 result = {
                     'octane1': o1,
                     'octane2': o2,
-                    'amount1': round(r1 * tank, 2),
-                    'amount2': round(r2 * tank, 2),
+                    'amount1': amount1,
+                    'amount2': amount2,
                     'percent1': round(r1 * 100, 2),
                     'percent2': round(r2 * 100, 2),
                     'target': target,
                     'tank': tank,
+                    'regular_price': regular_price,
+                    'premium_price': premium_price,
+                    'regular_cost': round(amount1 * regular_price),
+                    'premium_cost': round(amount2 * premium_price),
+                    'total_cost': round((amount1 * regular_price) + (amount2 * premium_price)),
+                    'show_cost': regular_price > 0 and premium_price > 0,
                 }
                 messages.success(request, "✅ تم حساب الخلطة بنجاح!")
         except ValueError:
@@ -813,7 +867,7 @@ def mix_calculator_view(request):
         except ZeroDivisionError:
             messages.error(request, "⚠️ حدث خطأ في الحساب. تأكد من القيم المدخلة.")
     
-    return render(request, 'cars/mix_calculator.html', {'cars': _mix_cars(), 'result': result})
+    return render(request, 'cars/mix_calculator.html', _mix_calculator_context(result))
 
 
 def recommendations_view(request, car_id):

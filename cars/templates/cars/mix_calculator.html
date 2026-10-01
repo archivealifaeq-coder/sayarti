@@ -177,6 +177,13 @@
             margin-bottom: 16px;
         }
 
+        .helper-card {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(59, 130, 246, 0.08));
+            border: 1px solid rgba(245, 158, 11, 0.22);
+            border-radius: 20px;
+            padding: 18px;
+        }
+
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
@@ -266,6 +273,30 @@
                 {% endif %}
             </div>
 
+            <div class="helper-card mb-8">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-5">
+                    <div>
+                        <h3 class="text-white font-bold text-lg">اختر طريقتك</h3>
+                        <p class="text-slate-300 text-sm leading-7 mt-1">
+                            يمكنك إدخال بيانات سيارتك يدوياً، أو اختيارها من قاعدة بيانات سيارتي بتحديد الماركة والموديل والسنة والمحرك، وسنملأ الأوكتان وسعة الخزان تلقائياً إذا كانت متوفرة. كل القيم تبقى قابلة للتعديل قبل الحساب.
+                        </p>
+                    </div>
+                    {% if regular_fuel_price_iqd and premium_fuel_price_iqd %}
+                    <div class="bg-slate-950/40 border border-slate-700/60 rounded-2xl px-4 py-3 text-xs text-slate-300 min-w-48">
+                        <div>سعر العادي: <span class="text-blue-300 font-bold">{{ regular_fuel_price_iqd }}</span> د.ع/لتر</div>
+                        <div class="mt-1">سعر المحسن: <span class="text-amber-300 font-bold">{{ premium_fuel_price_iqd }}</span> د.ع/لتر</div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <select id="mix-brand" class="car-select"><option value="">1) اختر الماركة</option></select>
+                    <select id="mix-model" class="car-select" disabled><option value="">2) اختر الموديل</option></select>
+                    <select id="mix-year-spec" class="car-select" disabled><option value="">3) اختر السنة والمواصفة</option></select>
+                    <select id="mix-engine" class="car-select" disabled><option value="">4) اختر المحرك</option></select>
+                </div>
+                <div id="selected-car-summary" class="text-slate-400 text-xs text-center mt-3"></div>
+            </div>
+
             <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6" id="calculator-form">
                 {% csrf_token %}
 
@@ -318,7 +349,7 @@
                         🔄 احسب الخلطة المثالية
                     </button>
 
-                    <button type="reset" class="text-slate-500 hover:text-slate-300 text-sm transition"
+                    <button type="button" class="text-slate-500 hover:text-slate-300 text-sm transition"
                             onclick="resetForm()">
                         ↺ إعادة تعيين القيم الافتراضية
                     </button>
@@ -358,34 +389,28 @@
                         <p class="text-sm text-slate-400">
                             بإجمالي <span class="text-white font-bold">{{ result.tank }}</span> لتر
                         </p>
+                        {% if result.show_cost %}
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div class="bg-slate-900/60 rounded-xl p-3 border border-blue-500/20">
+                                <div class="text-slate-400">تكلفة العادي</div>
+                                <div class="text-blue-300 font-bold">{{ result.regular_cost }} د.ع</div>
+                            </div>
+                            <div class="bg-slate-900/60 rounded-xl p-3 border border-amber-500/20">
+                                <div class="text-slate-400">تكلفة المحسن</div>
+                                <div class="text-amber-300 font-bold">{{ result.premium_cost }} د.ع</div>
+                            </div>
+                            <div class="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20">
+                                <div class="text-slate-400">سعر التفويلة التقريبي</div>
+                                <div class="text-emerald-300 font-bold text-lg">{{ result.total_cost }} د.ع</div>
+                            </div>
+                        </div>
+                        {% endif %}
                         <p class="text-xs text-green-400/70 mt-2">✅ خليط مثالي لأداء ممتاز وحماية للمحرك</p>
                     </div>
                 </div>
                 {% endif %}
             </div>
 
-            <div class="mt-8 border-t border-slate-700 pt-6">
-                <h4 class="text-slate-300 font-semibold mb-4 text-center text-sm">
-                    🔍 اختر سيارة لتعبئة البيانات تلقائياً
-                </h4>
-                <div class="flex flex-col md:flex-row gap-3">
-                    <select id="car-select" class="car-select">
-                        <option value="">-- اختر سيارة --</option>
-                        {% for car in cars %}
-                            <option value="{{ car.octane }}|{{ car.oil_capacity|default:60 }}">
-                                {{ car.brand_ar }} {{ car.model_ar }} ({{ car.year }}) - أوكتان {{ car.octane }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    <button onclick="fillCarData()"
-                            class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-6 py-3 rounded-xl transition whitespace-nowrap">
-                        📥 تعبئة البيانات
-                    </button>
-                </div>
-                <p class="text-slate-500 text-xs text-center mt-3">
-                    💡 سيتم تعبئة حقل "الأوكتان المطلوب" و "سعة الخزان" تلقائياً
-                </p>
-            </div>
         </div>
 
         <div class="text-center mt-6">
@@ -395,6 +420,7 @@
         </div>
     </div>
 
+    {{ car_options|json_script:"mix-car-options" }}
     <script>
         function scrollToElement(elementId, delay) {
             if (delay === undefined) delay = 500;
@@ -429,25 +455,111 @@
             }
         }
 
-        function fillCarData() {
-            var select = document.getElementById('car-select');
-            var value = select.value;
-            if (value) {
-                var parts = value.split('|');
-                var octane = parts[0];
-                var capacity = parts[1] || 60;
+        var mixCars = JSON.parse(document.getElementById('mix-car-options').textContent || '[]');
+        var brandSelect = document.getElementById('mix-brand');
+        var modelSelect = document.getElementById('mix-model');
+        var yearSpecSelect = document.getElementById('mix-year-spec');
+        var engineSelect = document.getElementById('mix-engine');
+        var selectedSummary = document.getElementById('selected-car-summary');
 
-                document.querySelector('input[name="octane_target"]').value = octane;
-                document.querySelector('input[name="tank_capacity"]').value = capacity;
+        function uniqueSorted(values) {
+            var seen = {};
+            return values.filter(function(value) {
+                if (!value || seen[value]) return false;
+                seen[value] = true;
+                return true;
+            }).sort(function(a, b) { return String(a).localeCompare(String(b), 'ar'); });
+        }
 
-                var targetInput = document.querySelector('input[name="octane_target"]');
-                targetInput.style.borderColor = '#fbbf24';
-                targetInput.style.boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.2)';
-                setTimeout(function() {
-                    targetInput.style.borderColor = '';
-                    targetInput.style.boxShadow = '';
-                }, 2000);
+        function resetSelect(select, placeholder) {
+            select.innerHTML = '<option value="">' + placeholder + '</option>';
+            select.disabled = true;
+        }
+
+        function addOptions(select, values) {
+            values.forEach(function(value) {
+                var option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
+            select.disabled = values.length === 0;
+        }
+
+        function yearSpecKey(car) {
+            return car.year + ' - ' + (car.spec_region_label || car.spec_region || 'مواصفة غير محددة');
+        }
+
+        function engineLabel(car) {
+            var parts = [car.engine];
+            if (car.engine_type) parts.push(car.engine_type);
+            if (car.octane_label) parts.push('أوكتان ' + car.octane_label);
+            return parts.filter(Boolean).join(' - ');
+        }
+
+        function highlightInput(input) {
+            input.style.borderColor = '#fbbf24';
+            input.style.boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.2)';
+            setTimeout(function() {
+                input.style.borderColor = '';
+                input.style.boxShadow = '';
+            }, 1800);
+        }
+
+        function fillSelectedCar(car) {
+            var targetInput = document.querySelector('input[name="octane_target"]');
+            var tankInput = document.querySelector('input[name="tank_capacity"]');
+            if (car.octane) {
+                targetInput.value = car.octane;
+                highlightInput(targetInput);
             }
+            if (car.tank) {
+                tankInput.value = car.tank;
+                highlightInput(tankInput);
+            }
+            selectedSummary.textContent = 'تم اختيار: ' + car.brand + ' ' + car.model + ' ' + car.year + ' - يمكنك تعديل الأرقام قبل الحساب.';
+        }
+
+        function initCarSelector() {
+            if (!brandSelect || !mixCars.length) return;
+            addOptions(brandSelect, uniqueSorted(mixCars.map(function(car) { return car.brand; })));
+
+            brandSelect.addEventListener('change', function() {
+                resetSelect(modelSelect, '2) اختر الموديل');
+                resetSelect(yearSpecSelect, '3) اختر السنة والمواصفة');
+                resetSelect(engineSelect, '4) اختر المحرك');
+                selectedSummary.textContent = '';
+                var cars = mixCars.filter(function(car) { return car.brand === brandSelect.value; });
+                addOptions(modelSelect, uniqueSorted(cars.map(function(car) { return car.model; })));
+            });
+
+            modelSelect.addEventListener('change', function() {
+                resetSelect(yearSpecSelect, '3) اختر السنة والمواصفة');
+                resetSelect(engineSelect, '4) اختر المحرك');
+                selectedSummary.textContent = '';
+                var cars = mixCars.filter(function(car) { return car.brand === brandSelect.value && car.model === modelSelect.value; });
+                addOptions(yearSpecSelect, uniqueSorted(cars.map(yearSpecKey)));
+            });
+
+            yearSpecSelect.addEventListener('change', function() {
+                resetSelect(engineSelect, '4) اختر المحرك');
+                selectedSummary.textContent = '';
+                var cars = mixCars.filter(function(car) {
+                    return car.brand === brandSelect.value && car.model === modelSelect.value && yearSpecKey(car) === yearSpecSelect.value;
+                });
+                cars.forEach(function(car) {
+                    var option = document.createElement('option');
+                    option.value = car.id;
+                    option.textContent = engineLabel(car);
+                    engineSelect.appendChild(option);
+                });
+                engineSelect.disabled = cars.length === 0;
+            });
+
+            engineSelect.addEventListener('change', function() {
+                var car = mixCars.find(function(item) { return String(item.id) === String(engineSelect.value); });
+                if (car) fillSelectedCar(car);
+            });
         }
 
         function resetForm() {
@@ -455,7 +567,13 @@
             document.querySelector('input[name="octane1"]').value = 84;
             document.querySelector('input[name="octane2"]').value = 91;
             document.querySelector('input[name="tank_capacity"]').value = 60;
-            document.getElementById('car-select').value = '';
+            if (brandSelect) {
+                brandSelect.value = '';
+                resetSelect(modelSelect, '2) اختر الموديل');
+                resetSelect(yearSpecSelect, '3) اختر السنة والمواصفة');
+                resetSelect(engineSelect, '4) اختر المحرك');
+                selectedSummary.textContent = '';
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -468,6 +586,7 @@
                     }
                 });
             }
+            initCarSelector();
         });
     </script>
 
