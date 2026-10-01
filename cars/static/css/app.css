@@ -67,7 +67,8 @@
             left: 0;
             right: 0;
             z-index: 9997;
-            background: linear-gradient(90deg, rgba(15, 23, 42, 0.98), rgba(30, 36, 48, 0.96), rgba(15, 23, 42, 0.98));
+            background: linear-gradient(115deg, rgba(15, 23, 42, 0.98), rgba(42, 34, 21, 0.96), rgba(17, 24, 39, 0.98), rgba(30, 41, 59, 0.96));
+            background-size: 260% 100%;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(245, 158, 11, 0.06);
@@ -76,10 +77,10 @@
             overflow: hidden;
             display: flex;
             align-items: center;
-            animation: tickerGlow 5s ease-in-out infinite;
+            animation: tickerAurora 7s ease-in-out infinite, tickerGlow 4.5s ease-in-out infinite;
         }
-        .ticker-wrapper::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(231, 198, 111, .12), transparent 42%); opacity: .55; pointer-events: none; animation: tickerBreath 4s ease-in-out infinite; }
-        .ticker-wrapper::after { content: ''; position: absolute; top: 0; bottom: 0; width: 120px; right: -140px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .12), transparent); transform: skewX(-18deg); pointer-events: none; animation: tickerSheen 4.5s ease-in-out infinite; }
+        .ticker-wrapper::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 18% 50%, rgba(251, 191, 36, .18), transparent 28%), radial-gradient(circle at 82% 50%, rgba(245, 158, 11, .13), transparent 30%); opacity: .65; pointer-events: none; animation: tickerBreath 3.4s ease-in-out infinite; }
+        .ticker-wrapper::after { content: ''; position: absolute; top: 0; bottom: 0; width: 170px; right: -190px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent); transform: skewX(-18deg); pointer-events: none; animation: tickerSheen 3.2s ease-in-out infinite; }
         @media (max-width: 640px) {
             .ticker-wrapper { height: 40px; top: 56px; }
         }
@@ -118,13 +119,15 @@
             letter-spacing: 0.01em;
             overflow: hidden;
             text-overflow: ellipsis;
+            text-shadow: 0 0 16px rgba(251, 191, 36, .16);
         }
         .ticker-item .ticker-text .highlight { color: #e7c66f; }
         .ticker-link { display: inline-flex; align-items: center; justify-content: center; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(231, 198, 111, .12); color: #f8e3a5; border: 1px solid rgba(231, 198, 111, .2); font-size: .75rem; font-weight: 900; text-decoration: none; flex-shrink: 0; }
         .ticker-link:hover { background: rgba(231, 198, 111, .2); }
-        @keyframes tickerGlow { 0%, 100% { border-bottom-color: rgba(245, 158, 11, .06); } 50% { border-bottom-color: rgba(231, 198, 111, .18); } }
-        @keyframes tickerBreath { 0%, 100% { opacity: .35; transform: scaleX(.95); } 50% { opacity: .65; transform: scaleX(1.04); } }
-        @keyframes tickerSheen { 0%, 58% { right: -140px; opacity: 0; } 68% { opacity: .65; } 100% { right: calc(100% + 140px); opacity: 0; } }
+        @keyframes tickerAurora { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        @keyframes tickerGlow { 0%, 100% { border-bottom-color: rgba(245, 158, 11, .08); box-shadow: 0 4px 18px rgba(0,0,0,.24); } 50% { border-bottom-color: rgba(231, 198, 111, .28); box-shadow: 0 7px 24px rgba(245,158,11,.12); } }
+        @keyframes tickerBreath { 0%, 100% { opacity: .42; transform: scaleX(.96); } 50% { opacity: .82; transform: scaleX(1.05); } }
+        @keyframes tickerSheen { 0%, 48% { right: -190px; opacity: 0; } 62% { opacity: .78; } 100% { right: calc(100% + 190px); opacity: 0; } }
         @keyframes tickerIconPulse { 0%, 100% { opacity: .86; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
         @media (max-width: 640px) { .ticker-item { justify-content: flex-start; padding: 0 14px; } .ticker-link { display: none; } }
         
