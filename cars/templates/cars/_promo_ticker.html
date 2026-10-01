@@ -23,6 +23,8 @@
     .ticker-text .highlight { color: #fbbf24; }
     @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     @media (max-width: 640px) { .ticker-wrapper { top: 56px; height: 40px; } .ticker-item { padding: 0 22px; } }
+    body.no-navbar .ticker-wrapper { top: 0; }
+    @media (max-width: 640px) { body.no-navbar .ticker-wrapper { top: 0; } }
 </style>
 <div class="ticker-wrapper" id="tickerWrapper" role="region" aria-label="شريط العروض والإعلانات">
     <div class="ticker-track" id="tickerTrack">
