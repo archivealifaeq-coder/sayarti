@@ -96,8 +96,9 @@
     </section>
     {% endif %}
 
-    <section class="diag-card mt-4">
-        <h2 class="text-xl font-black text-amber-300 mb-3">الأسباب المحتملة</h2>
+    <section class="diag-card mt-4" id="possibleCauses"{% if driver_questions %} style="display:none;"{% endif %}>
+        <h2 class="text-xl font-black text-amber-300 mb-3">أسباب محتملة أخرى</h2>
+        {% if driver_questions %}<p class="text-slate-400 text-sm leading-7 mb-3">هذه الأسباب لا تعتمد مباشرة على إجاباتك، لكنها أكثر الاحتمالات المرتبطة بهذا العرض وتحتاج فحص مختص للتأكيد.</p>{% endif %}
         <div class="grid gap-3">
             {% for cause in active_causes %}
             <article class="cause-card">
@@ -131,6 +132,7 @@
         var answeredCount = document.getElementById('answeredCount');
         var progress = document.getElementById('diagnosisProgress');
         var result = document.getElementById('diagnosisResult');
+        var possibleCauses = document.getElementById('possibleCauses');
         var summary = document.getElementById('answerSummary');
         var actionHint = document.getElementById('actionHint');
         var answers = {};
@@ -159,6 +161,7 @@
                 actionHint.textContent = 'الإجابات لا تؤكد نمطاً خطيراً بوضوح، لكن إذا استمر العرض أو زاد، افحص السيارة عند مختص.';
             }
             result.classList.add('show');
+            if (possibleCauses) possibleCauses.style.display = 'block';
             result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
