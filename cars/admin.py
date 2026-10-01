@@ -787,7 +787,7 @@ class AdBannerForm(forms.ModelForm):
                 'placeholder': 'اعرف المزيد',
             }),
             'button_url': forms.URLInput(attrs={
-                'placeholder': 'https://example.com',
+                'placeholder': 'اختياري: https://example.com أو /offers/',
             }),
             'order': forms.NumberInput(),
         }
@@ -803,7 +803,7 @@ class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
     excel_template_example = ({
         'id': '', 'sponsor_slug': '', 'title': 'عنوان الإعلان', 'subtitle': '', 'position': 'ticker',
         'gateway_card_target': '', 'target_dealer_id': '', 'background_color': 'from-blue-700 via-indigo-700 to-purple-700',
-        'text_color': 'text-white', 'button_text': 'اعرف المزيد', 'button_url': '#', 'order': 0,
+        'text_color': 'text-white', 'button_text': 'اعرف المزيد', 'button_url': '', 'order': 0,
         'is_active': True, 'image_reference': '', 'mobile_image_reference': '',
     },)
 
@@ -842,7 +842,7 @@ class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
         }),
         ('🖼️ الصور', {
             'fields': ('image', 'image_mobile'),
-            'description': '📸 السلايدر: 1920×820 بكسل | الهاتف: 800×600. بطاقات الوكلاء: صورة مربعة أو أفقية صغيرة.',
+            'description': 'السلايدر الرئيسي فقط: سطح المكتب 1920×360 بكسل، الهاتف 1080×480 بكسل. الشريط العلوي نصي ولا يحتاج صورة. تجنب وضع نص مهم قرب أطراف الصورة.',
             'classes': ('collapse',),
         }),
         ('🎨 الألوان (احتياطي)', {
@@ -850,7 +850,8 @@ class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('🔗 الرابط', {
-            'fields': ('button_text', 'button_url')
+            'fields': ('button_text', 'button_url'),
+            'description': 'الرابط اختياري. إذا تركته فارغاً لن يظهر زر في الشريط العلوي أو الإعلان.'
         }),
         ('⚙️ الإعدادات', {
             'fields': ('order', 'is_active')
@@ -865,7 +866,7 @@ class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
     
     def position_badge(self, obj):
         if obj.position == 'ticker':
-            return mark_safe('<span style="background:#dbeafe; padding:2px 12px; border-radius:12px; color:#1d4ed8;">📢 شريط متحرك</span>')
+            return mark_safe('<span style="background:#dbeafe; padding:2px 12px; border-radius:12px; color:#1d4ed8;">📢 شريط علوي</span>')
         return mark_safe('<span style="background:#fef3c7; padding:2px 12px; border-radius:12px; color:#b45309;">🎠 سلايدر</span>')
     position_badge.short_description = 'الموقع'
     
@@ -890,7 +891,7 @@ class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == 'position':
             kwargs['widget'] = forms.Select(choices=[
-                ('ticker', '📢 شريط متحرك علوي نصي (10%) - كل الصفحات العامة'),
+                ('ticker', '📢 شريط علوي ثابت/متبدل نصي - كل الصفحات العامة'),
                 ('slider', '🎠 سلايدر رئيسي (30%) - الصفحة الرئيسية'),
                 ('gateway_grid', '💎 إعلان بين بطاقات الرئيسية'),
                 ('gateway_card', '🏷️ رعاية داخل بطاقات الرئيسية'),

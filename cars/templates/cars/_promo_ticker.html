@@ -15,46 +15,46 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
     }
-    .ticker-track { display: flex; align-items: center; height: 100%; width: max-content; animation: tickerScroll 16s linear infinite; will-change: transform; }
-    .ticker-group { display: flex; align-items: center; height: 100%; width: max-content; flex-shrink: 0; }
-    .ticker-item { display: flex; align-items: center; gap: 10px; padding: 0 34px; height: 100%; white-space: nowrap; flex-shrink: 0; border-left: 1px solid rgba(245, 158, 11, 0.06); }
+    .ticker-track { position: relative; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; }
+    .ticker-item { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 18px; height: 100%; white-space: nowrap; opacity: 0; transform: translateY(6px); transition: opacity .45s ease, transform .45s ease; pointer-events: none; }
+    .ticker-item.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
     .ticker-icon { font-size: 1rem; flex-shrink: 0; }
-    .ticker-text { color: #f8fafc; font-weight: 900; font-size: clamp(0.82rem, 1vw, 1rem); letter-spacing: 0.01em; }
+    .ticker-text { color: #f8fafc; font-weight: 900; font-size: clamp(0.82rem, 1vw, 1rem); letter-spacing: 0.01em; overflow: hidden; text-overflow: ellipsis; }
     .ticker-text .highlight { color: #e7c66f; }
-    @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    @media (max-width: 640px) { .ticker-wrapper { top: 56px; height: 40px; } .ticker-item { padding: 0 22px; } }
+    .ticker-link { display: inline-flex; align-items: center; justify-content: center; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(231, 198, 111, .12); color: #f8e3a5; border: 1px solid rgba(231, 198, 111, .2); font-size: .75rem; font-weight: 900; text-decoration: none; flex-shrink: 0; }
+    .ticker-link:hover { background: rgba(231, 198, 111, .2); }
+    @media (max-width: 640px) { .ticker-wrapper { top: 56px; height: 40px; } .ticker-item { justify-content: flex-start; padding: 0 14px; } .ticker-link { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .ticker-item { transition: none; transform: none; } }
     body.no-navbar .ticker-wrapper { top: 0; }
     @media (max-width: 640px) { body.no-navbar .ticker-wrapper { top: 0; } }
 </style>
 <div class="ticker-wrapper" id="tickerWrapper" role="region" aria-label="شريط العروض والإعلانات">
     <div class="ticker-track" id="tickerTrack">
-        <div class="ticker-group">
-            {% if ticker_banners %}
-                {% for banner in ticker_banners %}
-                    <div class="ticker-item">
-                        <span class="ticker-icon">📢</span>
-                        <span class="ticker-text">{{ banner.title|escape }}{% if banner.subtitle %} <span class="highlight">{{ banner.subtitle|escape }}</span>{% endif %}</span>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="ticker-item"><span class="ticker-icon">🔥</span><span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span></div>
-                <div class="ticker-item"><span class="ticker-icon">⭐</span><span class="ticker-text">خصومات وخدمات مختارة من شركاء <span class="highlight">سيارتي</span></span></div>
-                <div class="ticker-item"><span class="ticker-icon">🚗</span><span class="ticker-text">أفضل ماركات الزيت وقطع الغيار في مكان واحد</span></div>
-            {% endif %}
-        </div>
-        <div class="ticker-group" aria-hidden="true">
-            {% if ticker_banners %}
-                {% for banner in ticker_banners %}
-                    <div class="ticker-item">
-                        <span class="ticker-icon">📢</span>
-                        <span class="ticker-text">{{ banner.title|escape }}{% if banner.subtitle %} <span class="highlight">{{ banner.subtitle|escape }}</span>{% endif %}</span>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="ticker-item"><span class="ticker-icon">🔥</span><span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span></div>
-                <div class="ticker-item"><span class="ticker-icon">⭐</span><span class="ticker-text">خصومات وخدمات مختارة من شركاء <span class="highlight">سيارتي</span></span></div>
-                <div class="ticker-item"><span class="ticker-icon">🚗</span><span class="ticker-text">أفضل ماركات الزيت وقطع الغيار في مكان واحد</span></div>
-            {% endif %}
-        </div>
+        {% if ticker_banners %}
+            {% for banner in ticker_banners %}
+                <div class="ticker-item{% if forloop.first %} active{% endif %}">
+                    <span class="ticker-icon">📢</span>
+                    <span class="ticker-text">{{ banner.title|escape }}{% if banner.subtitle %} <span class="highlight">{{ banner.subtitle|escape }}</span>{% endif %}</span>
+                    {% if banner.button_url and banner.button_url != '#' %}<a class="ticker-link" href="{{ banner.button_url|escape }}">{{ banner.button_text|default:"التفاصيل"|escape }}</a>{% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="ticker-item active"><span class="ticker-icon">⭐</span><span class="ticker-text">خصومات وخدمات مختارة من شركاء <span class="highlight">سيارتي</span></span></div>
+        {% endif %}
     </div>
 </div>
+<script>
+    (function() {
+        var track = document.getElementById('tickerTrack');
+        if (!track || track.dataset.ready === '1') return;
+        track.dataset.ready = '1';
+        var items = track.querySelectorAll('.ticker-item');
+        if (items.length <= 1) return;
+        var index = 0;
+        window.setInterval(function() {
+            items[index].classList.remove('active');
+            index = (index + 1) % items.length;
+            items[index].classList.add('active');
+        }, 3000);
+    })();
+</script>

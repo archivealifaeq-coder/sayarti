@@ -1653,21 +1653,6 @@
                 });
             }
             
-            var tickerTrack = document.getElementById('tickerTrack');
-            if (tickerTrack) {
-                var items = tickerTrack.querySelectorAll('.ticker-item');
-                if (items.length > 0 && items.length < 10) {
-                    var cloned = [];
-                    items.forEach(function(item) {
-                        var clone = item.cloneNode(true);
-                        cloned.push(clone);
-                    });
-                    cloned.forEach(function(clone) {
-                        tickerTrack.appendChild(clone);
-                    });
-                }
-            }
-            
             var mainTrack = document.getElementById('sliderMainTrack');
             var mainSlides = mainTrack ? mainTrack.querySelectorAll('.slider-main-slide') : [];
             var mainDots = document.querySelectorAll('.slider-main-dot');

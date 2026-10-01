@@ -229,7 +229,7 @@ def import_banners(uploaded_file):
                 "background_color": text_value(row, "background_color", "from-blue-700 via-indigo-700 to-purple-700"),
                 "text_color": text_value(row, "text_color", "text-white"),
                 "button_text": text_value(row, "button_text", "اعرف المزيد"),
-                "button_url": text_value(row, "button_url", "#"),
+                "button_url": text_value(row, "button_url", ""),
                 "order": int_value(row, "order", 0),
                 "is_active": bool_value(row, "is_active", True),
             }

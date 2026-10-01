@@ -248,7 +248,7 @@ class PromoCode(models.Model):
 
 class AdBanner(models.Model):
     POSITION_CHOICES = [
-        ('ticker', '📢 شريط متحرك علوي نصي (10%) - كل الصفحات العامة'),
+        ('ticker', '📢 شريط علوي ثابت/متبدل نصي - كل الصفحات العامة'),
         ('slider', '🎠 سلايدر رئيسي (30%) - الصفحة الرئيسية'),
         ('gateway_grid', '💎 إعلان بين بطاقات الرئيسية'),
         ('gateway_card', '🏷️ رعاية داخل بطاقات الرئيسية'),
@@ -310,10 +310,9 @@ class AdBanner(models.Model):
         verbose_name="نص الزر"
     )
     button_url = models.URLField(
-        default="#",
         blank=True,
         verbose_name="رابط الزر",
-        help_text="مثال: /offers/ أو https://example.com"
+        help_text="اختياري. اتركه فارغاً إذا كان الإعلان نصياً فقط. مثال: /offers/ أو https://example.com"
     )
     position = models.CharField(
         max_length=20,
