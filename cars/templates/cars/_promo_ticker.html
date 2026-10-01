@@ -14,17 +14,24 @@
         border-bottom: 1px solid rgba(245, 158, 11, 0.06);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
+        animation: tickerGlow 5s ease-in-out infinite;
     }
+    .ticker-wrapper::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(231, 198, 111, .12), transparent 42%); opacity: .55; pointer-events: none; animation: tickerBreath 4s ease-in-out infinite; }
+    .ticker-wrapper::after { content: ''; position: absolute; top: 0; bottom: 0; width: 120px; right: -140px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .12), transparent); transform: skewX(-18deg); pointer-events: none; animation: tickerSheen 4.5s ease-in-out infinite; }
     .ticker-track { position: relative; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; }
     .ticker-item { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 18px; height: 100%; white-space: nowrap; opacity: 0; transform: translateY(6px); transition: opacity .45s ease, transform .45s ease; pointer-events: none; }
     .ticker-item.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
-    .ticker-icon { font-size: 1rem; flex-shrink: 0; }
+    .ticker-icon { font-size: 1rem; flex-shrink: 0; filter: drop-shadow(0 0 8px rgba(231, 198, 111, .28)); animation: tickerIconPulse 2.8s ease-in-out infinite; }
     .ticker-text { color: #f8fafc; font-weight: 900; font-size: clamp(0.82rem, 1vw, 1rem); letter-spacing: 0.01em; overflow: hidden; text-overflow: ellipsis; }
     .ticker-text .highlight { color: #e7c66f; }
     .ticker-link { display: inline-flex; align-items: center; justify-content: center; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(231, 198, 111, .12); color: #f8e3a5; border: 1px solid rgba(231, 198, 111, .2); font-size: .75rem; font-weight: 900; text-decoration: none; flex-shrink: 0; }
     .ticker-link:hover { background: rgba(231, 198, 111, .2); }
+    @keyframes tickerGlow { 0%, 100% { border-bottom-color: rgba(245, 158, 11, .06); } 50% { border-bottom-color: rgba(231, 198, 111, .18); } }
+    @keyframes tickerBreath { 0%, 100% { opacity: .35; transform: scaleX(.95); } 50% { opacity: .65; transform: scaleX(1.04); } }
+    @keyframes tickerSheen { 0%, 58% { right: -140px; opacity: 0; } 68% { opacity: .65; } 100% { right: calc(100% + 140px); opacity: 0; } }
+    @keyframes tickerIconPulse { 0%, 100% { opacity: .86; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
     @media (max-width: 640px) { .ticker-wrapper { top: 56px; height: 40px; } .ticker-item { justify-content: flex-start; padding: 0 14px; } .ticker-link { display: none; } }
-    @media (prefers-reduced-motion: reduce) { .ticker-item { transition: none; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .ticker-wrapper, .ticker-wrapper::before, .ticker-wrapper::after, .ticker-icon { animation: none; } .ticker-item { transition: none; transform: none; } }
     body.no-navbar .ticker-wrapper { top: 0; }
     @media (max-width: 640px) { body.no-navbar .ticker-wrapper { top: 0; } }
 </style>
