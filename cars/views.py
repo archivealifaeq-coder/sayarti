@@ -786,6 +786,16 @@ def _format_iqd(value):
         return ''
 
 
+def _format_clean_number(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return value
+    if number.is_integer():
+        return str(int(number))
+    return str(round(number, 2)).rstrip('0').rstrip('.')
+
+
 def _mix_car_options():
     options = []
     for car in _mix_cars():
@@ -860,12 +870,16 @@ def mix_calculator_view(request):
                 result = {
                     'octane1': o1,
                     'octane2': o2,
+                    'octane1_display': _format_clean_number(o1),
+                    'octane2_display': _format_clean_number(o2),
                     'amount1': amount1,
                     'amount2': amount2,
                     'percent1': round(r1 * 100, 2),
                     'percent2': round(r2 * 100, 2),
                     'target': target,
                     'tank': tank,
+                    'target_display': _format_clean_number(target),
+                    'tank_display': _format_clean_number(tank),
                     'regular_price': regular_price,
                     'premium_price': premium_price,
                     'regular_cost': regular_cost,
