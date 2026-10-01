@@ -87,11 +87,20 @@
             width: max-content;
             align-items: center;
             height: 100%;
+            will-change: transform;
+        }
+
+        .ticker-group {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            width: max-content;
+            flex-shrink: 0;
         }
         
         @keyframes tickerScroll {
             0% { transform: translateX(0); }
-            100% { transform: translateX(-25%); }
+            100% { transform: translateX(-50%); }
         }
         
         .ticker-item {

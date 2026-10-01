@@ -15,33 +15,46 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
     }
-    .ticker-track { display: flex; align-items: center; height: 100%; width: max-content; animation: tickerScroll 16s linear infinite; }
+    .ticker-track { display: flex; align-items: center; height: 100%; width: max-content; animation: tickerScroll 16s linear infinite; will-change: transform; }
+    .ticker-group { display: flex; align-items: center; height: 100%; width: max-content; flex-shrink: 0; }
     .ticker-item { display: flex; align-items: center; gap: 10px; padding: 0 34px; height: 100%; white-space: nowrap; flex-shrink: 0; border-left: 1px solid rgba(245, 158, 11, 0.06); }
     .ticker-icon { font-size: 1rem; flex-shrink: 0; }
     .ticker-text { color: #f8fafc; font-weight: 900; font-size: clamp(0.82rem, 1vw, 1rem); letter-spacing: 0.01em; }
     .ticker-text .highlight { color: #e7c66f; }
-    @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-25%); } }
+    @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     @media (max-width: 640px) { .ticker-wrapper { top: 56px; height: 40px; } .ticker-item { padding: 0 22px; } }
     body.no-navbar .ticker-wrapper { top: 0; }
     @media (max-width: 640px) { body.no-navbar .ticker-wrapper { top: 0; } }
 </style>
 <div class="ticker-wrapper" id="tickerWrapper" role="region" aria-label="شريط العروض والإعلانات">
     <div class="ticker-track" id="tickerTrack">
-        {% if ticker_banners %}
-            {% for repeat in "1234" %}
+        <div class="ticker-group">
+            {% if ticker_banners %}
                 {% for banner in ticker_banners %}
-                    <div class="ticker-item" {% if not forloop.parentloop.first %}aria-hidden="true"{% endif %}>
+                    <div class="ticker-item">
                         <span class="ticker-icon">📢</span>
                         <span class="ticker-text">{{ banner.title|escape }}{% if banner.subtitle %} <span class="highlight">{{ banner.subtitle|escape }}</span>{% endif %}</span>
                     </div>
                 {% endfor %}
-            {% endfor %}
-        {% else %}
-            {% for repeat in "1234" %}
-                <div class="ticker-item" {% if not forloop.first %}aria-hidden="true"{% endif %}><span class="ticker-icon">🔥</span><span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span></div>
-                <div class="ticker-item" {% if not forloop.first %}aria-hidden="true"{% endif %}><span class="ticker-icon">⭐</span><span class="ticker-text">خصومات وخدمات مختارة من شركاء <span class="highlight">سيارتي</span></span></div>
-                <div class="ticker-item" {% if not forloop.first %}aria-hidden="true"{% endif %}><span class="ticker-icon">🚗</span><span class="ticker-text">أفضل ماركات الزيت وقطع الغيار في مكان واحد</span></div>
-            {% endfor %}
-        {% endif %}
+            {% else %}
+                <div class="ticker-item"><span class="ticker-icon">🔥</span><span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span></div>
+                <div class="ticker-item"><span class="ticker-icon">⭐</span><span class="ticker-text">خصومات وخدمات مختارة من شركاء <span class="highlight">سيارتي</span></span></div>
+                <div class="ticker-item"><span class="ticker-icon">🚗</span><span class="ticker-text">أفضل ماركات الزيت وقطع الغيار في مكان واحد</span></div>
+            {% endif %}
+        </div>
+        <div class="ticker-group" aria-hidden="true">
+            {% if ticker_banners %}
+                {% for banner in ticker_banners %}
+                    <div class="ticker-item">
+                        <span class="ticker-icon">📢</span>
+                        <span class="ticker-text">{{ banner.title|escape }}{% if banner.subtitle %} <span class="highlight">{{ banner.subtitle|escape }}</span>{% endif %}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="ticker-item"><span class="ticker-icon">🔥</span><span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span></div>
+                <div class="ticker-item"><span class="ticker-icon">⭐</span><span class="ticker-text">خصومات وخدمات مختارة من شركاء <span class="highlight">سيارتي</span></span></div>
+                <div class="ticker-item"><span class="ticker-icon">🚗</span><span class="ticker-text">أفضل ماركات الزيت وقطع الغيار في مكان واحد</span></div>
+            {% endif %}
+        </div>
     </div>
 </div>
