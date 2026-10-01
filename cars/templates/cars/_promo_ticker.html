@@ -1,0 +1,51 @@
+<style>
+    .ticker-wrapper {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        z-index: 9998;
+        height: 48px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        background: linear-gradient(90deg, rgba(15, 23, 42, 0.98), rgba(88, 56, 19, 0.96), rgba(15, 23, 42, 0.98));
+        border-top: 1px solid rgba(245, 158, 11, 0.08);
+        border-bottom: 1px solid rgba(245, 158, 11, 0.18);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+    .ticker-track { display: flex; align-items: center; height: 100%; width: max-content; animation: tickerScroll 34s linear infinite; }
+    .ticker-track:hover { animation-play-state: paused; }
+    .ticker-item { display: flex; align-items: center; gap: 10px; padding: 0 34px; height: 100%; white-space: nowrap; flex-shrink: 0; border-left: 1px solid rgba(245, 158, 11, 0.12); }
+    .ticker-icon { font-size: 1rem; flex-shrink: 0; }
+    .ticker-text { color: #f8fafc; font-weight: 900; font-size: clamp(0.82rem, 1vw, 1rem); letter-spacing: 0.01em; }
+    .ticker-text .highlight { color: #fbbf24; }
+    @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    @media (max-width: 640px) { .ticker-wrapper { top: 52px; height: 42px; } .ticker-item { padding: 0 22px; } }
+</style>
+<div class="ticker-wrapper" id="tickerWrapper" role="region" aria-label="شريط العروض والإعلانات">
+    <div class="ticker-track" id="tickerTrack">
+        {% if ticker_banners %}
+            {% for banner in ticker_banners %}
+                <div class="ticker-item">
+                    <span class="ticker-icon">📢</span>
+                    <span class="ticker-text">{{ banner.title|escape }}{% if banner.subtitle %} <span class="highlight">{{ banner.subtitle|escape }}</span>{% endif %}</span>
+                </div>
+            {% endfor %}
+            {% for banner in ticker_banners %}
+                <div class="ticker-item" aria-hidden="true">
+                    <span class="ticker-icon">📢</span>
+                    <span class="ticker-text">{{ banner.title|escape }}{% if banner.subtitle %} <span class="highlight">{{ banner.subtitle|escape }}</span>{% endif %}</span>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="ticker-item"><span class="ticker-icon">🔥</span><span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span></div>
+            <div class="ticker-item"><span class="ticker-icon">⭐</span><span class="ticker-text">خصومات وخدمات مختارة من شركاء <span class="highlight">سيارتي</span></span></div>
+            <div class="ticker-item"><span class="ticker-icon">🚗</span><span class="ticker-text">أفضل ماركات الزيت وقطع الغيار في مكان واحد</span></div>
+            <div class="ticker-item" aria-hidden="true"><span class="ticker-icon">🔥</span><span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span></div>
+            <div class="ticker-item" aria-hidden="true"><span class="ticker-icon">⭐</span><span class="ticker-text">خصومات وخدمات مختارة من شركاء <span class="highlight">سيارتي</span></span></div>
+            <div class="ticker-item" aria-hidden="true"><span class="ticker-icon">🚗</span><span class="ticker-text">أفضل ماركات الزيت وقطع الغيار في مكان واحد</span></div>
+        {% endif %}
+    </div>
+</div>

@@ -248,8 +248,8 @@ class PromoCode(models.Model):
 
 class AdBanner(models.Model):
     POSITION_CHOICES = [
-        ('ticker', '📢 شريط متحرك علوي (5%) - أعلى الصفحة'),
-        ('slider', '🎠 سلايدر رئيسي (35%) - وسط الصفحة'),
+        ('ticker', '📢 شريط متحرك علوي نصي (10%) - كل الصفحات العامة'),
+        ('slider', '🎠 سلايدر رئيسي (30%) - الصفحة الرئيسية'),
         ('gateway_grid', '💎 إعلان بين بطاقات الرئيسية'),
         ('gateway_card', '🏷️ رعاية داخل بطاقات الرئيسية'),
         ('dealer_card', '🏪 رعاية داخل بطاقة كل وكيل'),
@@ -281,7 +281,7 @@ class AdBanner(models.Model):
         blank=True,
         null=True,
         verbose_name="صورة البنر (سطح المكتب)",
-        help_text="📐 الأبعاد الموصى بها: 1920 × 820 بكسل (نسبة 21:9) — الصورة تُقص تلقائياً"
+        help_text="للسلايدر الرئيسي: 1920 × 600 بكسل. الشريط العلوي نصي ولا يحتاج صورة."
     )
     
     image_mobile = models.ImageField(
@@ -289,7 +289,7 @@ class AdBanner(models.Model):
         blank=True,
         null=True,
         verbose_name="صورة البنر للهواتف",
-        help_text="📱 الأبعاد الموصى بها: 800 × 600 بكسل (نسبة 4:3)"
+        help_text="للسلايدر على الهاتف: 1080 × 720 بكسل. الشريط العلوي نصي ولا يحتاج صورة."
     )
     
     background_color = models.CharField(

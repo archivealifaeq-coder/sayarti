@@ -890,8 +890,8 @@ class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == 'position':
             kwargs['widget'] = forms.Select(choices=[
-                ('ticker', '📢 شريط متحرك علوي (5%) - أعلى الصفحة'),
-                ('slider', '🎠 سلايدر رئيسي (35%) - وسط الصفحة'),
+                ('ticker', '📢 شريط متحرك علوي نصي (10%) - كل الصفحات العامة'),
+                ('slider', '🎠 سلايدر رئيسي (30%) - الصفحة الرئيسية'),
                 ('gateway_grid', '💎 إعلان بين بطاقات الرئيسية'),
                 ('gateway_card', '🏷️ رعاية داخل بطاقات الرئيسية'),
                 ('dealer_card', '🏪 رعاية داخل بطاقة كل وكيل'),
@@ -919,8 +919,8 @@ class AdBannerAdmin(ExcelDataAdminMixin, admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj=None, **kwargs)
-        form.base_fields['image'].help_text = '🖼️ الأبعاد الموصى بها: 1920 × 820 بكسل (21:9) — الصورة تُقص تلقائياً'
-        form.base_fields['image_mobile'].help_text = '📱 الأبعاد الموصى بها: 800 × 600 بكسل (4:3)'
+        form.base_fields['image'].help_text = 'للسلايدر الرئيسي: 1920 × 600 بكسل. الشريط العلوي نصي ولا يحتاج صورة.'
+        form.base_fields['image_mobile'].help_text = 'للسلايدر على الهاتف: 1080 × 720 بكسل. الشريط العلوي نصي ولا يحتاج صورة.'
         return form
 
 

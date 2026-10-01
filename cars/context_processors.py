@@ -1,5 +1,8 @@
-from .models import SiteSettings
+from .models import AdBanner, SiteSettings
 
 
 def site_settings(request):
-    return {'site_settings': SiteSettings.load()}
+    return {
+        'site_settings': SiteSettings.load(),
+        'ticker_banners': AdBanner.objects.filter(is_active=True, position='ticker').order_by('order', '-created_at'),
+    }

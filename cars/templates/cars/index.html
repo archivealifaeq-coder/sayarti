@@ -195,7 +195,7 @@
         .nav-link.active { color: #fbbf24; }
         
         /* ============================================ */
-        /*  TICKER                                     */
+        /*  TICKER - نص إعلاني متحرك فقط              */
         /* ============================================ */
         .ticker-wrapper {
             position: fixed;
@@ -203,23 +203,23 @@
             left: 0;
             right: 0;
             z-index: 9998;
-            background: rgba(20, 30, 50, 0.95);
+            background: linear-gradient(90deg, rgba(15, 23, 42, 0.98), rgba(88, 56, 19, 0.96), rgba(15, 23, 42, 0.98));
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(245, 158, 11, 0.08);
-            border-top: 1px solid rgba(245, 158, 11, 0.05);
-            height: 36px;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.18);
+            border-top: 1px solid rgba(245, 158, 11, 0.08);
+            height: 48px;
             overflow: hidden;
             display: flex;
             align-items: center;
         }
         @media (max-width: 640px) {
-            .ticker-wrapper { height: 30px; top: 52px; }
+            .ticker-wrapper { height: 42px; top: 52px; }
         }
         
         .ticker-track {
             display: flex;
-            animation: tickerScroll 30s linear infinite;
+            animation: tickerScroll 34s linear infinite;
             width: max-content;
             align-items: center;
             height: 100%;
@@ -234,54 +234,42 @@
         .ticker-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 0 20px;
+            gap: 10px;
+            padding: 0 34px;
             white-space: nowrap;
             flex-shrink: 0;
             height: 100%;
-            border-left: 1px solid rgba(245, 158, 11, 0.06);
+            border-left: 1px solid rgba(245, 158, 11, 0.12);
         }
         .ticker-item:last-child { border-left: none; }
         
-        .ticker-item .ticker-icon { font-size: 0.8rem; flex-shrink: 0; }
+        .ticker-item .ticker-icon { font-size: 1rem; flex-shrink: 0; }
         .ticker-item .ticker-text {
-            font-size: clamp(0.6rem, 0.7vw, 0.8rem);
-            color: #e2e8f0;
-            font-weight: 600;
+            font-size: clamp(0.82rem, 1vw, 1rem);
+            color: #f8fafc;
+            font-weight: 900;
+            letter-spacing: 0.01em;
         }
         .ticker-item .ticker-text .highlight { color: #fbbf24; }
-        .ticker-item .ticker-btn {
-            padding: 1px 12px;
-            font-size: 0.5rem;
-            font-weight: 700;
-            border-radius: 30px;
-            background: rgba(245, 158, 11, 0.12);
-            color: #fbbf24;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(245, 158, 11, 0.08);
-            flex-shrink: 0;
-        }
-        .ticker-item .ticker-btn:hover { background: rgba(245, 158, 11, 0.25); transform: scale(1.05); }
         
         /* ============================================ */
         /*  MAIN CONTENT                               */
         /* ============================================ */
         .main-content {
-            padding-top: 92px;
+            padding-top: 104px;
         }
         @media (max-width: 640px) {
-            .main-content { padding-top: 82px; }
+            .main-content { padding-top: 94px; }
         }
         
         /* ============================================ */
-        /*  SLIDER - عرض كامل + ارتفاع 35% من الشاشة   */
+        /*  SLIDER - عرض كامل + ارتفاع 30% من الشاشة   */
         /* ============================================ */
         .slider-main-container {
             position: relative;
             width: 100%;
-            height: 35vh;
-            min-height: 220px;
+            height: 30vh;
+            min-height: 200px;
             max-height: 650px;
             overflow: hidden;
             background: #0a0f1a;
@@ -291,9 +279,9 @@
         
         @media (max-width: 768px) {
             .slider-main-container {
-                height: 35vh;
-                min-height: 180px;
-                max-height: 420px;
+                height: 30vh;
+                min-height: 170px;
+                max-height: 360px;
             }
         }
         
@@ -909,24 +897,34 @@
         .promo-float {
             position: absolute;
             z-index: 30;
-            top: 16px;
-            left: 16px;
+            bottom: 18px;
+            left: 18px;
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 10px 18px;
+            gap: 9px;
+            padding: 12px 20px;
             border-radius: 999px;
             border: 2px solid rgba(255, 255, 255, 0.4);
             background: linear-gradient(135deg, #f59e0b, #ef4444);
             color: #0f172a;
-            font-weight: 800;
-            font-size: 0.85rem;
+            font-weight: 900;
+            font-size: 0.96rem;
             line-height: 1;
-            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.5);
+            box-shadow: 0 12px 30px rgba(245, 158, 11, 0.45);
             cursor: pointer;
             transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
             white-space: nowrap;
             animation: promoFloat 3s ease-in-out infinite;
+        }
+        @media (max-width: 640px) {
+            .promo-float {
+                left: 12px;
+                bottom: 12px;
+                padding: 9px 13px;
+                font-size: 0.75rem;
+                max-width: calc(100vw - 24px);
+            }
+            .promo-float .pf-text { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
         }
         /* حركة عائمة لطيفة داخل مساحة السلايدر */
         @keyframes promoFloat {
@@ -942,9 +940,10 @@
         .promo-float:active { transform: scale(0.97); }
         .promo-float .pf-disc {
             background: rgba(255, 255, 255, 0.35);
-            padding: 2px 9px;
+            padding: 4px 10px;
             border-radius: 999px;
-            font-size: 0.75rem;
+            font-size: 0.88rem;
+            font-weight: 900;
         }
 
         /* شارة الإعلان */
@@ -1349,75 +1348,7 @@
         </div>
     </nav>
 
-    <!-- ============================================ -->
-    <!--  TICKER                                     -->
-    <!-- ============================================ -->
-    <div class="ticker-wrapper" id="tickerWrapper" role="region" aria-label="شريط الأخبار والعروض">
-        <div class="ticker-track" id="tickerTrack">
-            {% for banner in banners %}
-                {% if banner.position == 'ticker' and banner.is_active %}
-                <div class="ticker-item">
-                    <span class="ticker-icon">📌</span>
-                    <span class="ticker-text">{{ banner.title|escape|truncatechars:30 }}</span>
-                    <a href="{{ banner.button_url|escape }}" class="ticker-btn" {% if banner.button_url and banner.button_url != '#' %}target="_blank" rel="noopener noreferrer"{% endif %}>{{ banner.button_text|escape|default:"عرض" }}</a>
-                </div>
-                {% endif %}
-            {% endfor %}
-            
-            {% if not banners|length %}
-            <div class="ticker-item">
-                <span class="ticker-icon">🔥</span>
-                <span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span>
-                <a href="#" class="ticker-btn">اعرف المزيد</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">⭐</span>
-                <span class="ticker-text">خصم <span class="highlight">20%</span> على خدمة الصيانة الشاملة</span>
-                <a href="#" class="ticker-btn">احجز الآن</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">🚗</span>
-                <span class="ticker-text">أفضل <span class="highlight">ماركات الزيت</span> في مكان واحد</span>
-                <a href="#" class="ticker-btn">تفاصيل</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">📋</span>
-                <span class="ticker-text">توصيات الصيانة <span class="highlight">المعتمدة</span> لسيارتك</span>
-                <a href="#" class="ticker-btn">اعرف المزيد</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">🛞</span>
-                <span class="ticker-text">استشارة <span class="highlight">مجانية</span> للمحرك</span>
-                <a href="#" class="ticker-btn">تواصل الآن</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">🔥</span>
-                <span class="ticker-text">عروض حصرية على <span class="highlight">زيت المحرك</span> الأصلي</span>
-                <a href="#" class="ticker-btn">اعرف المزيد</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">⭐</span>
-                <span class="ticker-text">خصم <span class="highlight">20%</span> على خدمة الصيانة الشاملة</span>
-                <a href="#" class="ticker-btn">احجز الآن</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">🚗</span>
-                <span class="ticker-text">أفضل <span class="highlight">ماركات الزيت</span> في مكان واحد</span>
-                <a href="#" class="ticker-btn">تفاصيل</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">📋</span>
-                <span class="ticker-text">توصيات الصيانة <span class="highlight">المعتمدة</span> لسيارتك</span>
-                <a href="#" class="ticker-btn">اعرف المزيد</a>
-            </div>
-            <div class="ticker-item">
-                <span class="ticker-icon">🛞</span>
-                <span class="ticker-text">استشارة <span class="highlight">مجانية</span> للمحرك</span>
-                <a href="#" class="ticker-btn">تواصل الآن</a>
-            </div>
-            {% endif %}
-        </div>
-    </div>
+    {% include 'cars/_promo_ticker.html' %}
     
     <!-- ============================================ -->
     <!--  MAIN CONTENT                               -->
@@ -1765,7 +1696,7 @@
                     btn.setAttribute('data-sponsor-name', name);
                     btn.setAttribute('data-discount', disc || '');
                     var textEl = btn.querySelector('.pf-text');
-                    if (textEl) textEl.textContent = 'اضغط على الزر للحصول على خصم من ' + name;
+                    if (textEl) textEl.textContent = 'احصل على خصم';
                     var discEl = btn.querySelector('.pf-disc');
                     if (discEl) discEl.textContent = (disc ? '-' + disc + '%' : '');
                     btn.style.display = 'inline-flex';
