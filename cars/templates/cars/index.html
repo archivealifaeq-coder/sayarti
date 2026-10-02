@@ -5,25 +5,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="description" content="سيارتي العراق موقع عراقي يساعدك تعرف مواصفات سيارتك، الزيت المناسب، الفلاتر، الأوكتان، والصيانة حسب الممشى."/>
-    <meta name="keywords" content="سيارتي العراق, موقع سيارتي, دليل السيارات العراقي, سيارات, مواصفات, زيت, إطارات, أوكتان, صيانة, سيارتي"/>
+    <meta name="description" content="سيارتي دليل سيارات عراقي لمعرفة مواصفات السيارة، زيت المحرك والفلتر والبواجي، حاسبة خلط الوقود والأوكتان، وتشخيص أعطال السيارة والصيانة حسب الممشى."/>
+    <meta name="keywords" content="سيارتي, سيارتي العراق, مواصفات السيارات, زيت السيارة, حاسبة الأوكتان, خلط الوقود, صيانة السيارات, أعطال السيارات, دليل السيارات العراقي"/>
     <meta name="robots" content="index, follow"/>
     <meta name="language" content="Arabic"/>
-    <title>سيارتي العراق - دليل مواصفات السيارات والصيانة</title>
+    <title>سيارتي - مواصفات السيارات وحاسبة الوقود والصيانة في العراق</title>
 
     {% with request.build_absolute_uri as abs_url %}{% with request.META.HTTP_HOST as site_host %}
     {% if abs_url and site_host %}
     <link rel="canonical" href="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="سيارتي العراق" />
-    <meta property="og:title" content="سيارتي العراق - دليل مواصفات السيارات والصيانة" />
-    <meta property="og:description" content="موقع عراقي يساعدك تعرف مواصفات سيارتك، الزيت المناسب، الفلاتر، الأوكتان، والصيانة حسب الممشى." />
+    <meta property="og:title" content="سيارتي - مواصفات السيارات وحاسبة الوقود والصيانة في العراق" />
+    <meta property="og:description" content="اعرف مواصفات سيارتك، زيت المحرك والفلتر والبواجي، احسب خلط الوقود والأوكتان، وتابع الصيانة وتشخيص الأعطال." />
     <meta property="og:url" content="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/" />
     <meta property="og:image" content="{% if request.is_secure %}https{% else %}http{% endif %}://{{ site_host }}/static/shared/icons/icon-512.png" />
     <meta property="og:locale" content="ar_AR" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="سيارتي العراق - دليل مواصفات السيارات والصيانة" />
-    <meta name="twitter:description" content="موقع عراقي يساعدك تعرف مواصفات سيارتك، الزيت المناسب، الفلاتر، الأوكتان، والصيانة حسب الممشى." />
+    <meta name="twitter:title" content="سيارتي - مواصفات السيارات وحاسبة الوقود والصيانة في العراق" />
+    <meta name="twitter:description" content="اعرف مواصفات سيارتك، زيت المحرك والفلتر والبواجي، احسب خلط الوقود والأوكتان، وتابع الصيانة وتشخيص الأعطال." />
     {% endif %}
     {% endwith %}{% endwith %}
 
@@ -31,11 +31,26 @@
     {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "سيارتي العراق",
+        "name": "سيارتي",
         "alternateName": "سيارتي",
-        "description": "موقع عراقي لمعرفة مواصفات السيارات، الزيت المناسب، الفلاتر، الأوكتان، والصيانة حسب الممشى.",
+        "description": "دليل سيارات عراقي لمعرفة مواصفات السيارة، زيت المحرك والفلتر والبواجي، حاسبة خلط الوقود والأوكتان، وتشخيص أعطال السيارة والصيانة حسب الممشى.",
         "url": "{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/",
-        "inLanguage": "ar"
+        "inLanguage": "ar",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/search/?brand={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "سيارتي",
+        "url": "{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/",
+        "logo": "{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}/static/shared/icons/icon-512.png",
+        "sameAs": []
     }
     </script>
     
