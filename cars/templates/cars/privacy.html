@@ -41,6 +41,12 @@
         .prose-ar h2 { color: #fbbf24; font-weight: 800; font-size: 1.15rem; margin: 1.6rem 0 0.7rem; }
         .prose-ar p, .prose-ar li { line-height: 2; color: #cbd5e1; font-size: 0.95rem; }
         .prose-ar ul { padding-right: 1.5rem; list-style: disc; margin-bottom: 0.8rem; }
+        .contact-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+        .contact-action { display:inline-flex; align-items:center; gap:8px; padding:11px 15px; border-radius:16px; color:#fff; font-weight:900; text-decoration:none; border:1px solid rgba(255,255,255,.1); transition:.22s ease; }
+        .contact-action:hover { transform:translateY(-2px); }
+        .contact-action.whatsapp { background:linear-gradient(135deg,#22c55e,#15803d); }
+        .contact-action.telegram { background:linear-gradient(135deg,#38bdf8,#2563eb); }
+        .contact-action.email { background:rgba(51,65,85,.74); color:#e2e8f0; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -88,12 +94,12 @@
                 <p>قد نقوم بتحديث هذه السياسة من وقت لآخر. سيتم نشر أي تغييرات على هذه الصفحة مع تحديث تاريخ آخر مراجعة.</p>
 
                 <h2>تواصل معنا</h2>
-                <p>لأي استفسار حول سياسة الخصوصية، تواصل معنا عبر
-                    {% if site_settings.contact_whatsapp_url %}<a href="{{ site_settings.contact_whatsapp_url }}" class="text-amber-400 hover:underline" target="_blank" rel="noopener noreferrer">واتساب</a>{% endif %}
-                    {% if site_settings.contact_telegram_url %}{% if site_settings.contact_whatsapp_url %} أو {% endif %}<a href="{{ site_settings.contact_telegram_url }}" class="text-amber-400 hover:underline" target="_blank" rel="noopener noreferrer">تلكرام</a>{% endif %}
-                    {% if not site_settings.contact_whatsapp_url and not site_settings.contact_telegram_url %}<a href="mailto:archivealifaeq@gmail.com" class="text-amber-400 hover:underline">البريد الإلكتروني</a>{% endif %}
-                    أو من خلال <a href="{% url 'about' %}" class="text-amber-400 hover:underline">صفحة من نحن</a>.
-                </p>
+                <p>لأي استفسار حول سياسة الخصوصية، استخدم أحد أزرار التواصل:</p>
+                <div class="contact-actions">
+                    {% if site_settings.contact_whatsapp_url %}<a href="{{ site_settings.contact_whatsapp_url }}" class="contact-action whatsapp" target="_blank" rel="noopener noreferrer">💬 واتساب</a>{% endif %}
+                    {% if site_settings.contact_telegram_url %}<a href="{{ site_settings.contact_telegram_url }}" class="contact-action telegram" target="_blank" rel="noopener noreferrer">✈️ تلكرام</a>{% endif %}
+                    <a href="mailto:archivealifaeq@gmail.com" class="contact-action email">📧 البريد الإلكتروني</a>
+                </div>
             </div>
         </div>
 

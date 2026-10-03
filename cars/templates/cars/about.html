@@ -41,6 +41,12 @@
         .prose-ar h2 { color: #fbbf24; font-weight: 800; font-size: 1.15rem; margin: 1.6rem 0 0.7rem; }
         .prose-ar p, .prose-ar li { line-height: 2; color: #cbd5e1; font-size: 0.95rem; }
         .prose-ar ul { padding-right: 1.5rem; list-style: disc; margin-bottom: 0.8rem; }
+        .contact-actions { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0; }
+        .contact-action { display:inline-flex; align-items:center; gap:9px; padding:12px 16px; border-radius:16px; color:#fff; font-weight:900; text-decoration:none; border:1px solid rgba(255,255,255,.1); transition:.22s ease; }
+        .contact-action:hover { transform:translateY(-2px); }
+        .contact-action.whatsapp { background:linear-gradient(135deg,#22c55e,#15803d); box-shadow:0 14px 30px rgba(34,197,94,.18); }
+        .contact-action.telegram { background:linear-gradient(135deg,#38bdf8,#2563eb); box-shadow:0 14px 30px rgba(56,189,248,.18); }
+        .contact-action.email { background:rgba(51,65,85,.74); color:#e2e8f0; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -82,12 +88,12 @@
             <div class="prose-ar">
                 <h2>تواصل معنا</h2>
                 <p>نرحب بملاحظاتك واقتراحاتك واستفساراتك:</p>
-                <ul>
-                    {% if site_settings.contact_whatsapp_url %}<li>💬 واتساب: <a href="{{ site_settings.contact_whatsapp_url }}" class="text-amber-400 hover:underline" target="_blank" rel="noopener noreferrer">اضغط هنا للتواصل</a></li>{% endif %}
-                    {% if site_settings.contact_telegram_url %}<li>✈️ تلكرام: <a href="{{ site_settings.contact_telegram_url }}" class="text-amber-400 hover:underline" target="_blank" rel="noopener noreferrer">اضغط هنا للتواصل</a></li>{% endif %}
-                    <li>📧 البريد الإلكتروني: <a href="mailto:archivealifaeq@gmail.com?subject=استفسار%20عن%20سيارتي" class="text-amber-400 hover:underline">archivealifaeq@gmail.com</a></li>
-                    <li>⏱️ نرد عادة خلال 24-48 ساعة</li>
-                </ul>
+                <div class="contact-actions">
+                    {% if site_settings.contact_whatsapp_url %}<a href="{{ site_settings.contact_whatsapp_url }}" class="contact-action whatsapp" target="_blank" rel="noopener noreferrer">💬 واتساب</a>{% endif %}
+                    {% if site_settings.contact_telegram_url %}<a href="{{ site_settings.contact_telegram_url }}" class="contact-action telegram" target="_blank" rel="noopener noreferrer">✈️ تلكرام</a>{% endif %}
+                    <a href="mailto:archivealifaeq@gmail.com?subject=استفسار%20عن%20سيارتي" class="contact-action email">📧 البريد الإلكتروني</a>
+                </div>
+                <p class="text-sm text-slate-400">نرد عادة خلال 24-48 ساعة.</p>
 
                 <h2>للمعلنين والرعاة</h2>
                 <p>إذا كنت تمتلك متجر زيوت أو قطع غيار وترغب بالظهور كممول للموقع (في البنرات أو بطاقات المميزات)، تواصل معنا عبر واتساب أو تلكرام أو البريد أعلاه وسنسعد بشراكة مربحة للطرفين.</p>
