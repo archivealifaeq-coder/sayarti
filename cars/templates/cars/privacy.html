@@ -88,8 +88,10 @@
                 <p>قد نقوم بتحديث هذه السياسة من وقت لآخر. سيتم نشر أي تغييرات على هذه الصفحة مع تحديث تاريخ آخر مراجعة.</p>
 
                 <h2>تواصل معنا</h2>
-                <p>لأي استفسار حول سياسة الخصوصية، راسلنا على:
-                    <a href="mailto:archivealifaeq@gmail.com" class="text-amber-400 hover:underline">archivealifaeq@gmail.com</a>
+                <p>لأي استفسار حول سياسة الخصوصية، تواصل معنا عبر
+                    {% if site_settings.contact_whatsapp_url %}<a href="{{ site_settings.contact_whatsapp_url }}" class="text-amber-400 hover:underline" target="_blank" rel="noopener noreferrer">واتساب</a>{% endif %}
+                    {% if site_settings.contact_telegram_url %}{% if site_settings.contact_whatsapp_url %} أو {% endif %}<a href="{{ site_settings.contact_telegram_url }}" class="text-amber-400 hover:underline" target="_blank" rel="noopener noreferrer">تلكرام</a>{% endif %}
+                    {% if not site_settings.contact_whatsapp_url and not site_settings.contact_telegram_url %}<a href="mailto:archivealifaeq@gmail.com" class="text-amber-400 hover:underline">البريد الإلكتروني</a>{% endif %}
                     أو من خلال <a href="{% url 'about' %}" class="text-amber-400 hover:underline">صفحة من نحن</a>.
                 </p>
             </div>

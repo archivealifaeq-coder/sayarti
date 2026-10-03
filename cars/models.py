@@ -540,6 +540,16 @@ class SiteSettings(models.Model):
         verbose_name="سعر لتر البنزين المحسن بالدينار",
         help_text="مثال: 850. اتركه 0 لإخفاء حساب تكلفة التفويلة."
     )
+    contact_whatsapp_url = models.URLField(
+        blank=True,
+        verbose_name="رابط واتساب للتواصل",
+        help_text="مثال: https://wa.me/9647700000000"
+    )
+    contact_telegram_url = models.URLField(
+        blank=True,
+        verbose_name="رابط تلكرام للتواصل",
+        help_text="مثال: https://t.me/username"
+    )
     ads_txt = models.TextField(
         blank=True,
         verbose_name="محتوى ads.txt",

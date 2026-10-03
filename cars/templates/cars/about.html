@@ -83,14 +83,14 @@
                 <h2>تواصل معنا</h2>
                 <p>نرحب بملاحظاتك واقتراحاتك واستفساراتك:</p>
                 <ul>
-                    <li>📧 البريد الإلكتروني:
-                        <a href="mailto:archivealifaeq@gmail.com?subject=استفسار%20عن%20سيارتي" class="text-amber-400 hover:underline">archivealifaeq@gmail.com</a>
-                    </li>
+                    {% if site_settings.contact_whatsapp_url %}<li>💬 واتساب: <a href="{{ site_settings.contact_whatsapp_url }}" class="text-amber-400 hover:underline" target="_blank" rel="noopener noreferrer">اضغط هنا للتواصل</a></li>{% endif %}
+                    {% if site_settings.contact_telegram_url %}<li>✈️ تلكرام: <a href="{{ site_settings.contact_telegram_url }}" class="text-amber-400 hover:underline" target="_blank" rel="noopener noreferrer">اضغط هنا للتواصل</a></li>{% endif %}
+                    <li>📧 البريد الإلكتروني: <a href="mailto:archivealifaeq@gmail.com?subject=استفسار%20عن%20سيارتي" class="text-amber-400 hover:underline">archivealifaeq@gmail.com</a></li>
                     <li>⏱️ نرد عادة خلال 24-48 ساعة</li>
                 </ul>
 
                 <h2>للمعلنين والرعاة</h2>
-                <p>إذا كنت تمتلك متجر زيوت أو قطع غيار وترغب بالظهور كممول للموقع (في البنرات أو بطاقات المميزات)، راسلنا على البريد أعلاه وسنسعد بشراكة مربحة للطرفين.</p>
+                <p>إذا كنت تمتلك متجر زيوت أو قطع غيار وترغب بالظهور كممول للموقع (في البنرات أو بطاقات المميزات)، تواصل معنا عبر واتساب أو تلكرام أو البريد أعلاه وسنسعد بشراكة مربحة للطرفين.</p>
 
                 <p class="mt-4">اقرأ أيضاً:
                     <a href="{% url 'privacy' %}" class="text-amber-400 hover:underline">سياسة الخصوصية 🔒</a>

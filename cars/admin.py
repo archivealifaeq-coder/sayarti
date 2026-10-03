@@ -1155,6 +1155,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('regular_fuel_price_iqd', 'premium_fuel_price_iqd'),
             'description': 'أدخل سعر اللتر بالدينار العراقي ليظهر حساب تكلفة التفويلة في حاسبة الأوكتان. اترك السعر 0 لإخفاء التكلفة.'
         }),
+        ('روابط التواصل', {
+            'fields': ('contact_whatsapp_url', 'contact_telegram_url'),
+            'description': 'تظهر هذه الروابط في الفوتر وصفحات التواصل. اترك الحقل فارغاً لإخفاء الزر.'
+        }),
         ('إحصاءات الزوار', {
             'fields': ('ga4_id', 'ga4_property_id', 'ga_service_account_json'),
             'classes': ('collapse',),

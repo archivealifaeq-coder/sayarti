@@ -1615,8 +1615,9 @@
                     {% if user.is_staff %}<a href="/admin/" rel="nofollow">لوحة التحكم</a>{% endif %}
                 </nav>
                 <div class="footer-meta">
-                    <a href="mailto:archivealifaeq@gmail.com" class="meta-mail">📧 archivealifaeq@gmail.com</a>
-                    <span class="meta-web">🌐 www.sayarti.org</span>
+                    {% if site_settings.contact_whatsapp_url %}<a href="{{ site_settings.contact_whatsapp_url }}" class="meta-mail" target="_blank" rel="noopener noreferrer">💬 واتساب</a>{% endif %}
+                    {% if site_settings.contact_telegram_url %}<a href="{{ site_settings.contact_telegram_url }}" class="meta-mail" target="_blank" rel="noopener noreferrer">✈️ تلكرام</a>{% endif %}
+                    <a href="mailto:archivealifaeq@gmail.com" class="meta-mail">📧 البريد</a>
                 </div>
             </div>
             <div class="footer-bottom">
