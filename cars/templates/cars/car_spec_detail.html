@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <title>{{ car.brand_ar }} {{ car.model_ar }} {{ car.year }} - زيت المحرك والسعة والأوكتان | سيارتي</title>
+    <meta name="description" content="مواصفات {{ car.brand_ar }} {{ car.model_ar }} {{ car.year }}: زيت المحرك {{ car.oil_visc }}، سعة الزيت {{ car.oil_capacity }}، الوقود {{ car.fuel }}، الأوكتان {{ car.octane }}، والمحرك {{ car.engine }}.">
+    <link rel="canonical" href="{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}{{ request.path }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "{{ car.brand_ar|escapejs }} {{ car.model_ar|escapejs }} {{ car.year }} - زيت المحرك والسعة والأوكتان",
+        "description": "مواصفات {{ car.brand_ar|escapejs }} {{ car.model_ar|escapejs }} {{ car.year }}: زيت المحرك {{ car.oil_visc|escapejs }}، سعة الزيت {{ car.oil_capacity|escapejs }}، الوقود {{ car.fuel|escapejs }}، الأوكتان {{ car.octane|escapejs }}.",
+        "inLanguage": "ar",
+        "mainEntityOfPage": "{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.META.HTTP_HOST }}{{ request.path }}",
+        "publisher": {"@type": "Organization", "name": "سيارتي"}
+    }
+    </script>
+    <style>
+        body { font-family:'Cairo', sans-serif; background:#0a0f1a; color:#f8fafc; min-height:100vh; }
+        .seo-shell { max-width:980px; margin:0 auto; padding:28px 16px 48px; }
+        .seo-card { background:linear-gradient(145deg,rgba(30,41,59,.82),rgba(15,23,42,.74)); border:1px solid rgba(245,158,11,.16); border-radius:28px; padding:22px; box-shadow:0 24px 70px rgba(0,0,0,.34); }
+        .seo-pill { display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:7px 13px; background:rgba(251,191,36,.13); color:#fde68a; font-weight:900; font-size:.82rem; }
+        .spec-grid-page { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-top:18px; }
+        .spec-box { border:1px solid rgba(148,163,184,.16); background:rgba(15,23,42,.48); border-radius:18px; padding:14px; }
+        .spec-box span { display:block; color:#94a3b8; font-size:.78rem; font-weight:800; margin-bottom:5px; }
+        .spec-box strong { color:#fff; font-size:1rem; line-height:1.8; }
+        .brand-list { display:grid; gap:8px; margin-top:10px; }
+        .brand-list div { border:1px solid rgba(251,191,36,.14); background:rgba(251,191,36,.06); color:#fde68a; border-radius:14px; padding:9px 12px; font-weight:800; }
+        .cta-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+        .cta-link { display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:16px; padding:12px 16px; font-weight:900; text-decoration:none; }
+        .cta-primary { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#111827; box-shadow:0 14px 32px rgba(245,158,11,.22); }
+        .cta-secondary { background:rgba(51,65,85,.58); color:#e2e8f0; border:1px solid rgba(148,163,184,.18); }
+        .note { color:#cbd5e1; line-height:2; margin-top:14px; }
+    </style>
+</head>
+<body>
+<main class="seo-shell">
+    <a href="{% url 'search' %}" class="cta-link cta-secondary">← البحث عن سيارة أخرى</a>
+
+    <section class="seo-card" style="margin-top:16px;">
+        <div class="seo-pill">🚗 مواصفات سيارة</div>
+        <h1 style="font-size:clamp(1.8rem,4vw,3rem); font-weight:900; margin:16px 0 8px;">
+            {{ car.brand_ar }} {{ car.model_ar }} {{ car.year }}: زيت المحرك والسعة والأوكتان
+        </h1>
+        <p class="note">
+            هذه الصفحة تجمع أهم مواصفات {{ car.brand_ar }} {{ car.model_ar }} {{ car.year }} للمحرك {{ car.engine }}{% if car.engine_code %}، كود {{ car.engine_code }}{% endif %}، حتى تعرف الزيت المناسب وسعة الزيت ونوع الوقود ورقم الأوكتان بسرعة.
+        </p>
+
+        <div class="spec-grid-page">
+            <div class="spec-box"><span>الماركة والموديل</span><strong>{{ car.brand_ar }} {{ car.model_ar }}</strong></div>
+            <div class="spec-box"><span>السنة</span><strong>{{ car.year }}</strong></div>
+            <div class="spec-box"><span>المحرك</span><strong>{{ car.engine }}{% if car.engine_code %} - {{ car.engine_code }}{% endif %}</strong></div>
+            <div class="spec-box"><span>مواصفات المنطقة</span><strong>{{ car.get_spec_region_display }}</strong></div>
+            <div class="spec-box"><span>لزوجة زيت المحرك</span><strong>{{ car.oil_visc }}</strong></div>
+            <div class="spec-box"><span>سعة زيت المحرك</span><strong>{{ car.oil_capacity }}</strong></div>
+            <div class="spec-box"><span>نوع الوقود</span><strong>{{ car.fuel }}</strong></div>
+            <div class="spec-box"><span>الأوكتان المناسب</span><strong>{{ car.octane }}</strong></div>
+            {% if car.tank %}<div class="spec-box"><span>سعة خزان الوقود</span><strong>{{ car.tank }} لتر</strong></div>{% endif %}
+            {% if car.tire_size %}<div class="spec-box"><span>مقاس الإطارات</span><strong>{{ car.tire_size }}</strong></div>{% endif %}
+            {% if car.transmission_type %}<div class="spec-box"><span>نوع ناقل الحركة</span><strong>{{ car.transmission_type }}</strong></div>{% endif %}
+            {% if car.transmission_oil_spec %}<div class="spec-box"><span>زيت الكير</span><strong>{{ car.transmission_oil_spec }}</strong></div>{% endif %}
+        </div>
+    </section>
+
+    {% if oil_brand_items %}
+    <section class="seo-card" style="margin-top:16px;">
+        <h2 style="font-size:1.35rem; font-weight:900; color:#fbbf24;">ماركات زيت مناسبة</h2>
+        <div class="brand-list">
+            {% for brand in oil_brand_items %}<div>{{ forloop.counter }}. {{ brand }}</div>{% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="seo-card" style="margin-top:16px;">
+        <h2 style="font-size:1.35rem; font-weight:900; color:#fbbf24;">اعرف بقية تفاصيل سيارتك</h2>
+        <p class="note">إذا تريد تفاصيل أكثر أو تريد مقارنة المحركات والتجهيزات، استخدم أداة سيارتي للبحث داخل قاعدة البيانات.</p>
+        <div class="cta-row">
+            <a class="cta-link cta-primary" href="{% url 'search' %}?brand={{ car.brand_ar|urlencode }}&model={{ car.model_ar|urlencode }}&year={{ car.year }}&spec_region={{ car.spec_region }}">🔎 افتح أداة مواصفات سيارتي</a>
+            <a class="cta-link cta-secondary" href="{% url 'mix_calculator' %}">🧮 حاسبة الوقود والأوكتان</a>
+            <a class="cta-link cta-secondary" href="{% url 'maintenance' %}">🛠️ مستكشف الأعطال والصيانة</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

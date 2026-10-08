@@ -7,6 +7,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q, Count, F
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
+from django.utils.text import slugify
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.core.cache import cache, caches
@@ -18,6 +19,17 @@ from .services.textnorm import fold_ar, fold_engine
 
 
 SW_FILE = Path(__file__).resolve().parent / 'static' / 'shared' / 'sw.js'
+
+
+def _car_spec_slug(car):
+    parts = [car.brand_en or car.brand_ar, car.model_en or car.model_ar, str(car.year), car.engine]
+    if car.spec_region:
+        parts.append(car.spec_region)
+    return slugify('-'.join(str(part) for part in parts if part), allow_unicode=True) or str(car.id)
+
+
+def _car_spec_url(car):
+    return reverse('car_spec_detail', args=[car.id, _car_spec_slug(car)])
 
 
 def manifest_view(request):
@@ -620,6 +632,24 @@ def search_view(request):
     return render(request, 'cars/search.html', context)
 
 
+def car_spec_detail(request, car_id, slug):
+    try:
+        car = CarSpecification.objects.get(id=car_id)
+    except CarSpecification.DoesNotExist:
+        messages.error(request, "⚠️ السيارة غير موجودة")
+        return redirect('search')
+
+    canonical_slug = _car_spec_slug(car)
+    if slug != canonical_slug:
+        return redirect('car_spec_detail', car_id=car.id, slug=canonical_slug, permanent=True)
+
+    return render(request, 'cars/car_spec_detail.html', {
+        'car': car,
+        'oil_brand_items': _split_list_values(car.oil_brands),
+        'transmission_oil_brand_items': _split_list_values(car.transmission_oil_brands),
+    })
+
+
 def dealers_view(request):
     if not SiteSettings.load().show_dealers_card:
         return redirect('index')
@@ -994,6 +1024,11 @@ def sitemap_view(request):
         urls.append({'loc': host + reverse('maintenance'), 'priority': '0.8', 'freq': 'weekly'})
         for slug in CarSymptom.objects.filter(is_active=True).values_list('slug', flat=True)[:1000]:
             urls.append({'loc': host + reverse('symptom_detail', args=[slug]), 'priority': '0.6', 'freq': 'monthly'})
+
+    for car in CarSpecification.objects.order_by('id').only(
+        'id', 'brand_en', 'brand_ar', 'model_en', 'model_ar', 'year', 'engine', 'spec_region'
+    )[:45000]:
+        urls.append({'loc': host + _car_spec_url(car), 'priority': '0.65', 'freq': 'monthly'})
 
     chunk = '\n'.join(
         f"   <url><loc>{escape(u['loc'])}</loc><lastmod>{today}</lastmod>"

@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.index_view, name='index'),
     path('budget/', views.legacy_budget_redirect, name='legacy_budget_redirect'),
     path('search/', views.search_view, name='search'),
+    path('car-spec/<int:car_id>-<slug:slug>/', views.car_spec_detail, name='car_spec_detail'),
     path('dealers/', views.dealers_view, name='dealers'),
     path('maintenance/', views.maintenance_view, name='maintenance'),
     path('maintenance/symptom/<slug:slug>/', views.symptom_detail, name='symptom_detail'),

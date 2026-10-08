@@ -237,12 +237,13 @@
                                 <section class="engine-recommendation-scope{% if not forloop.first %} has-divider{% endif %}">
                                     {% if engine.recommendations|length > 1 %}<div class="scope-title">التجهيز الموثق {{ forloop.counter }}</div>{% endif %}
                                     {% if not site_settings.hide_result_engine_oil %}<div class="text-white font-black text-lg mb-2">توصي بـ <span class="text-amber-400">{{ rec.oil_visc|escape }}</span></div>{% endif %}
-                                    <div class="spec-grid recommendation-spec-grid">
-                                        {% if not site_settings.hide_result_engine_oil %}<div class="spec-item oil-capacity-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ rec.oil_capacity|default:"غير محدد"|escape }}</span></div>{% endif %}
-                                        {% if rec.fuel %}<div class="spec-item fuel-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ rec.fuel|escape }}</span></div>{% endif %}
-                                        {% if not site_settings.hide_result_octane %}<div class="spec-item octane-item"><span class="label">⛽ الأوكتان</span><span class="value">{{ rec.octane|escape }}</span></div>{% endif %}
-                                    </div>
-                                    {% if recommendation.oil_brand_items and not site_settings.hide_result_oil_brands %}
+                                     <div class="spec-grid recommendation-spec-grid">
+                                         {% if not site_settings.hide_result_engine_oil %}<div class="spec-item oil-capacity-item"><span class="label">🧴 سعة الزيت</span><span class="value green">{{ rec.oil_capacity|default:"غير محدد"|escape }}</span></div>{% endif %}
+                                         {% if rec.fuel %}<div class="spec-item fuel-item"><span class="label">⛽ نوع الوقود</span><span class="value">{{ rec.fuel|escape }}</span></div>{% endif %}
+                                         {% if not site_settings.hide_result_octane %}<div class="spec-item octane-item"><span class="label">⛽ الأوكتان</span><span class="value">{{ rec.octane|escape }}</span></div>{% endif %}
+                                     </div>
+                                     <a href="{{ recommendation.seo_url }}" class="inline-flex items-center justify-center gap-2 mt-3 px-3 py-2 rounded-xl bg-amber-400/12 text-amber-200 border border-amber-300/15 text-xs font-black hover:bg-amber-400/20 transition">اقرأ صفحة المواصفات الكاملة ←</a>
+                                     {% if recommendation.oil_brand_items and not site_settings.hide_result_oil_brands %}
                                     <div class="oil-brands-text">
                                         <div class="text-amber-300 text-xs font-black mb-2">🏷️ ماركات الزيت الموصى بها</div>
                                         <div class="oil-brand-lines">

@@ -15,7 +15,7 @@ from cars.models import (
     AppInstallMetric, CarSpecification, Dealer, MaintenanceTask, PromoCode,
     SiteSettings, Sponsor, SITE_SETTINGS_CACHE_KEY,
 )
-from cars.views import _client_ip
+from cars.views import _car_spec_url, _client_ip
 
 # الاختبارات تعمل في عملية واحدة، لذا نستبدل التخزين "المشترك" بذاكرة محلية
 # لنفس المنطق (العدّاد والحد) دون الحاجة لجدول قاعدة بيانات في قاعدة الاختبار.
@@ -515,6 +515,25 @@ class PageSmokeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['X-Robots-Tag'], 'noindex, follow')
         self.assertContains(response, '<meta name="robots" content="noindex, follow"/>')
+
+    def test_car_spec_detail_is_indexable_and_useful(self):
+        car = _make_car(33, brand_ar='تويوتا', model_ar='كامري', year=2022, engine='2.5L', oil_visc='0W-16', oil_capacity='4.5 لتر', fuel='بنزين', octane='91')
+
+        response = self.client.get(_car_spec_url(car))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'تويوتا كامري 2022')
+        self.assertContains(response, '0W-16')
+        self.assertContains(response, '4.5 لتر')
+        self.assertContains(response, 'افتح أداة مواصفات سيارتي')
+
+    def test_car_spec_pages_are_in_sitemap(self):
+        car = _make_car(34, brand_ar='تويوتا', model_ar='كامري', year=2022, engine='2.5L')
+
+        response = self.client.get('/sitemap.xml')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, _car_spec_url(car))
 
     def test_car_export_excel_by_brand(self):
         self.client.force_login(User.objects.create_superuser('boss4', 'b4@example.com', 'pw'))
