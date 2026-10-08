@@ -507,6 +507,15 @@ class PageSmokeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'Limited')
 
+    def test_recommendation_card_is_not_indexable(self):
+        car = _make_car(32)
+
+        response = self.client.get(f'/car/{car.id}/recommendations/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['X-Robots-Tag'], 'noindex, follow')
+        self.assertContains(response, '<meta name="robots" content="noindex, follow"/>')
+
     def test_car_export_excel_by_brand(self):
         self.client.force_login(User.objects.create_superuser('boss4', 'b4@example.com', 'pw'))
         _make_car(1, 'تويوتا', 'كورولا')

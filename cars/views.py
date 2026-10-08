@@ -905,10 +905,12 @@ def recommendations_view(request, car_id):
     except CarSpecification.DoesNotExist:
         messages.error(request, "\u26a0\ufe0f \u0627\u0644\u0633\u064a\u0627\u0631\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629")
         return redirect('index')
-    return render(request, 'cars/recommendations.html', {
+    response = render(request, 'cars/recommendations.html', {
         'car': car,
         'display_recommendations': _unique_recommendation_lines(car.recommendations),
     })
+    response['X-Robots-Tag'] = 'noindex, follow'
+    return response
 
 
 def _unique_recommendation_lines(text):
